@@ -76,7 +76,7 @@ def main():
                 folder=ROOT/'src/lib/contract' if version==1 else ROOT/f'src/lib/contract/v{version}'
                 provenance=json.loads((folder/'provenance.json').read_text())
                 assert hashlib.sha256((source/f'contracts/api-v0.{version}.0.json').read_bytes()).hexdigest()==provenance['sha256']
-            print('F3 fixture: exact public backend/schema verified; building native Go CLI.',flush=True)
+            print('F4 fixture: exact public backend/schema verified; building native Go CLI.',flush=True)
             binary=directory/'db-manager';run(['go','build','-trimpath','-o',str(binary),'./cmd/db-manager'],cwd=source)
             tls=directory/'tls';tls.mkdir()
             run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN=DB Manager F3 Fixture CA','-keyout',str(tls/'ca.key'),'-out',str(tls/'ca.pem')])
@@ -98,7 +98,7 @@ def main():
             assert tcp.returncode != 0, 'Bootstrap must not be mistaken for final TCP readiness'
             run(['docker','exec',prefix,'touch','/fixture/release_bootstrap'])
             wait(lambda:'accepting connections' in run(['docker','exec',prefix,'pg_isready','-h','127.0.0.1','-U','postgres','-d','f3_probe']),'final PostgreSQL TCP readiness')
-            print('F3 fixture: socket-only bootstrap reproduced; final TCP readiness required.',flush=True)
+            print('F4 fixture: socket-only bootstrap reproduced; final TCP readiness required.',flush=True)
             pgport=int(json.loads(run(['docker','inspect','--format','{{json .NetworkSettings.Ports}}',prefix]))['5432/tcp'][0]['HostPort'])
             tokenfile=directory/'token';tokenfile.write_text(token+'\n');tokenfile.chmod(0o600)
             backendport=port();base=f'http://127.0.0.1:{backendport}'
@@ -109,15 +109,15 @@ def main():
             pg={'driver':'postgres','host':'localhost','port':pgport,'username':'postgres','password':password,'database':'f3_probe','tls_mode':'verify-full'}
             api(base,'/api/v1/connections/test',token,{'connection':pg})
             api(base,'/api/v1/connections/test',token,{'connection':{**pg,'host':'127.0.0.1'}},422)
-            print('F3 fixture: positive verify-full connection followed by wrong-host refusal passed.',flush=True)
+            print('F4 fixture: positive verify-full connection followed by wrong-host refusal passed.',flush=True)
             for driver,connection in [('sqlite',{'driver':'sqlite','database':'f3_fixture'}),('postgres',pg)]:
                 statement=0
                 def query(sql):
                     nonlocal statement
                     statement+=1
                     try: return api(base,'/api/v1/query',token,{'connection':connection,'sql':sql})
-                    except RuntimeError as error: raise RuntimeError(f'F3 synthetic {driver} fixture statement {statement}: {error}') from None
-                print(f'F3 fixture: setting up synthetic {driver} values, metadata and view.',flush=True)
+                    except RuntimeError as error: raise RuntimeError(f'F4 synthetic {driver} fixture statement {statement}: {error}') from None
+                print(f'F4 fixture: setting up synthetic {driver} values, metadata and view.',flush=True)
                 table='"odd""name"'
                 types='id INTEGER PRIMARY KEY, huge TEXT' if driver=='sqlite' else 'id BIGINT PRIMARY KEY, huge NUMERIC(40,20)'
                 payload='BLOB' if driver=='sqlite' else 'BYTEA'
@@ -148,7 +148,7 @@ def main():
             environment=dict(os.environ,DBM_REAL_CONFIG=str(config),CI='1')
             run(['npx','playwright','install','chromium'],cwd=ROOT,env=environment)
             print(redact(run(['npx','playwright','test','--config','playwright.real.config.ts','--reporter=line'],cwd=ROOT,env=environment)),flush=True)
-            print('F3 real: exact public backend/schema, SQLite/PostgreSQL verify-full, structured browse/filter/page/metadata, strict CSP and session reset passed.',flush=True)
+            print('F4 real: exact public backend/schema, SQLite/PostgreSQL verify-full, structured browse and row insert/update/delete/conflict/lost-commit-response/session checks passed.',flush=True)
         finally:
             import signal
             for process in reversed(processes):
@@ -158,7 +158,7 @@ def main():
                     process.wait(timeout=15)
             for log in logs: log.close()
             if created: run(['docker','rm','-fv',prefix])
-    print('F3 task-owned processes, database container/volume, private credentials and pinned temporary checkout removed.',flush=True)
+    print('F4 task-owned processes, database container/volume, private credentials and pinned temporary checkout removed.',flush=True)
 
 if __name__=='__main__':
     try: main()

@@ -1,4 +1,4 @@
-name: Echte Tabellenintegration
+name: Echte Tabellen- und Zeilenintegration
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read

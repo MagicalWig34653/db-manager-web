@@ -25,6 +25,12 @@ async function sql(page: Page, driver: string, statement: string) {
   return response.json();
 }
 async function connect(page: Page, driver: string) {
+  await page.addInitScript(() => {
+    window.cspViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) =>
+      window.cspViolations.push(event.violatedDirective),
+    );
+  });
   await page.goto('/');
   await page.getByRole('button', { name: 'Backend-Zugang' }).click();
   await page.getByLabel('Zugriffstoken').fill(config.token);
@@ -213,6 +219,7 @@ for (const driver of ['sqlite', 'postgresql']) {
     ).not.toBeVisible();
     await expect(page.getByText('old-session-commit', { exact: true })).toHaveCount(0);
     expect(realWrites).toBe(2);
+    expect(await page.evaluate(() => window.cspViolations)).toEqual([]);
     const final = await sql(
       page,
       driver,
