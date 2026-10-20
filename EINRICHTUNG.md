@@ -169,3 +169,8 @@ Der Test entfernt eigene Prozesse, Container/Volume und temporäre Daten. Browse
 Screenshots und Videos bleiben aus; keine Credentials in Logs oder Prozessargumenten.
 Die CI installiert Chromium-Systempakete mit `npx playwright install --with-deps chromium`.
 Tatsächliche Ergebnisse und unabhängige Abnahme: [F3-Handoff](docs/handoffs/F3.md).
+
+Ältere Instanzen ohne `/api/v2/capabilities` behalten ihren SQL-Arbeitsplatz.
+Der Tabellenbereich meldet die fehlende Fähigkeit ausdrücklich und bietet den
+Rückweg zu SQL. Für Tabellenfunktionen ist die freigegebene API0.2.0 erforderlich;
+eine fehlende Route wird nicht als erfolgreicher Tabellenzugriff behandelt.
