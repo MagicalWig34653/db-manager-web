@@ -10,7 +10,7 @@ Frontend & UX implementiert in eigenen Worktrees, QA prüft unabhängig.
 | F1b | CSP-taugliche Standalone-Validatoren | nach QA und CI integriert, Quelle 4e5abee | reproduzierbarer Generator und tatsächlicher strikter Produktions-CSP-Test |
 | F2a | Gepinnte Webassets/Go-Webwrapper | nach unabhängiger QA im Hauptrepo integriert | saubere öffentliche Quelle, Hash-/Lizenzprovenienz, isoliertes Goembed/Routing |
 | F2b | Echte Web→Go→DB-/Containerintegration | nach unabhängiger QA im Hauptrepo integriert (`df0b291`/`c7e1a1d`) | echter SQLite-/PostgreSQL-TLS-Browserpfad, beobachteter Abbruch und Compose-/isolierte-Swarm-Persistenz; vier öffentliche CIs erfolgreich |
-| F3 | Strukturierter Tabellenarbeitsplatz und Quellcode-/Lizenzverweise | Phase A/B beauftragt, `feat/table-workbench`, `.worktrees/table-workbench`, Basis `ec8dcea`; API0.2.0 für Bindung freigegeben | strikte CSP/Sessiongrenzen erhalten, genaue Metadaten/Sortierung/parametrisierte Filter/Pagination und echte Browserfälle gegen reproduzierbar gepinnten öffentlichen Backendcheckout; unabhängige QA und CI vor Integration |
+| F3 | Strukturierter Tabellenarbeitsplatz und Quellcode-/Lizenzverweise | nach unabhängigem Gesamt- und Fixreview integriert (`8ab07fb`), Quelle `6c6eb33` für F3b freigegeben | strikte CSP/Sessiongrenzen erhalten, genaue Metadaten/Sortierung/parametrisierte Filter/Pagination und echte Browserfälle gegen reproduzierbar gepinnten öffentlichen Backendcheckout; unabhängige QA und CI vor Integration |
 
 Keine weiteren Featureänderungen ohne begrenztes Ticket/Vertragsabstimmung.
 F1-Branch `feat/web-workbench`, Worktree `.worktrees/web-workbench`, sauber und ohne
@@ -25,3 +25,11 @@ API0.2.0 ist ausdrücklich freigegeben: öffentlicher Backendquellstand
 V1 bleibt unverändert; neue Fähigkeiten über `/api/v2/capabilities`. B2a-Findings
 unabhängig geschlossen und alle vier nativen Fix-CIs erfolgreich. F3 darf diesen
 Stand konsumieren; Mutationskandidat0.3 gehört nicht zum Auftrag.
+
+F3-Abnahme: P0-Erstreview vollständig grün bis QA-F3-01; P3-Nachreview schloss den
+atomaren Filter-/Sortzustandsfix unabhängig gegen beide echten Engines. Alle drei
+Fix-CIs39500902843/39500903174/39500902856 erfolgreich. Integrierter Typecheck,
+19 Units, Dualvertrag und Build bestanden. Originalquelle bleibt in main-Ancestry.
+F3b neuer Root-Webpin und TCP-/TLS-Testreadiness nach eigener Hauptrepo-Zuweisung;
+keine nachträgliche Veränderung freigegebener Webartefakte. F4-Schreiboberfläche
+benötigt eigenen Auftrag und sicheren gepinnten Backendstand.

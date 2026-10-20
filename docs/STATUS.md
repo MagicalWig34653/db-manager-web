@@ -34,13 +34,19 @@ Keine vollständige Parität, Dateneditor-/Schema-/Import-/Vault-/Teamfunktionen
 Backendtoken und DB-Passwörter nur im Speicher; Reload/Sessionwechsel verwirft sie.
 Abbruch verspricht keinen Rollback bereits erfolgter Datenbankeffekte.
 
-F1-/F2-Worktrees bleiben saubere Provenienz. F3 startet im Webrepo-Worktree
-`.worktrees/table-workbench`, Branch `feat/table-workbench`, Basis `ec8dcea`.
-Zuerst sichtbare Quellcode-/Lizenzverweise mit tatsächlicher Buildherkunft;
-Tabellenmetadaten/-ansicht mit ausdrücklich freigegebenem API0.2.0-Vertrag.
-Herkunft `427444d7bcb8e30c9563ded2000ec3d5e19646c4`, Schema-SHA256
-`c15a848f01bb779429fd68a2b6eb6bba1575d3e07a4c68e6796cf7840a661838`.
-Besitz Produkt-/Build-/Vertrags-/Test-/Lizenzdateien, README/Einrichtung/Handoff;
-STATUS/ARBEITSPLAN gehören Lead. Keine Mutation oder Credential-/SQL-Persistenz.
+F3 nach vollständigem P0-Erstreview und unabhängiger P3-Fixnachprüfung integriert,
+Merge `8ab07fb` erhält alle Originalquellcommits. QA-F3-01 (unsichtbarer verworfener
+Filter nach ungültiger Sortierung) durch atomare Zustandsübernahme geschlossen;
+Repro vor Fix auf beiden echten Engines rot, nachher einschließlich Weiter/Refresh grün.
+Freigegebene unveränderliche Quelle für Rootpaket F3b:
+`6c6eb33c93eed355a10cd114f61ce27be7f3f55e`. Alle drei Fix-CIs erfolgreich.
+Integrierte Typecheck-/19-Unit-/Dualvertrags-/Produktionsbuildprüfungen bestanden.
+Daten-/Strukturansicht, Sortierung/Filter/Pagination sowie Quellcode-/Lizenzdialog
+sind Webprodukt; Root-Embed enthält bis F3b noch den vorherigen F1-Build.
+
+F3b ist das nächste eigene Hauptrepo-Paket: reproduzierbarer neuer Webpin plus
+enger TCP-/TLS-Readinessfix des Root-Testhelfers. Keine Mutationsoberfläche im
+freigegebenen F3. API0.3.0 bleibt einem späteren eigenen Clientpaket vorbehalten.
+F1-/F2-/F3-Worktrees bleiben saubere Provenienz, zentrale Dateien beim Lead.
 Keine eigenen F1-Browser-/Vitejobs offen. [Handoff F1](handoffs/F1.md),
 [Handoff F1b](handoffs/F1b.md), [Einrichtung](../EINRICHTUNG.md).
