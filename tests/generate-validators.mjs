@@ -6,8 +6,9 @@ import standaloneCode from 'ajv/dist/standalone/index.js';
 import { build } from 'vite';
 
 const root = new URL('../', import.meta.url);
-const version = process.argv.includes('--v2') ? '0.2.0' : '0.1.0';
-const folder = version === '0.2.0' ? 'src/lib/contract/v2/' : 'src/lib/contract/';
+const major = process.argv.find((arg) => /^--v[234]$/.test(arg))?.slice(3) ?? '1';
+const version = `0.${major}.0`;
+const folder = major === '1' ? 'src/lib/contract/' : `src/lib/contract/v${major}/`;
 const spec = JSON.parse(readFileSync(new URL(`${folder}api-v${version}.json`, root), 'utf8'));
 const definitions = JSON.parse(
   JSON.stringify(spec.components.schemas).replaceAll('#/components/schemas/', '#/$defs/'),

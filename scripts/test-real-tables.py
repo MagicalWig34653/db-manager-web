@@ -16,7 +16,7 @@ import urllib.request
 import urllib.error
 
 ROOT = Path(__file__).resolve().parent.parent
-PIN = json.loads((ROOT/'src/lib/contract/v2/provenance.json').read_text())
+PIN = json.loads((ROOT/'src/lib/contract/v4/provenance.json').read_text())
 HIDDEN=[]
 
 def redact(value):
@@ -56,7 +56,7 @@ def api(base, path, token=None, body=None, expected=200):
         return json.load(response)
 
 def main():
-    prefix='dbmanager-f3-'+secrets.token_hex(6)
+    prefix='dbmanager-f4-'+secrets.token_hex(6)
     token=secrets.token_urlsafe(48); password=secrets.token_urlsafe(32); invalid=secrets.token_urlsafe(48)
     HIDDEN.extend([token,password,invalid])
     parent=ROOT/'node_modules/.cache';parent.mkdir(parents=True,exist_ok=True)
@@ -72,6 +72,10 @@ def main():
             run(['git','-C',str(source),'checkout','--detach','FETCH_HEAD'])
             assert run(['git','-C',str(source),'rev-parse','HEAD'])==PIN['source_commit']
             assert hashlib.sha256((source/PIN['source_path']).read_bytes()).hexdigest()==PIN['sha256']
+            for version in [1,2,3,4]:
+                folder=ROOT/'src/lib/contract' if version==1 else ROOT/f'src/lib/contract/v{version}'
+                provenance=json.loads((folder/'provenance.json').read_text())
+                assert hashlib.sha256((source/f'contracts/api-v0.{version}.0.json').read_bytes()).hexdigest()==provenance['sha256']
             print('F3 fixture: exact public backend/schema verified; building native Go CLI.',flush=True)
             binary=directory/'db-manager';run(['go','build','-trimpath','-o',str(binary),'./cmd/db-manager'],cwd=source)
             tls=directory/'tls';tls.mkdir()
@@ -81,7 +85,7 @@ def main():
             run(['openssl','x509','-req','-days','1','-in',str(tls/'server.csr'),'-CA',str(tls/'ca.pem'),'-CAkey',str(tls/'ca.key'),'-CAcreateserial','-extfile',str(tls/'extensions'),'-out',str(tls/'server.pem')])
             envfile=directory/'pg.env';envfile.write_text('POSTGRES_PASSWORD='+password+'\nPOSTGRES_DB=f3_probe\n');envfile.chmod(0o600)
             command='chown -R postgres /fixture && chmod 600 /fixture/server.key && exec /usr/local/bin/docker-entrypoint.sh "$@"'
-            run(['docker','create','--name',prefix,'--label','dbmanager.task=F3','-p','127.0.0.1::5432','--env-file',str(envfile),'--entrypoint','sh','postgres:18.6-alpine','-c',command,'fixture','postgres','-c','ssl=on','-c','ssl_cert_file=/fixture/server.pem','-c','ssl_key_file=/fixture/server.key']);created=True
+            run(['docker','create','--name',prefix,'--label','dbmanager.task=F4','-p','127.0.0.1::5432','--env-file',str(envfile),'--entrypoint','sh','postgres:18.6-alpine','-c',command,'fixture','postgres','-c','ssl=on','-c','ssl_cert_file=/fixture/server.pem','-c','ssl_key_file=/fixture/server.key']);created=True
             run(['docker','cp',str(tls),prefix+':/fixture'])
             # Reproduce the official image's socket-only bootstrap phase deterministically.
             barrier=directory/'bootstrap-barrier.sh'
@@ -126,6 +130,13 @@ def main():
                     values.append(f"({i},'12345678901234567890.12345678901234567890',{nullable},'',{binary_sql})")
                 query(f'INSERT INTO {table}(id,huge,nullable,empty_text,payload) VALUES '+','.join(values))
                 query(f'CREATE VIEW f3_view AS SELECT huge,nullable FROM {table}')
+                key='id INTEGER PRIMARY KEY AUTOINCREMENT' if driver=='sqlite' else 'id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY'
+                numeric='TEXT' if driver=='sqlite' else 'NUMERIC(40,20)'
+                query(f"CREATE TABLE f4_rows ({key}, label TEXT NOT NULL DEFAULT 'default-label', optional TEXT, empty_text TEXT, precise {numeric}, payload {payload}, generated_text TEXT GENERATED ALWAYS AS (label || '-generated') {generation})")
+                query("INSERT INTO f4_rows(label,optional,empty_text,precise,payload) VALUES('original',NULL,'','12345678901234567890.12345678901234567890',"+("X'00FF'" if driver=='sqlite' else "decode('00ff','hex')")+")")
+                query('CREATE VIEW f4_view AS SELECT * FROM f4_rows')
+                query('CREATE TABLE f4_no_pk(value TEXT)')
+                query("INSERT INTO f4_no_pk VALUES('read-only')")
                 if driver=='postgres':
                     assert query('SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()')['results'][0]['rows'][0][0]['value']=='true'
             webport=port();webbase=f'http://127.0.0.1:{webport}'
@@ -133,7 +144,7 @@ def main():
             log=(directory/'web.log').open('w');logs.append(log)
             processes.append(subprocess.Popen(['npm','run','preview','--','--port',str(webport),'--strictPort'],cwd=ROOT,env=environment,stdout=log,stderr=log,start_new_session=True))
             wait(lambda:urllib.request.urlopen(webbase,timeout=2).status==200,'production web preview with real same-origin API proxy')
-            config=directory/'config.json';config.write_text(json.dumps({'baseURL':webbase,'token':token,'password':password,'invalidToken':invalid,'postgresPort':pgport,'outputDir':str(directory/'results')}));config.chmod(0o600)
+            config=directory/'config.json';config.write_text(json.dumps({'baseURL':webbase,'token':token,'password':password,'invalidToken':invalid,'postgresPort':pgport,'backendURL':base,'outputDir':str(directory/'results')}));config.chmod(0o600)
             environment=dict(os.environ,DBM_REAL_CONFIG=str(config),CI='1')
             run(['npx','playwright','install','chromium'],cwd=ROOT,env=environment)
             print(redact(run(['npx','playwright','test','--config','playwright.real.config.ts','--reporter=line'],cwd=ROOT,env=environment)),flush=True)

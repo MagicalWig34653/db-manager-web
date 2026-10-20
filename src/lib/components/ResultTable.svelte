@@ -3,7 +3,17 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { displayCell, isNumeric, type DisplayCell, type DisplayResult } from '$lib/workbench';
-  let { result }: { result: DisplayResult } = $props();
+  let {
+    result,
+    onedit,
+    ondelete,
+    actionsDisabled = false,
+  }: {
+    result: DisplayResult;
+    onedit?: (index: number) => void;
+    ondelete?: (index: number) => void;
+    actionsDisabled?: boolean;
+  } = $props();
   let selected = $state<DisplayCell | null>(null);
   let open = $state(false);
   let copied = $state(false);
@@ -26,7 +36,7 @@
         ><tr
           ><th class="row-number" scope="col">#</th>{#each result.columns as column}<th scope="col"
               ><span>{column.name}</span><small>{column.type}</small></th
-            >{/each}</tr
+            >{/each}{#if onedit || ondelete}<th scope="col">Einzelzeile</th>{/if}</tr
         ></thead
       >
       <tbody>
@@ -48,11 +58,26 @@
                     ? '""'
                     : displayCell(cell)}</button
                 ></td
-              >{/each}</tr
+              >{/each}{#if onedit || ondelete}<td class="row-actions"
+                >{#if onedit}<Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={actionsDisabled}
+                    aria-label={`Zeile ${index + 1} bearbeiten`}
+                    onclick={() => onedit?.(index)}>Bearbeiten</Button
+                  >{/if}{#if ondelete}<Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={actionsDisabled}
+                    aria-label={`Zeile ${index + 1} löschen`}
+                    onclick={() => ondelete?.(index)}>Löschen</Button
+                  >{/if}</td
+              >{/if}</tr
           >{/each}
         {#if result.rows.length === 0}<tr
-            ><td colspan={result.columns.length + 1} class="empty-result"
-              >Die Abfrage hat keine Zeilen zurückgegeben.</td
+            ><td
+              colspan={result.columns.length + 1 + (onedit || ondelete ? 1 : 0)}
+              class="empty-result">Die Abfrage hat keine Zeilen zurückgegeben.</td
             ></tr
           >{/if}
       </tbody>
