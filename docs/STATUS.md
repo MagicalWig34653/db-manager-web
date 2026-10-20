@@ -23,14 +23,22 @@ Zeilenbegrenzung. Keine Credentialpersistenz und kein vorgetäuschter DB-Erfolg.
 
 ## Grenzen und Fortsetzung
 
-Diese Abnahme verwendet explizite Mock-API-Fixtures. Reale Web→Go→DB-Integration
-und Auslieferung im Go-/Dockerprodukt gehören zu F2; noch nicht daraus ableiten.
+Die F1-Abnahme verwendet explizite Mock-API-Fixtures. F2a/F2b sind inzwischen im
+Hauptrepo nach unabhängiger QA integriert: reproduzierbares Go-Webpaket und echter
+Browser→Go→SQLite/PostgreSQL-TLS-Pfad, beobachtete Abbruchfreigabe sowie Compose-/
+isolierte-Swarm-Neustartpersistenz. F2b-Quelle `f2c92ee`/`c9ced80`, integriert als
+`df0b291`/`c7e1a1d`, zentraler Hauptrepo-Abnahmecheckpoint `c706741`. Öffentliche
+[Webpfad-CI](https://github.com/MagicalWig34653/db-manager/actions/runs/39495523677)
+sowie Backend-/Engine-/Dokumentations-CI am Kandidaten erfolgreich.
 Keine vollständige Parität, Dateneditor-/Schema-/Import-/Vault-/Teamfunktionen.
 Backendtoken und DB-Passwörter nur im Speicher; Reload/Sessionwechsel verwirft sie.
 Abbruch verspricht keinen Rollback bereits erfolgter Datenbankeffekte.
 
-F2a läuft im eigenen Hauptrepo-Worktree `.worktrees/web-integration` auf Branch
-`feat/web-integration`: reproduzierbar gepinnte Assets/Provenienz und Go-Webwrapper,
-noch keine parallele main-/Dockerverdrahtung zu B1. F1-Worktree bleibt Provenienz.
+F1-/F2-Worktrees bleiben saubere Provenienz. F3 startet im Webrepo-Worktree
+`.worktrees/table-workbench`, Branch `feat/table-workbench`, Basis `ec8dcea`.
+Zuerst sichtbare Quellcode-/Lizenzverweise mit tatsächlicher Buildherkunft;
+Tabellenmetadaten/-ansicht erst nach ausdrücklichem API0.2-Freeze durch Lead.
+Besitz Produkt-/Build-/Vertrags-/Test-/Lizenzdateien, README/Einrichtung/Handoff;
+STATUS/ARBEITSPLAN gehören Lead. Keine Mutation oder Credential-/SQL-Persistenz.
 Keine eigenen F1-Browser-/Vitejobs offen. [Handoff F1](handoffs/F1.md),
 [Handoff F1b](handoffs/F1b.md), [Einrichtung](../EINRICHTUNG.md).
