@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+src/lib/contract/
+src/third-party-notices.txt
+package-lock.json
