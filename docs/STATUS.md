@@ -42,11 +42,24 @@ Freigegebene unveränderliche Quelle für Rootpaket F3b:
 `6c6eb33c93eed355a10cd114f61ce27be7f3f55e`. Alle drei Fix-CIs erfolgreich.
 Integrierte Typecheck-/19-Unit-/Dualvertrags-/Produktionsbuildprüfungen bestanden.
 Daten-/Strukturansicht, Sortierung/Filter/Pagination sowie Quellcode-/Lizenzdialog
-sind Webprodukt; Root-Embed enthält bis F3b noch den vorherigen F1-Build.
+sind Webprodukt; F3b ist inzwischen nach unabhängigem Review im Go-Hauptrepo integriert
+(`0767969`/`22fdf78`/`cc175a5`/`5cb604a`, zentraler Stand `f46cafe`).
 
-F3b ist das nächste eigene Hauptrepo-Paket: reproduzierbarer neuer Webpin plus
-enger TCP-/TLS-Readinessfix des Root-Testhelfers. Keine Mutationsoberfläche im
-freigegebenen F3. API0.3.0 bleibt einem späteren eigenen Clientpaket vorbehalten.
+F3b bestanden: zwei bytegleiche öffentliche Builds, fünf echte Browserfälle,
+Compose und isolierter DinD-Swarm samt SQLitepersistenz, Go-Race/Vet und sauberer
+Go-/Imagebuild ohne Node/npm zur Laufzeit. Alle sechs Feature-CIs erfolgreich;
+kombinierte Haupt-CIs an f46cafe noch kontrollieren. Keine Mutationsoberfläche im
+freigegebenen F3.
+
+F4 ist aktiv in feat/row-workbench/.worktrees/row-workbench ab ffdd2a0. Bestätigtes
+Einzelzeilen-Insert/Edit/Delete auf unabhängig freigegebenen API0.3/0.4-Verträgen;
+Referenzbackend72855cf enthält beide v3-Integritätsfixes. Schreibaktionen benötigen
+validierte v4-Fähigkeiten und passende v3-Eignung; ältere Backendstände behalten
+SQL-/v2-Tabellenbetrieb ohne neue Schreibaktionen. Vollständiger typisierter Snapshot,
+keine automatischen Retries, Konflikt fordert Neuladen, Transportabbruch nach Versand
+meldet möglichen Commit. Besitz Produkt/Vertragskopien/Build/Tests/Lizenzen/README/
+Einrichtung/Handoff; zentrale Statusdateien beim Lead. Echte SQLite-/PG-TLS-Browser-
+und unabhängige QA vor Integration, später eigener RootpinF4b.
 F1-/F2-/F3-Worktrees bleiben saubere Provenienz, zentrale Dateien beim Lead.
 Keine eigenen F1-Browser-/Vitejobs offen. [Handoff F1](handoffs/F1.md),
 [Handoff F1b](handoffs/F1b.md), [Einrichtung](../EINRICHTUNG.md).
