@@ -4,6 +4,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import socket
@@ -47,7 +48,11 @@ def api(base, path, token=None, body=None, expected=200):
     try: response=urllib.request.urlopen(request,timeout=20)
     except urllib.error.HTTPError as error: response=error
     with response:
-        if response.status!=expected: raise RuntimeError(f'{path}: HTTP {response.status}, expected {expected}')
+        if response.status!=expected:
+            try: code=json.load(response).get('error',{}).get('code','unknown')
+            except (ValueError,AttributeError): code='unknown'
+            if not isinstance(code,str) or not re.fullmatch('[a-z_]{1,64}',code): code='unknown'
+            raise RuntimeError(f'{path}: HTTP {response.status}, expected {expected}; public code={code}')
         return json.load(response)
 
 def main():
@@ -67,6 +72,7 @@ def main():
             run(['git','-C',str(source),'checkout','--detach','FETCH_HEAD'])
             assert run(['git','-C',str(source),'rev-parse','HEAD'])==PIN['source_commit']
             assert hashlib.sha256((source/PIN['source_path']).read_bytes()).hexdigest()==PIN['sha256']
+            print('F3 fixture: exact public backend/schema verified; building native Go CLI.',flush=True)
             binary=directory/'db-manager';run(['go','build','-trimpath','-o',str(binary),'./cmd/db-manager'],cwd=source)
             tls=directory/'tls';tls.mkdir()
             run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN=DB Manager F3 Fixture CA','-keyout',str(tls/'ca.key'),'-out',str(tls/'ca.pem')])
@@ -88,7 +94,13 @@ def main():
             pg={'driver':'postgres','host':'localhost','port':pgport,'username':'postgres','password':password,'database':'f3_probe','tls_mode':'verify-full'}
             api(base,'/api/v1/connections/test',token,{'connection':{**pg,'host':'127.0.0.1'}},422)
             for driver,connection in [('sqlite',{'driver':'sqlite','database':'f3_fixture'}),('postgres',pg)]:
-                def query(sql): return api(base,'/api/v1/query',token,{'connection':connection,'sql':sql})
+                statement=0
+                def query(sql):
+                    nonlocal statement
+                    statement+=1
+                    try: return api(base,'/api/v1/query',token,{'connection':connection,'sql':sql})
+                    except RuntimeError as error: raise RuntimeError(f'F3 synthetic {driver} fixture statement {statement}: {error}') from None
+                print(f'F3 fixture: setting up synthetic {driver} values, metadata and view.',flush=True)
                 table='"odd""name"'
                 types='id INTEGER PRIMARY KEY, huge TEXT' if driver=='sqlite' else 'id BIGINT PRIMARY KEY, huge NUMERIC(40,20)'
                 payload='BLOB' if driver=='sqlite' else 'BYTEA'
