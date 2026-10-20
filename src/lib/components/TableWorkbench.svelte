@@ -18,6 +18,7 @@
     tables,
     tableResult,
     prepareFilters,
+    validateTable,
     emptyFilter,
     type TableDescription,
     type BrowseResult,
@@ -43,14 +44,16 @@
   let pageSize = $state(100);
   let filters = $state<FilterDraft[]>([]);
   let sort = $state<TableSort[]>([]);
-  let appliedSnapshot = $state(JSON.stringify({ filters: [], sort: [], pageSize: 100 }));
-  let appliedFilters: TableFilter[] = [];
-  let appliedSort: TableSort[] = [];
-  let appliedPageSize = 100;
+  let appliedQuery = $state({
+    filters: [] as TableFilter[],
+    sort: [] as TableSort[],
+    pageSize: 100,
+    snapshot: JSON.stringify({ filters: [], sort: [], pageSize: 100 }),
+  });
   let version = 0;
   let destroyed = false;
   let controller = new AbortController();
-  const dirty = $derived(JSON.stringify({ filters, sort, pageSize }) !== appliedSnapshot);
+  const dirty = $derived(JSON.stringify({ filters, sort, pageSize }) !== appliedQuery.snapshot);
   const display = $derived(result ? tableResult(result) : null);
   const table = $derived({
     name: object.name,
@@ -109,10 +112,10 @@
         {
           connection: toConnection(connection),
           table,
-          page_size: appliedPageSize,
+          page_size: appliedQuery.pageSize,
           offset,
-          sort: appliedSort,
-          filters: appliedFilters,
+          sort: appliedQuery.sort,
+          filters: appliedQuery.filters,
           timeout_ms: 10000,
         },
         token,
@@ -139,7 +142,7 @@
   function apply() {
     if (!description || busy) return;
     try {
-      appliedFilters = prepareFilters(
+      const nextFilters = prepareFilters(
         filters,
         description.columns.map((column) => column.name),
       );
@@ -149,9 +152,26 @@
         throw new Error('Wähle vorhandene Sortierspalten.');
       if (new Set(sort.map((order) => order.column)).size !== sort.length)
         throw new Error('Jede Sortierspalte darf nur einmal vorkommen.');
-      appliedSort = sort.map((order) => ({ ...order }));
-      appliedPageSize = pageSize;
-      appliedSnapshot = JSON.stringify({ filters, sort, pageSize });
+      const nextSort = sort.map((order) => ({ ...order }));
+      const nextPageSize = pageSize;
+      if (!Number.isInteger(nextPageSize) || nextPageSize < 1 || nextPageSize > 1000)
+        throw new Error('Die Seitengröße muss zwischen 1 und 1.000 Zeilen liegen.');
+      validateTable('BrowseRequest', {
+        connection: toConnection(connection),
+        table,
+        offset: 0,
+        filters: nextFilters,
+        sort: nextSort,
+        page_size: nextPageSize,
+        timeout_ms: 10000,
+      });
+      const nextQuery = {
+        filters: nextFilters,
+        sort: nextSort,
+        pageSize: nextPageSize,
+        snapshot: JSON.stringify({ filters, sort, pageSize }),
+      };
+      appliedQuery = nextQuery;
       void loadPage(0);
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Prüfe die Filterwerte.';
