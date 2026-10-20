@@ -69,6 +69,19 @@ for (const driver of ['sqlite', 'postgresql']) {
     await expect(
       workspace.getByRole('button', { name: 'integer: 9223372036854775807' }),
     ).toBeVisible();
+    await page.getByRole('button', { name: 'Sortierung hinzufügen' }).click();
+    await page.getByLabel('Sortierspalte 1').selectOption('empty_text');
+    await page.getByLabel('Richtung 1').selectOption('asc');
+    await page.getByLabel('Sortierspalte 2').selectOption('id');
+    await page.getByLabel('Richtung 2').selectOption('desc');
+    await page.getByRole('button', { name: 'Anwenden', exact: true }).click();
+    await expect(
+      workspace.getByRole('button', { name: 'integer: 9223372036854775807' }),
+    ).toBeVisible();
+    expect(requests.at(-1)?.sort).toEqual([
+      { column: 'empty_text', direction: 'asc' },
+      { column: 'id', direction: 'desc' },
+    ]);
     await page.getByRole('button', { name: 'Filter hinzufügen' }).click();
     await page.getByLabel('Filterspalte 1').selectOption('nullable');
     await page.getByLabel('Bedingung 1').selectOption('is_null');
@@ -102,13 +115,21 @@ for (const driver of ['sqlite', 'postgresql']) {
     expect((requests.at(-1)?.filters as { value: { value: string } }[])[0].value.value).toBe(
       '12345678901234567890.12345678901234567890',
     );
+    await page.getByLabel('Filterspalte 1').selectOption('empty_text');
+    await page.getByLabel('Werttyp 1').selectOption('text');
+    await page.getByLabel('Filterwert 1').fill("' OR 1=1 --");
+    await page.getByRole('button', { name: 'Anwenden', exact: true }).click();
+    await expect(
+      workspace.getByText('Keine passenden Zeilen · Gesamtzahl nicht ermittelt'),
+    ).toBeVisible();
+    expect((requests.at(-1)?.filters as { value: { value: string } }[])[0].value.value).toBe(
+      "' OR 1=1 --",
+    );
     await page.getByRole('tab', { name: /Struktur/ }).click();
     await expect(workspace.getByRole('columnheader', { name: 'PK-Position' })).toBeVisible();
     await expect(workspace.getByRole('rowheader', { name: 'generated_text' })).toBeVisible();
     await expect(
-      workspace
-        .getByRole('row')
-        .filter({ has: workspace.getByRole('rowheader', { name: 'nullable', exact: true }) }),
+      workspace.getByRole('rowheader', { name: 'nullable', exact: true }).locator('..'),
     ).toContainText('fallback');
     await expect(
       workspace.getByRole('cell', {
