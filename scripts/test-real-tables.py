@@ -82,8 +82,19 @@ def main():
             envfile=directory/'pg.env';envfile.write_text('POSTGRES_PASSWORD='+password+'\nPOSTGRES_DB=f3_probe\n');envfile.chmod(0o600)
             command='chown -R postgres /fixture && chmod 600 /fixture/server.key && exec /usr/local/bin/docker-entrypoint.sh "$@"'
             run(['docker','create','--name',prefix,'--label','dbmanager.task=F3','-p','127.0.0.1::5432','--env-file',str(envfile),'--entrypoint','sh','postgres:18.6-alpine','-c',command,'fixture','postgres','-c','ssl=on','-c','ssl_cert_file=/fixture/server.pem','-c','ssl_key_file=/fixture/server.key']);created=True
-            run(['docker','cp',str(tls),prefix+':/fixture']);run(['docker','start',prefix])
-            wait(lambda:'accepting connections' in run(['docker','exec',prefix,'pg_isready','-U','postgres','-d','f3_probe']),'PostgreSQL TLS readiness')
+            run(['docker','cp',str(tls),prefix+':/fixture'])
+            # Reproduce the official image's socket-only bootstrap phase deterministically.
+            barrier=directory/'bootstrap-barrier.sh'
+            barrier.write_text('touch /fixture/bootstrap_waiting\nwhile [ ! -e /fixture/release_bootstrap ]; do sleep 0.1; done\n')
+            run(['docker','cp',str(barrier),prefix+':/docker-entrypoint-initdb.d/00_f3_bootstrap.sh'])
+            run(['docker','start',prefix])
+            wait(lambda:run(['docker','exec',prefix,'test','-e','/fixture/bootstrap_waiting'])=='','PostgreSQL bootstrap barrier')
+            assert 'accepting connections' in run(['docker','exec',prefix,'pg_isready','-U','postgres','-d','f3_probe'])
+            tcp=subprocess.run(['docker','exec',prefix,'pg_isready','-h','127.0.0.1','-U','postgres','-d','f3_probe'],capture_output=True)
+            assert tcp.returncode != 0, 'Bootstrap must not be mistaken for final TCP readiness'
+            run(['docker','exec',prefix,'touch','/fixture/release_bootstrap'])
+            wait(lambda:'accepting connections' in run(['docker','exec',prefix,'pg_isready','-h','127.0.0.1','-U','postgres','-d','f3_probe']),'final PostgreSQL TCP readiness')
+            print('F3 fixture: socket-only bootstrap reproduced; final TCP readiness required.',flush=True)
             pgport=int(json.loads(run(['docker','inspect','--format','{{json .NetworkSettings.Ports}}',prefix]))['5432/tcp'][0]['HostPort'])
             tokenfile=directory/'token';tokenfile.write_text(token+'\n');tokenfile.chmod(0o600)
             backendport=port();base=f'http://127.0.0.1:{backendport}'
@@ -92,7 +103,9 @@ def main():
             processes.append(subprocess.Popen([str(binary)],env=environment,stdout=log,stderr=log))
             wait(lambda:api(base,'/healthz')['status']=='ok','real pinned Go server')
             pg={'driver':'postgres','host':'localhost','port':pgport,'username':'postgres','password':password,'database':'f3_probe','tls_mode':'verify-full'}
+            api(base,'/api/v1/connections/test',token,{'connection':pg})
             api(base,'/api/v1/connections/test',token,{'connection':{**pg,'host':'127.0.0.1'}},422)
+            print('F3 fixture: positive verify-full connection followed by wrong-host refusal passed.',flush=True)
             for driver,connection in [('sqlite',{'driver':'sqlite','database':'f3_fixture'}),('postgres',pg)]:
                 statement=0
                 def query(sql):
