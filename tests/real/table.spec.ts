@@ -81,7 +81,9 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     await expect(workspace.getByText('Zeilen 26–50 · Gesamtzahl nicht ermittelt')).toBeVisible();
     expect(requests.at(-1)).toMatchObject({ offset: 25, page_size: 25, filters: [], sort: [] });
+    const beforeRefresh = requests.length;
     await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
+    await expect.poll(() => requests.length).toBe(beforeRefresh + 1);
     await expect(workspace.getByText('Zeilen 26–50 · Gesamtzahl nicht ermittelt')).toBeVisible();
     expect(requests.at(-1)).toMatchObject({ offset: 25, page_size: 25, filters: [], sort: [] });
     await page.getByRole('button', { name: 'Zurück', exact: true }).click();
