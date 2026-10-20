@@ -70,3 +70,12 @@ Die eigenen Vite-Dev-/Previewserver wurden durch Playwright beendet; Ports 4179
 und 4180 haben nach Prüfabschluss keinen eigenen Listener. Keine laufenden Jobs.
 Nächster Schritt: QA prüft Clientvalidierung/CSP; danach öffentlicher Commitpin
 und reproduzierbarer Assetbuild in F2a. Keine Selbstfreigabe oder Integration.
+
+## Unabhängige Abnahme und Integration
+
+QA & Release hat `4e5abee` ausdrücklich inklusive Verwendung als F2a-Assetquelle
+freigegeben. Standalone-Generator im eigenen Cleanclone mit frischem npmci bytegleich;
+Produktionsbuild und Chromium unter strikter CSP mit gültiger Query, absichtlich
+ungültiger Antwort und null CSP-Verletzungen bestanden. Keine offenen Befunde.
+API unverändert. Öffentliche Frontend-/Dokumentations-CI erfolgreich, Quelle per
+FastForward in main erhalten. Kein tatsächlicher B1-/Produktnachweis daraus ableiten.
