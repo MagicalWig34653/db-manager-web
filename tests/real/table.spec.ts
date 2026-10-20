@@ -28,8 +28,7 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByLabel('Zugriffstoken').fill(config.token);
     await page.getByRole('button', { name: 'Übernehmen' }).click();
     await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
-    if (driver === 'postgresql')
-      await page.getByRole('button', { name: 'PostgreSQL', exact: true }).click();
+    if (driver === 'postgresql') await page.getByRole('button', { name: 'PostgreSQL' }).click();
     await page
       .getByLabel('Datenbank', { exact: true })
       .fill(driver === 'sqlite' ? 'f3_fixture' : 'f3_probe');
@@ -106,6 +105,11 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByRole('tab', { name: /Struktur/ }).click();
     await expect(workspace.getByRole('columnheader', { name: 'PK-Position' })).toBeVisible();
     await expect(workspace.getByRole('rowheader', { name: 'generated_text' })).toBeVisible();
+    await expect(
+      workspace
+        .getByRole('row')
+        .filter({ has: workspace.getByRole('rowheader', { name: 'nullable', exact: true }) }),
+    ).toContainText('fallback');
     await expect(
       workspace.getByRole('cell', {
         name: driver === 'sqlite' ? 'Virtuell' : 'Gespeichert',

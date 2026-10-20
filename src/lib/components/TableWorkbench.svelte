@@ -13,7 +13,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import ResultTable from './ResultTable.svelte';
-  import { toConnection } from '$lib/api';
+  import { toConnection, ApiError } from '$lib/api';
   import {
     tables,
     tableResult,
@@ -30,12 +30,15 @@
     connection,
     token,
     object,
-  }: { connection: ConnectionDraft; token: string; object: CatalogObject } = $props();
+    onsql,
+  }: { connection: ConnectionDraft; token: string; object: CatalogObject; onsql: () => void } =
+    $props();
   let description = $state<TableDescription | null>(null);
   let result = $state<BrowseResult | null>(null);
   let busy = $state(false);
   let error = $state('');
   let cancelled = $state(false);
+  let unsupported = $state(false);
   let tab = $state<'data' | 'structure'>('data');
   let pageSize = $state(100);
   let filters = $state<FilterDraft[]>([]);
@@ -82,9 +85,11 @@
     } catch (cause) {
       if (!destroyed && current === version) {
         if (controller.signal.aborted) cancelled = true;
-        else
+        else {
+          unsupported = cause instanceof ApiError && cause.code === 'unsupported_feature';
           error =
             cause instanceof Error ? cause.message : 'Die Tabelle konnte nicht geöffnet werden.';
+        }
       }
     } finally {
       if (!destroyed && current === version) busy = false;
@@ -119,11 +124,13 @@
     } catch (cause) {
       if (!destroyed && current === version) {
         if (request.signal.aborted) cancelled = true;
-        else
+        else {
+          unsupported = cause instanceof ApiError && cause.code === 'unsupported_feature';
           error =
             cause instanceof Error
               ? cause.message
               : 'Die Tabellenzeilen konnten nicht geladen werden.';
+        }
       }
     } finally {
       if (!destroyed && current === version) busy = false;
@@ -408,7 +415,10 @@
         ><Square size={14} />Laden abbrechen</Button
       >
     </div>{/if}
-  {#if error}<div class="table-feedback table-error" role="alert">{error}</div>{/if}
+  {#if error}<div class="table-feedback table-error" role="alert">
+      {error}{#if unsupported}<Button variant="outline" onclick={onsql}>Zu SQL wechseln</Button
+        >{/if}
+    </div>{/if}
   {#if cancelled}<div class="table-feedback" role="status">
       Laden abgebrochen. Keine Tabellenzeilen verändert.
     </div>{/if}

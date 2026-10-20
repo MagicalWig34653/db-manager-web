@@ -1,6 +1,6 @@
 # Einrichtung und Prüfungen
 
-Svelte-Workbench für die freigegebene API `0.1.0`. Ein sauberer Checkout benötigt keine
+Svelte-Workbench für die freigegebenen APIs `0.1.0` (SQL) und `0.2.0` (Tabellen). Ein sauberer Checkout benötigt keine
 Geschwister-Repositories. Eigener Code ist AGPL-3.0-only; Fremdlizenzen und exakte
 Versionen stehen in [LIZENZEN](docs/LIZENZEN.md) und `package-lock.json`.
 
@@ -21,9 +21,9 @@ Origin verwendet. Entwicklung mit separat gestartetem Backend:
 DB_MANAGER_BACKEND_URL=http://127.0.0.1:8080 npm run dev
 ```
 
-Diese Variable wird nur von Vites Entwicklungsproxy für `/api` ausgewertet und nicht
+Diese Variable wird nur von Vites Entwicklungs-/Previewproxy für `/api` ausgewertet und nicht
 in Browsercode eingebettet. Sie enthält keine Zugangsdaten. Das Backend muss separat
-laufen und die API-Version `0.1.0` unterstützen; der Frontendstart startet keine Datenbank.
+laufen und die API-Version `0.1.0` sowie für die Tabellenansicht `0.2.0` unterstützen; der Frontendstart startet keine Datenbank.
 Die Oberfläche meldet unerreichbare Instanzen und nicht angebotene Datenbanktreiber als
 solche. Es gibt keine eingebauten Demoergebnisse.
 
@@ -44,8 +44,18 @@ private CA-Dateien sind durch API 0.1.0 noch nicht als UI-Optionen verfügbar.
 
 ## Bedienung
 
-Verbindung testen/öffnen, Objekte filtern und auswählen, SQL prüfen und explizit ausführen.
-Objektauswahl erzeugt nur einen korrekt gequoteten SELECT-Entwurf; Tippen führt kein SQL aus.
+Verbindung testen/öffnen und Objekt auswählen: „Tabelle“ zeigt Daten und Struktur über
+strukturierte Backendanfragen, ohne SQL im Browser zusammenzubauen. Seiten werden ohne
+COUNT-Gesamtzahl angezeigt. Mehrspaltensortierung und UND-Filter verwenden ausschließlich
+vorhandene Metadatenspalten. NULL-Bedingungen sind getrennt von getaggten Werten;
+Dezimalwerte bleiben Strings mit Dezimalpunkt, Binärfilter erwarten Base64. „Anwenden“
+übernimmt Änderungen ausdrücklich und startet auf der ersten Seite. Während unübernommener
+Änderungen ist die Seitennavigation gesperrt. Fehlende PK-/stabile Reihenfolge werden
+angezeigt; auch eindeutige Sortierung ist kein Snapshot bei parallelen DB-Änderungen.
+Diese Tabellenansicht verändert keine Zeilen. „Struktur“ zeigt PK-Position, NULL, Default,
+Generated-/Read-only-Metadaten; unbekannte Angaben bleiben unbekannt.
+
+„SQL“ öffnet den freien Editor. Tippen führt kein SQL aus; Ausführung nur ausdrücklich.
 `⌘/Strg + K` fokussiert den Editor, `⌘/Strg + Enter` führt aus, `Escape` fordert den Abbruch
 an. Zeilenlimit und Zeitlimit werden mitgeschickt. Tabellenwerte bleiben getaggt; Integer,
 Dezimalwerte und betroffene Zeilen werden nicht in JavaScript-Zahlen umgewandelt.
@@ -61,7 +71,7 @@ npm run preview
 ```
 
 `dist/` ist der eigenständig auslieferbare statische Build für spätere Go-Einbettung.
-Der Hostingdienst muss `/api/v1/*` zur API derselben Origin leiten und HTTPS anbieten.
+Der Hostingdienst muss `/api/v1/*` und `/api/v2/*` zur API derselben Origin leiten und HTTPS anbieten.
 `LICENSE.txt` und `THIRD-PARTY-NOTICES.txt` werden neben den Assets ausgegeben.
 Vites Preview ist eine lokale Prüfung, kein Produktionsserver. Compose/Swarm werden im
 Hauptrepository umgesetzt; ein Frontendbuild allein belegt keine Deploymentabnahme.
@@ -130,3 +140,32 @@ Der Hauptrepo-Buildpfad erzeugt diesen ohnehin frisch mit festem öffentlichem C
 Dialog: exakter Commitlink, originale lokale Lizenzbytes, Dialog-/Tastaturfokus und
 strikte Script-CSP. Der neue Tabellenvertrag wird erst nach Freigabe gebunden;
 aktueller Paketstand und offene Prüfungen im [F3-Handoff](docs/handoffs/F3.md).
+
+
+## Freigegebene Tabellen-API und echte Kernpfadprobe
+
+Die unveränderte zusätzliche Vertragskopie liegt unter `src/lib/contract/v2/`.
+[Herkunft](src/lib/contract/v2/provenance.json): öffentlicher Backendcommit
+`427444d7bcb8e30c9563ded2000ec3d5e19646c4`, SHA256
+`c15a848f01bb779429fd68a2b6eb6bba1575d3e07a4c68e6796cf7840a661838`.
+V1-Datei und deren SHA bleiben unverändert. TypeScript und CSP-taugliche Standalone-
+Validatoren beider Versionen werden separat generiert und auf Byteabweichungen geprüft.
+
+Mit Go1.27.1, Git, Docker, OpenSSL und den üblichen Node-/npm-Werkzeugen:
+
+```sh
+python3 scripts/test-real-tables.py
+```
+
+Das Skript baut den committeten Produktionsclient, lädt ausschließlich den vollen
+öffentlichen Backendcommit in ein privates temporäres Gitverzeichnis, prüft dessen
+Vertragsbytes und baut das echte Go-CLI. SQLite und eine eigene PostgreSQL18.6-TLS-
+Fixture verwenden nur synthetische Daten und zufällige kurzlebige Credentials.
+Der lokale Vite-Preview vermittelt `/api` an dieses echte Backend; keine API-Mocks
+im Kernpfad. Die CSP entspricht der strikten Auslieferungsregel ohne Script-Eval/
+Inline-Scripts. Das belegt den neuen Client-/Backendpfad; erneute Go-Einbettung und
+Compose-/Swarm-Auslieferung dieses neuen Webpins sind ein separates F3b-Paket.
+Der Test entfernt eigene Prozesse, Container/Volume und temporäre Daten. Browsertraces,
+Screenshots und Videos bleiben aus; keine Credentials in Logs oder Prozessargumenten.
+Die CI installiert Chromium-Systempakete mit `npx playwright install --with-deps chromium`.
+Tatsächliche Ergebnisse und unabhängige Abnahme: [F3-Handoff](docs/handoffs/F3.md).

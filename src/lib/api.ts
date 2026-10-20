@@ -43,6 +43,9 @@ const errorMessages: Record<string, string> = {
     'Die Abfrage wurde abgebrochen oder ihr Zeitlimit wurde erreicht. Bereits ausgeführte Änderungen können bestehen bleiben.',
   database_error:
     'Die Datenbankoperation ist fehlgeschlagen. Prüfe Verbindung, SQL und Datenbankrechte.',
+  database_busy:
+    'Diese SQLite-Datenbank wird gerade verwendet. Warte auf die laufende Anfrage oder brich sie ab.',
+  table_not_found: 'Das Objekt ist nicht mehr verfügbar. Aktualisiere den Katalog.',
   unsupported_driver: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
   driver_unavailable: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
   result_too_large:
@@ -144,6 +147,12 @@ export class ApiClient {
       throw new ApiError(
         'network_error',
         'Das Backend ist nicht erreichbar. Prüfe, ob deine Instanz läuft.',
+      );
+    }
+    if (response.status === 404) {
+      throw new ApiError(
+        'not_found',
+        'Der angeforderte Bereich wird von dieser Instanz nicht angeboten.',
       );
     }
     let payload: unknown;

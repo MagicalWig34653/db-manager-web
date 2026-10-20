@@ -424,6 +424,7 @@
             {connection}
             token={backendToken}
             object={selectedObject}
+            onsql={() => (workspaceMode = 'sql')}
           />{/key}
       {:else}
         <section class="editor-panel" aria-label="SQL-Abfrage">

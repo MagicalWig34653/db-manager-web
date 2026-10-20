@@ -41,10 +41,18 @@ export function tableResult(data: BrowseResult): DisplayResult {
 export class TableClient {
   constructor(private client = new ApiClient()) {}
   async capabilities(token: string, signal: AbortSignal) {
-    const data = validateTable(
-      'TableCapabilities',
-      await this.client.requestRaw('/api/v2/capabilities', token, undefined, signal),
-    );
+    let payload: unknown;
+    try {
+      payload = await this.client.requestRaw('/api/v2/capabilities', token, undefined, signal);
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.code === 'not_found')
+        throw new ApiError(
+          'unsupported_feature',
+          'Diese Instanz bietet noch keine Tabellenansicht. SQL-Abfragen stehen weiterhin zur Verfügung.',
+        );
+      throw cause;
+    }
+    const data = validateTable('TableCapabilities', payload);
     if (!data.features.includes('table_describe') || !data.features.includes('table_browse'))
       throw new ApiError(
         'unsupported_feature',
