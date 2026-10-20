@@ -401,7 +401,9 @@
                     ? 'NULL'
                     : field.value}{/if}
               </p>{:else}<label
-                >Angabe für {field.column}<select bind:value={field.mode}
+                >Angabe für {field.column}<select
+                  aria-label={`Angabe für ${field.column}`}
+                  bind:value={field.mode}
                   ><option value={operation === 'insert' ? 'default' : 'unchanged'}
                     >{operation === 'insert'
                       ? 'DB-Default (nicht übergeben)'
@@ -411,7 +413,9 @@
                     >{/if}<option value="value">Wert angeben</option></select
                 ></label
               >{#if field.mode === 'value'}<label
-                  >Werttyp für {field.column}<select bind:value={field.kind}
+                  >Werttyp für {field.column}<select
+                    aria-label={`Werttyp für ${field.column}`}
+                    bind:value={field.kind}
                     ><option value="text">Text</option><option value="integer">Ganze Zahl</option
                     ><option value="decimal">Dezimalzahl</option><option value="float"
                       >Fließkommazahl</option
@@ -421,6 +425,7 @@
                   ></label
                 ><label
                   >Wert für {field.column}<Textarea
+                    aria-label={`Wert für ${field.column}`}
                     bind:value={field.value}
                     rows={2}
                     maxlength={1048576}

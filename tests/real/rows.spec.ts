@@ -54,7 +54,12 @@ async function confirm(page: Page, action: string, review = true) {
   await page
     .getByRole('checkbox', { name: 'Ich bestätige diesen einzelnen Schreibvorgang.' })
     .check();
-  await page.getByRole('button', { name: action, exact: true }).click();
+  await page
+    .getByRole('button', { name: action, exact: true })
+    .evaluate((button: HTMLButtonElement) => {
+      button.click();
+      button.click();
+    });
 }
 async function closeSuccess(page: Page) {
   await expect(page.getByRole('button', { name: 'Schließen und Tabelle neu laden' })).toBeVisible();
@@ -84,12 +89,12 @@ for (const driver of ['sqlite', 'postgresql']) {
     ).toBeVisible();
     expect(writes).toHaveLength(1);
     expect(
-      writes[0].body.changes.some(
+      writes[0].body.values.some(
         (c: any) => c.column === 'id' || c.column === 'label' || c.column === 'generated_text',
       ),
     ).toBe(false);
-    expect(writes[0].body.changes).toContainEqual({ column: 'optional', value: { kind: 'null' } });
-    expect(writes[0].body.changes).toContainEqual({
+    expect(writes[0].body.values).toContainEqual({ column: 'optional', value: { kind: 'null' } });
+    expect(writes[0].body.values).toContainEqual({
       column: 'empty_text',
       value: { kind: 'text', value: '' },
     });
@@ -157,14 +162,14 @@ for (const driver of ['sqlite', 'postgresql']) {
       const response = await route.fetch(); // Forward the actual request; never fabricate database output.
       expect(response.status()).toBe(200);
       const payload = await response.json();
-      expect(payload.committed).toBe(true);
+      expect(payload.outcome).toBe('committed');
       committed = true;
       await route.abort('connectionreset'); // Lose only the real committed response.
     });
     await page.getByRole('button', { name: 'Zeile hinzufügen', exact: true }).click();
     await value(page, 'label', 'lost-response');
     await confirm(page, 'Zeile verbindlich hinzufügen');
-    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('möglicherweise');
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('unbekannt');
     expect(committed).toBe(true);
     expect(realWrites).toBe(1);
     const actual = await sql(
@@ -172,7 +177,7 @@ for (const driver of ['sqlite', 'postgresql']) {
       driver,
       "SELECT COUNT(*) AS n FROM f4_rows WHERE label='lost-response'",
     );
-    expect(actual.rows[0][0]).toEqual({ kind: 'integer', value: '1' });
+    expect(actual.results[0].rows[0][0]).toEqual({ kind: 'integer', value: '1' });
     await expect(page.getByRole('button', { name: 'Zeile verbindlich hinzufügen' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Entwurf verwerfen und Daten neu laden' }).click();
     await page.unroute('**/api/v4/rows/insert');
@@ -213,7 +218,7 @@ for (const driver of ['sqlite', 'postgresql']) {
       driver,
       "SELECT COUNT(*) AS n FROM f4_rows WHERE label='old-session-commit'",
     );
-    expect(final.rows[0][0]).toEqual({ kind: 'integer', value: '1' });
+    expect(final.results[0].rows[0][0]).toEqual({ kind: 'integer', value: '1' });
     const storage = await page.evaluate(() =>
       JSON.stringify({
         local: { ...localStorage },

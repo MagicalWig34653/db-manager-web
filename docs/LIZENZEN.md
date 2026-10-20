@@ -296,3 +296,9 @@ Der echte Go-Testserver wird ausschließlich aus dem gepinnten öffentlichen
 gebaut; dessen Go-Abhängigkeiten behalten ihr eigenes
 [Inventar](https://github.com/MagicalWig34653/db-manager/blob/427444d7bcb8e30c9563ded2000ec3d5e19646c4/docs/LIZENZEN.md).
 PostgreSQL18.6 ist eine isolierte Testfixture und kein Teil des Webartefakts.
+
+## F4-Nachtrag
+
+Der Zeileneditor und die zusätzlichen Vertragsvalidatoren führen keine neuen
+Abhängigkeiten ein. Lockfile, Original-Lizenztexte und Fremdcodezuordnung bleiben
+unverändert; die zusätzlichen eigenen Produkt-/Testdateien sind AGPL-3.0-only.

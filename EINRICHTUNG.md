@@ -52,7 +52,16 @@ Dezimalwerte bleiben Strings mit Dezimalpunkt, Binärfilter erwarten Base64. „
 übernimmt Änderungen ausdrücklich und startet auf der ersten Seite. Während unübernommener
 Änderungen ist die Seitennavigation gesperrt. Fehlende PK-/stabile Reihenfolge werden
 angezeigt; auch eindeutige Sortierung ist kein Snapshot bei parallelen DB-Änderungen.
-Diese Tabellenansicht verändert keine Zeilen. „Struktur“ zeigt PK-Position, NULL, Default,
+Zeilenaktionen erscheinen nur bei gültigen v4-/v3-Capabilities und geeigneten
+transaktionalen Basistabellen mit Primärschlüssel. Ältere Backends behalten SQL und
+gegebenenfalls v2-Tabellen, jedoch keine neuen Schreibaktionen. Der Einzelzeileneditor
+unterscheidet DB-Default (Spalte ausgelassen), NULL und Leertext; Zahlen/Dezimalwerte
+bleiben Strings, Binärwerte Base64. Update erhält den vollständigen ursprünglichen
+Snapshot; PK und generierte Zielspalten sind gesperrt. Jede Änderung und jedes Löschen
+verlangt eine ausdrückliche Bestätigung. Es gibt keine automatischen Wiederholungen.
+Nach Konflikt aktuelle Daten laden und neu beginnen. Nach unterbrochener Antwort kann
+ein Commit bereits erfolgt sein: erst Datenstand prüfen, nicht blind erneut senden.
+Die vom Server gemeldete Nachherzeile berücksichtigt mögliche Datenbankkonversionen. „Struktur“ zeigt PK-Position, NULL, Default,
 Generated-/Read-only-Metadaten; unbekannte Angaben bleiben unbekannt.
 
 „SQL“ öffnet den freien Editor. Tippen führt kein SQL aus; Ausführung nur ausdrücklich.
@@ -71,7 +80,7 @@ npm run preview
 ```
 
 `dist/` ist der eigenständig auslieferbare statische Build für spätere Go-Einbettung.
-Der Hostingdienst muss `/api/v1/*` und `/api/v2/*` zur API derselben Origin leiten und HTTPS anbieten.
+Der Hostingdienst muss `/api/v1/*` bis `/api/v4/*` zur API derselben Origin leiten und HTTPS anbieten.
 `LICENSE.txt` und `THIRD-PARTY-NOTICES.txt` werden neben den Assets ausgegeben.
 Vites Preview ist eine lokale Prüfung, kein Produktionsserver. Compose/Swarm werden im
 Hauptrepository umgesetzt; ein Frontendbuild allein belegt keine Deploymentabnahme.
@@ -174,3 +183,14 @@ Tatsächliche Ergebnisse und unabhängige Abnahme: [F3-Handoff](docs/handoffs/F3
 Der Tabellenbereich meldet die fehlende Fähigkeit ausdrücklich und bietet den
 Rückweg zu SQL. Für Tabellenfunktionen ist die freigegebene API0.2.0 erforderlich;
 eine fehlende Route wird nicht als erfolgreicher Tabellenzugriff behandelt.
+
+## F4-Schreibverträge und echte Proben
+
+Unveränderte Verträge 0.3/0.4 und SHA256-Herkunft liegen unter
+`src/lib/contract/v3/` und `v4/`. Gemeinsamer öffentlicher Backendpin:
+`72855cf57ceb6620dead42856ee6c9d52d0612bd`. Kein Verbrauch früherer ungepatchter
+v3-Stände für die neue Schreiboberfläche. `python3 scripts/test-real-tables.py`
+baut einen frischen öffentlichen Backendcheckout und verwendet eigene SQLite-/
+PostgreSQL-TLS-Wegwerfdaten. Browserproben prüfen echte Schreibanfragen, parallele
+Konflikte und den Verlust echter bestätigter Commitantworten. Ein Frontendbuild
+ersetzt keine unabhängige QA oder erneute Root-/Compose-/Swarm-Artefaktabnahme.
