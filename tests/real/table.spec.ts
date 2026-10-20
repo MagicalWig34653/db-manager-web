@@ -57,8 +57,33 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByLabel('Zeilen pro Seite').selectOption('25');
     await page.getByRole('button', { name: 'Anwenden', exact: true }).click();
     await expect(workspace.getByText('Zeilen 1–25 · Gesamtzahl nicht ermittelt')).toBeVisible();
+    // QA-F3-01: a rejected draft must never change the applied query.
+    await page.getByText('Sortierung und Filter', { exact: true }).click();
+    await page.getByRole('button', { name: 'Filter hinzufügen' }).click();
+    await page.getByLabel('Filterspalte 1').selectOption('empty_text');
+    await page.getByLabel('Filterwert 1').fill('qa-never-present');
+    await page.getByRole('button', { name: 'Sortierung hinzufügen' }).click();
+    await page.getByLabel('Sortierspalte 1').selectOption('id');
+    await page.getByRole('button', { name: 'Sortierung hinzufügen' }).click();
+    await page.getByLabel('Sortierspalte 2').selectOption('id');
+    await page.getByLabel('Zeilen pro Seite').selectOption('500');
+    const beforeRejectedApply = requests.length;
+    await page.getByRole('button', { name: 'Anwenden', exact: true }).click();
+    await expect(workspace.getByRole('alert')).toHaveText(
+      'Jede Sortierspalte darf nur einmal vorkommen.',
+    );
+    expect(requests.length).toBe(beforeRejectedApply);
+    await page.getByRole('button', { name: 'Filter 1 entfernen' }).click();
+    await page.getByRole('button', { name: 'Sortierung 2 entfernen' }).click();
+    await page.getByRole('button', { name: 'Sortierung 1 entfernen' }).click();
+    await page.getByLabel('Zeilen pro Seite').selectOption('25');
+    await page.getByText('Sortierung und Filter', { exact: true }).click();
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     await expect(workspace.getByText('Zeilen 26–50 · Gesamtzahl nicht ermittelt')).toBeVisible();
+    expect(requests.at(-1)).toMatchObject({ offset: 25, page_size: 25, filters: [], sort: [] });
+    await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
+    await expect(workspace.getByText('Zeilen 26–50 · Gesamtzahl nicht ermittelt')).toBeVisible();
+    expect(requests.at(-1)).toMatchObject({ offset: 25, page_size: 25, filters: [], sort: [] });
     await page.getByRole('button', { name: 'Zurück', exact: true }).click();
     await expect(workspace.getByText('Zeilen 1–25 · Gesamtzahl nicht ermittelt')).toBeVisible();
     await page.getByText('Sortierung und Filter', { exact: true }).click();
