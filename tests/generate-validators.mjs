@@ -6,11 +6,13 @@ import standaloneCode from 'ajv/dist/standalone/index.js';
 import { build } from 'vite';
 
 const root = new URL('../', import.meta.url);
-const spec = JSON.parse(readFileSync(new URL('src/lib/contract/api-v0.1.0.json', root), 'utf8'));
+const version = process.argv.includes('--v2') ? '0.2.0' : '0.1.0';
+const folder = version === '0.2.0' ? 'src/lib/contract/v2/' : 'src/lib/contract/';
+const spec = JSON.parse(readFileSync(new URL(`${folder}api-v${version}.json`, root), 'utf8'));
 const definitions = JSON.parse(
   JSON.stringify(spec.components.schemas).replaceAll('#/components/schemas/', '#/$defs/'),
 );
-const schemaId = 'urn:db-manager:api:0.1.0';
+const schemaId = `urn:db-manager:api:${version}`;
 const ajv = new Ajv2020({ strict: false, code: { source: true, esm: true } });
 ajv.addSchema({ $id: schemaId, $defs: definitions });
 const exports = Object.fromEntries(
@@ -56,7 +58,7 @@ for (const [name, content] of [
   ['validators.js', code],
   ['validators.d.ts', types],
 ]) {
-  const path = new URL(`src/lib/contract/${name}`, root);
+  const path = new URL(`${folder}${name}`, root);
   if (process.argv.includes('--check')) {
     if (readFileSync(path, 'utf8') !== content) throw new Error(`Generated ${name} is stale.`);
   } else {

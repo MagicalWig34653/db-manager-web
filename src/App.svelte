@@ -33,17 +33,19 @@
   import ConnectionEditor from '$lib/components/ConnectionEditor.svelte';
   import ResultTable from '$lib/components/ResultTable.svelte';
   import SourceInformation from '$lib/components/SourceInformation.svelte';
+  import TableWorkbench from '$lib/components/TableWorkbench.svelte';
   import {
-    selectObject,
     type CatalogObject,
     type ConnectionDraft,
     type Execution,
     type Driver,
   } from '$lib/workbench';
   import { gateway } from '$lib/gateway';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
 
   let connection = $state<ConnectionDraft | null>(null);
+  let selectedObject = $state<CatalogObject | null>(null);
+  let workspaceMode = $state<'sql' | 'table'>('sql');
   let objects = $state<CatalogObject[]>([]);
   let objectSearch = $state('');
   let sql = $state('');
@@ -114,6 +116,8 @@
       await gateway.test(draft, backendToken, sessionController.signal);
       if (version !== sessionVersion) return;
       connection = draft;
+      selectedObject = null;
+      workspaceMode = 'sql';
       execution = null;
       error = '';
       cancelled = false;
@@ -150,9 +154,9 @@
   }
   function openObject(object: CatalogObject) {
     if (!connection) return;
-    sql = selectObject(object, connection.driver);
+    selectedObject = object;
+    workspaceMode = 'table';
     sidebarOpen = false;
-    editor?.focus();
   }
   async function execute() {
     if (!connection || !sql.trim() || running || connectionBusy) return;
@@ -193,6 +197,8 @@
     controller?.abort();
     controller = undefined;
     connection = null;
+    selectedObject = null;
+    workspaceMode = 'sql';
     backendToken = '';
     tokenDraft = '';
     objects = [];
@@ -223,6 +229,7 @@
   }
   function handleKey(event: KeyboardEvent) {
     if (
+      workspaceMode === 'sql' &&
       event.key === 'Enter' &&
       (event.metaKey || event.ctrlKey) &&
       !connectionOpen &&
@@ -237,7 +244,8 @@
     }
     if (event.key === 'k' && (event.metaKey || event.ctrlKey) && !connectionOpen && !accessOpen) {
       event.preventDefault();
-      editor?.focus();
+      workspaceMode = 'sql';
+      void tick().then(() => editor?.focus());
     }
   }
   function editorKey(event: KeyboardEvent) {
@@ -258,7 +266,9 @@
 </script>
 
 <svelte:window onkeydown={handleKey} />
-<a class="skip-link" href="#sql-editor">Zum SQL-Editor</a>
+<a class="skip-link" href={workspaceMode === 'sql' ? '#sql-editor' : '#table-workspace'}
+  >Zum Arbeitsbereich</a
+>
 <div class="workbench">
   <aside class:mobile-open={sidebarOpen} aria-label="Datenbanknavigation">
     <div class="brand">
@@ -360,7 +370,7 @@
           onclick={() => (sidebarOpen = true)}><Menu /></Button
         ><Database size={15} /><span>{connection?.name || 'Arbeitsplatz'}</span><ChevronRight
           size={13}
-        /><strong>SQL-Arbeitsbereich</strong>
+        /><strong>{workspaceMode === 'sql' ? 'SQL-Arbeitsbereich' : 'Tabellenansicht'}</strong>
       </div>
       <Button
         variant="outline"
@@ -379,8 +389,12 @@
       <div class="page-heading">
         <div>
           <p class="eyebrow">DEINE DATEN. DEIN ARBEITSBEREICH.</p>
-          <h1>SQL-Arbeitsbereich</h1>
-          <p>Abfragen schreiben. Ergebnisse verstehen.</p>
+          <h1>{workspaceMode === 'sql' ? 'SQL-Arbeitsbereich' : 'Tabellenansicht'}</h1>
+          <p>
+            {workspaceMode === 'sql'
+              ? 'Abfragen schreiben. Ergebnisse verstehen.'
+              : 'Daten erkunden. Struktur verstehen.'}
+          </p>
         </div>
         <div class="connection-status" class:connected={!!connection}>
           <span></span>{connection ? 'Verbunden' : 'Nicht verbunden'}
@@ -396,150 +410,167 @@
             >Verbindung hinzufügen <ArrowUpRight /></Button
           >
         </div>{/if}
-      <section class="editor-panel" aria-label="SQL-Abfrage">
-        <div class="panel-heading">
-          <div class="query-tab">
-            <FileCode2 size={17} /><strong>Abfrage 1</strong><Badge variant="secondary">SQL</Badge>
-          </div>
-          <span class="editor-hint"><span>Editor fokussieren</span><kbd>⌘ / Strg K</kbd></span>
-        </div>
-        <div class="editor-surface">
-          <div class="line-numbers" aria-hidden="true">
-            {#each Array.from({ length: lineCount }, (_, index) => index + 1) as line}<span
-                >{line}</span
-              >{/each}
-          </div>
-          <textarea
-            id="sql-editor"
-            aria-label="SQL-Abfrage"
-            bind:this={editor}
-            bind:value={sql}
-            onkeydown={editorKey}
-            spellcheck={false}
-            autocomplete="off"
-            autocapitalize="off"
-            maxlength={1000000}
-            placeholder="-- Schreibe hier deine SQL-Abfrage.&#10;-- Ausgeführt wird erst mit „Ausführen“ oder ⌘ / Strg + Enter."
-            disabled={running}></textarea>
-        </div>
-        <div class="editor-toolbar">
-          <div class="execution-actions">
-            <Button
-              class="run-button"
-              aria-label="Abfrage ausführen"
-              aria-keyshortcuts="Control+Enter Meta+Enter"
-              onclick={execute}
-              disabled={!connection || !sql.trim() || running || connectionBusy}
-              >{#if running}<LoaderCircle class="animate-spin" />Wird ausgeführt{:else}<Play
-                  size={15}
-                  fill="currentColor"
-                />Ausführen{/if}<kbd>⌘ ↵</kbd></Button
-            >{#if running}<Button variant="outline" onclick={cancelQuery}
-                ><Square size={13} />Abbrechen</Button
-              >{/if}
-          </div>
-          <div class="execution-options">
-            <label for="row-limit">Zeilenlimit</label><select
-              id="row-limit"
-              bind:value={rowLimit}
-              disabled={running}
-              ><option value={100}>100</option><option value={500}>500</option><option value={1000}
-                >1.000</option
-              ></select
-            ><span class="toolbar-divider"></span><Clock3 size={14} /><select
-              aria-label="Zeitlimit"
-              bind:value={timeoutMs}
-              disabled={running}
-              ><option value={10000}>10 Sek.</option><option value={30000}>30 Sek.</option><option
-                value={60000}>60 Sek.</option
-              ></select
-            >
-          </div>
-        </div>
-      </section>
-      <section class="results-panel" aria-label="Abfrageergebnisse" aria-busy={running}>
-        <div class="panel-heading">
-          <div class="result-title">
-            <Table2 size={17} /><strong>Ergebnisse</strong>{#if currentResult}<Badge
-                variant="secondary"
-                >{currentResult.rows.length}
-                {currentResult.rows.length === 1 ? 'Zeile' : 'Zeilen'}</Badge
-              >{/if}
-          </div>
-          {#if execution}<span class="execution-time"
-              ><CheckCheck size={15} />{execution.elapsedMs.toLocaleString('de-DE')} ms</span
-            >{/if}
-        </div>
-        {#if error}<div class="feedback error-feedback" role="alert">
-            <TriangleAlert size={21} />
-            <div>
-              <strong>Abfrage fehlgeschlagen</strong>
-              <p>{error}</p>
-            </div>
-          </div>
-        {:else if cancelled}<div class="feedback warning-feedback" role="status">
-            <Square size={18} />
-            <div>
-              <strong>Abbruch angefordert</strong>
-              <p>
-                Der Serverstatus muss geprüft werden. Bereits ausgeführte Änderungen werden durch
-                einen Abbruch nicht rückgängig gemacht.
-              </p>
-            </div>
-          </div>
-        {:else if running}<div class="results-empty" role="status">
-            <div class="empty-icon running-icon">
-              <LoaderCircle size={25} class="animate-spin" />
-            </div>
-            <h2>Abfrage wird ausgeführt</h2>
-            <p>Ergebnisse werden geladen. Mit Escape kannst du abbrechen.</p>
-          </div>
-        {:else if execution}
-          {#if execution.results.length > 1}<div
-              class="result-tabs"
-              role="tablist"
-              aria-label="Ergebnissätze"
-            >
-              {#each execution.results as result, index}<button
-                  role="tab"
-                  aria-selected={activeResult === index}
-                  onclick={() => (activeResult = index)}
-                  >Ergebnis {index + 1}<span>{result.rows.length}</span></button
-                >{/each}
-            </div>{/if}
-          {#if currentResult}<ResultTable result={currentResult} />{#if currentResult.truncated}<div
-                class="limit-note"
-                role="status"
+      <nav class="workspace-tabs" aria-label="Arbeitsbereich">
+        <button aria-pressed={workspaceMode === 'sql'} onclick={() => (workspaceMode = 'sql')}
+          >SQL</button
+        ><button
+          aria-pressed={workspaceMode === 'table'}
+          disabled={!selectedObject}
+          onclick={() => (workspaceMode = 'table')}>Tabelle</button
+        >
+      </nav>
+      {#if workspaceMode === 'table' && selectedObject && connection}
+        {#key selectedObject}<TableWorkbench
+            {connection}
+            token={backendToken}
+            object={selectedObject}
+          />{/key}
+      {:else}
+        <section class="editor-panel" aria-label="SQL-Abfrage">
+          <div class="panel-heading">
+            <div class="query-tab">
+              <FileCode2 size={17} /><strong>Abfrage 1</strong><Badge variant="secondary">SQL</Badge
               >
-                <TriangleAlert size={16} /><span
-                  >Ergebnis begrenzt. Es werden höchstens {rowLimit.toLocaleString('de-DE')} Zeilen angezeigt.
-                  Nicht alle Datensätze sind enthalten.</span
-                >
-              </div>{/if}{:else}<div class="feedback">
-              <Check size={20} />Anweisung ohne Ergebnissatz abgeschlossen.
+            </div>
+            <span class="editor-hint"><span>Editor fokussieren</span><kbd>⌘ / Strg K</kbd></span>
+          </div>
+          <div class="editor-surface">
+            <div class="line-numbers" aria-hidden="true">
+              {#each Array.from({ length: lineCount }, (_, index) => index + 1) as line}<span
+                  >{line}</span
+                >{/each}
+            </div>
+            <textarea
+              id="sql-editor"
+              aria-label="SQL-Abfrage"
+              bind:this={editor}
+              bind:value={sql}
+              onkeydown={editorKey}
+              spellcheck={false}
+              autocomplete="off"
+              autocapitalize="off"
+              maxlength={1000000}
+              placeholder="-- Schreibe hier deine SQL-Abfrage.&#10;-- Ausgeführt wird erst mit „Ausführen“ oder ⌘ / Strg + Enter."
+              disabled={running}></textarea>
+          </div>
+          <div class="editor-toolbar">
+            <div class="execution-actions">
+              <Button
+                class="run-button"
+                aria-label="Abfrage ausführen"
+                aria-keyshortcuts="Control+Enter Meta+Enter"
+                onclick={execute}
+                disabled={!connection || !sql.trim() || running || connectionBusy}
+                >{#if running}<LoaderCircle class="animate-spin" />Wird ausgeführt{:else}<Play
+                    size={15}
+                    fill="currentColor"
+                  />Ausführen{/if}<kbd>⌘ ↵</kbd></Button
+              >{#if running}<Button variant="outline" onclick={cancelQuery}
+                  ><Square size={13} />Abbrechen</Button
+                >{/if}
+            </div>
+            <div class="execution-options">
+              <label for="row-limit">Zeilenlimit</label><select
+                id="row-limit"
+                bind:value={rowLimit}
+                disabled={running}
+                ><option value={100}>100</option><option value={500}>500</option><option
+                  value={1000}>1.000</option
+                ></select
+              ><span class="toolbar-divider"></span><Clock3 size={14} /><select
+                aria-label="Zeitlimit"
+                bind:value={timeoutMs}
+                disabled={running}
+                ><option value={10000}>10 Sek.</option><option value={30000}>30 Sek.</option><option
+                  value={60000}>60 Sek.</option
+                ></select
+              >
+            </div>
+          </div>
+        </section>
+        <section class="results-panel" aria-label="Abfrageergebnisse" aria-busy={running}>
+          <div class="panel-heading">
+            <div class="result-title">
+              <Table2 size={17} /><strong>Ergebnisse</strong>{#if currentResult}<Badge
+                  variant="secondary"
+                  >{currentResult.rows.length}
+                  {currentResult.rows.length === 1 ? 'Zeile' : 'Zeilen'}</Badge
+                >{/if}
+            </div>
+            {#if execution}<span class="execution-time"
+                ><CheckCheck size={15} />{execution.elapsedMs.toLocaleString('de-DE')} ms</span
+              >{/if}
+          </div>
+          {#if error}<div class="feedback error-feedback" role="alert">
+              <TriangleAlert size={21} />
+              <div>
+                <strong>Abfrage fehlgeschlagen</strong>
+                <p>{error}</p>
+              </div>
+            </div>
+          {:else if cancelled}<div class="feedback warning-feedback" role="status">
+              <Square size={18} />
+              <div>
+                <strong>Abbruch angefordert</strong>
+                <p>
+                  Der Serverstatus muss geprüft werden. Bereits ausgeführte Änderungen werden durch
+                  einen Abbruch nicht rückgängig gemacht.
+                </p>
+              </div>
+            </div>
+          {:else if running}<div class="results-empty" role="status">
+              <div class="empty-icon running-icon">
+                <LoaderCircle size={25} class="animate-spin" />
+              </div>
+              <h2>Abfrage wird ausgeführt</h2>
+              <p>Ergebnisse werden geladen. Mit Escape kannst du abbrechen.</p>
+            </div>
+          {:else if execution}
+            {#if execution.results.length > 1}<div
+                class="result-tabs"
+                role="tablist"
+                aria-label="Ergebnissätze"
+              >
+                {#each execution.results as result, index}<button
+                    role="tab"
+                    aria-selected={activeResult === index}
+                    onclick={() => (activeResult = index)}
+                    >Ergebnis {index + 1}<span>{result.rows.length}</span></button
+                  >{/each}
+              </div>{/if}
+            {#if currentResult}<ResultTable
+                result={currentResult}
+              />{#if currentResult.truncated}<div class="limit-note" role="status">
+                  <TriangleAlert size={16} /><span
+                    >Ergebnis begrenzt. Es werden höchstens {rowLimit.toLocaleString('de-DE')} Zeilen
+                    angezeigt. Nicht alle Datensätze sind enthalten.</span
+                  >
+                </div>{/if}{:else}<div class="feedback">
+                <Check size={20} />Anweisung ohne Ergebnissatz abgeschlossen.
+              </div>{/if}
+            {#each execution.warnings as warning}<div class="limit-note" role="status">
+                <TriangleAlert size={16} />{warning}
+              </div>{/each}
+          {:else}<div class="results-empty">
+              <div class="empty-icon"><Code2 size={27} strokeWidth={1.4} /></div>
+              <h2>Platz für deine Ergebnisse</h2>
+              <p>
+                Führe eine Abfrage aus, um Daten, Spalten und<br class="desktop-break" /> Rückmeldungen
+                hier zu sehen.
+              </p>
+              <span class="empty-shortcut"
+                ><kbd>⌘ / Strg</kbd><span>+</span><kbd>Enter</kbd><span>zum Ausführen</span></span
+              >
             </div>{/if}
-          {#each execution.warnings as warning}<div class="limit-note" role="status">
-              <TriangleAlert size={16} />{warning}
-            </div>{/each}
-        {:else}<div class="results-empty">
-            <div class="empty-icon"><Code2 size={27} strokeWidth={1.4} /></div>
-            <h2>Platz für deine Ergebnisse</h2>
-            <p>
-              Führe eine Abfrage aus, um Daten, Spalten und<br class="desktop-break" /> Rückmeldungen
-              hier zu sehen.
-            </p>
-            <span class="empty-shortcut"
-              ><kbd>⌘ / Strg</kbd><span>+</span><kbd>Enter</kbd><span>zum Ausführen</span></span
-            >
-          </div>{/if}
-        <div class="results-footer">
-          <span
-            ><span class="footer-dot"></span>{execution
-              ? 'Werte werden ohne numerische Rundung angezeigt'
-              : 'Bereit für deine erste Abfrage'}</span
-          ><span>{rowLimit.toLocaleString('de-DE')} Zeilen max.</span>
-        </div>
-      </section>
+          <div class="results-footer">
+            <span
+              ><span class="footer-dot"></span>{execution
+                ? 'Werte werden ohne numerische Rundung angezeigt'
+                : 'Bereit für deine erste Abfrage'}</span
+            ><span>{rowLimit.toLocaleString('de-DE')} Zeilen max.</span>
+          </div>
+        </section>
+      {/if}
       <footer class="workspace-footer">
         <span
           ><ShieldCheck size={14} />Zugangsdaten und Abfragen werden hier nicht dauerhaft

@@ -67,6 +67,16 @@ export default defineConfig(({ mode, command }) => {
         ? { '/api': { target: env.DB_MANAGER_BACKEND_URL, changeOrigin: false } }
         : undefined,
     },
+    preview: {
+      proxy: env.DB_MANAGER_BACKEND_URL
+        ? { '/api': { target: env.DB_MANAGER_BACKEND_URL, changeOrigin: false } }
+        : undefined,
+      headers: {
+        'Content-Security-Policy':
+          "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; connect-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        'X-Content-Type-Options': 'nosniff',
+      },
+    },
     build: { target: 'es2022' },
   };
 });

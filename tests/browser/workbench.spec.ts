@@ -82,9 +82,11 @@ test('auth, connection, catalog, explicit SQL, precision, truncation, cancellati
   await setToken(page);
   await connect(page);
   await page.getByRole('button', { name: 'orders' }).click();
-  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue(
-    'SELECT * FROM "main"."orders";',
-  );
+  await expect(
+    page.getByRole('region', { name: 'Tabellenarbeitsplatz', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'SQL', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
   expect(queries).toBe(0);
   await page
     .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })

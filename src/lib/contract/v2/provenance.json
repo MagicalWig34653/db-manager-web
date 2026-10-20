@@ -1,0 +1,8 @@
+{
+  "version": "0.2.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "427444d7bcb8e30c9563ded2000ec3d5e19646c4",
+  "source_path": "contracts/api-v0.2.0.json",
+  "sha256": "c15a848f01bb779429fd68a2b6eb6bba1575d3e07a4c68e6796cf7840a661838",
+  "review": "Independently approved B2a plus fix 3b5a54c; lead explicitly froze API0.2.0 on 2026-10-20"
+}
