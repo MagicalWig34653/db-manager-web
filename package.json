@@ -14,11 +14,11 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "contract:generate": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts && npm run validators:generate",
-    "contract:check": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts --check && npm run validators:check",
+    "contract:generate": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts && openapi-typescript src/lib/contract/v2/api-v0.2.0.json --default-non-nullable false -o src/lib/contract/v2/api-types.ts && npm run validators:generate",
+    "contract:check": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts --check && npm run validators:check && openapi-typescript src/lib/contract/v2/api-v0.2.0.json --default-non-nullable false -o src/lib/contract/v2/api-types.ts --check",
     "format:check": "prettier --check \"src/**/*.{ts,svelte,css}\" \"*.{ts,js,json}\" \"tests/**/*.{ts,mjs}\"",
-    "validators:generate": "node tests/generate-validators.mjs",
-    "validators:check": "node tests/generate-validators.mjs --check",
+    "validators:generate": "node tests/generate-validators.mjs && node tests/generate-validators.mjs --v2",
+    "validators:check": "node tests/generate-validators.mjs --check && node tests/generate-validators.mjs --v2 --check",
     "test:csp": "npm run build && playwright test --config playwright.csp.config.ts"
   },
   "dependencies": {

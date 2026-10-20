@@ -278,3 +278,21 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `zimmerframe` | `1.1.5` | MIT | Laufzeit/Bündel |
 
 Inventar: 230 aufgelöste Paketpositionen einschließlich optionaler Plattformvarianten.
+
+
+## Sichtbare Hinweise F3
+
+Der Quellen-/Lizenzdialog verweist auf die unveränderten Builddateien `LICENSE.txt`
+und `THIRD-PARTY-NOTICES.txt`. Der Webquelllink ist an den tatsächlich gebauten
+Git-Commit gebunden. Go-Serverprojekt und Buildherkunft sind separat verlinkt;
+kein pauschaler Lizenzwechsel der Bibliotheken und keine zusätzliche Abhängigkeit.
+
+
+F3 ergänzt keine Produkt-/Testabhängigkeit und ändert `package-lock.json` nicht.
+Die zusätzliche API0.2.0-Typ-/Standalonegenerierung verwendet dieselben bereits
+erfassten Werkzeuge; Ajvs MIT-Helfer bleibt im unveränderten Originalnotice enthalten.
+Der echte Go-Testserver wird ausschließlich aus dem gepinnten öffentlichen
+[Backendstand](https://github.com/MagicalWig34653/db-manager/tree/427444d7bcb8e30c9563ded2000ec3d5e19646c4)
+gebaut; dessen Go-Abhängigkeiten behalten ihr eigenes
+[Inventar](https://github.com/MagicalWig34653/db-manager/blob/427444d7bcb8e30c9563ded2000ec3d5e19646c4/docs/LIZENZEN.md).
+PostgreSQL18.6 ist eine isolierte Testfixture und kein Teil des Webartefakts.

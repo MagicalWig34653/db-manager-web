@@ -43,6 +43,9 @@ const errorMessages: Record<string, string> = {
     'Die Abfrage wurde abgebrochen oder ihr Zeitlimit wurde erreicht. Bereits ausgeführte Änderungen können bestehen bleiben.',
   database_error:
     'Die Datenbankoperation ist fehlgeschlagen. Prüfe Verbindung, SQL und Datenbankrechte.',
+  database_busy:
+    'Diese SQLite-Datenbank wird gerade verwendet. Warte auf die laufende Anfrage oder brich sie ab.',
+  table_not_found: 'Das Objekt ist nicht mehr verfügbar. Aktualisiere den Katalog.',
   unsupported_driver: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
   driver_unavailable: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
   result_too_large:
@@ -92,6 +95,14 @@ export class ApiClient {
     body?: unknown,
     signal?: AbortSignal,
   ): Promise<Schemas[T]> {
+    return validatePayload(schema, await this.requestRaw(path, token, body, signal));
+  }
+  async requestRaw(
+    path: string,
+    token: string,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
     if (
       typeof location !== 'undefined' &&
       location.protocol !== 'https:' &&
@@ -107,7 +118,9 @@ export class ApiClient {
       throw new ApiError('request_too_large', errorMessages.request_too_large);
     }
     if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
-    const timeout = AbortSignal.timeout(path === '/api/v1/query' ? 75000 : 15000);
+    const timeout = AbortSignal.timeout(
+      ['/api/v1/query', '/api/v2/tables/browse'].includes(path) ? 75000 : 15000,
+    );
     const combined = signal ? AbortSignal.any([timeout, signal]) : timeout;
     let response: Response;
     try {
@@ -136,6 +149,12 @@ export class ApiClient {
         'Das Backend ist nicht erreichbar. Prüfe, ob deine Instanz läuft.',
       );
     }
+    if (response.status === 404) {
+      throw new ApiError(
+        'not_found',
+        'Der angeforderte Bereich wird von dieser Instanz nicht angeboten.',
+      );
+    }
     let payload: unknown;
     try {
       payload = await readJson(response);
@@ -160,7 +179,7 @@ export class ApiClient {
           `Die Anfrage wurde abgewiesen (HTTP ${response.status}). Prüfe Verbindung und Berechtigungen.`,
       );
     }
-    return validatePayload(schema, payload);
+    return payload;
   }
   capabilities(token: string, signal?: AbortSignal) {
     return this.request('/api/v1/capabilities', 'Capabilities', token, undefined, signal);

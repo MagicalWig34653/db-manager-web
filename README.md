@@ -2,9 +2,17 @@
 
 Svelte/shadcn-svelte-Weboberfläche. Eigener Projektcode: **AGPL-3.0-only**.
 
-Status: Dokumentationsgerüst, noch keine App und kein Produktcode.
-Gemeinsame Anforderungen, Architektur und Verträge liegen im Repository `db-manager`.
-GitHub-URLs und feste Vertragsreferenzen werden bei Veröffentlichung ergänzt.
+Deutscher SQL-Arbeitsplatz mit flüchtigen Verbindungen, Objektnavigation, expliziter
+SQL-Ausführung und typisierten Ergebnissen. Der freigegebene F1/F1b-Stand wird im
+Go-Server eingebettet; das Hauptprojekt prüft den echten SQLite-/PostgreSQL-Pfad.
+Strukturierter Tabellenarbeitsplatz als F3-Prüfkandidat: Daten/Struktur, Pagination,
+Sortierung und getaggte UND-Filter über die freigegebene API0.2.0. Keine Tabellenmutation
+oder vollständige Administrationsparität; Abnahme siehe [F3](docs/handoffs/F3.md).
+
+„Quellcode & Lizenzen“ im Arbeitsplatz führt zu Webquelle, Serverprojekt und originalen
+Lizenztexten. Produktionsbuilds verwenden einen festen Quellcommit; Produktänderungen
+vor `npm run build` committen. Gemeinsame Anforderungen und Verträge liegen im
+[Hauptprojekt](https://github.com/MagicalWig34653/db-manager).
 
 - [Agent-Einstieg](AGENTS.md), [Claude Code](CLAUDE.md)
 - [Status](docs/STATUS.md), [Arbeitsplan](docs/ARBEITSPLAN.md)

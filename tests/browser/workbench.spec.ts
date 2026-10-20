@@ -74,6 +74,9 @@ test('auth, connection, catalog, explicit SQL, precision, truncation, cancellati
       await route.fulfill({ json: result }).catch(() => {});
     }
   });
+  await page.route('**/api/v2/capabilities', (route) =>
+    route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not Found' }),
+  );
   await page.goto('/');
   await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
@@ -82,9 +85,16 @@ test('auth, connection, catalog, explicit SQL, precision, truncation, cancellati
   await setToken(page);
   await connect(page);
   await page.getByRole('button', { name: 'orders' }).click();
-  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue(
-    'SELECT * FROM "main"."orders";',
-  );
+  await expect(
+    page.getByRole('region', { name: 'Tabellenarbeitsplatz', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Diese Instanz bietet noch keine Tabellenansicht. SQL-Abfragen stehen weiterhin zur Verfügung.',
+    ),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Zu SQL wechseln' }).click();
+  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
   expect(queries).toBe(0);
   await page
     .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })

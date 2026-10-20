@@ -19,3 +19,6 @@ coverage/
 .claude/settings.local.json
 .codex/
 .worktrees/
+
+secrets/
+__pycache__/
