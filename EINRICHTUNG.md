@@ -73,11 +73,18 @@ im Hauptrepo. Generierung aus lokaler Kopie:
 ```sh
 npm run contract:generate
 npm run contract:check
+npm run validators:check
 ```
 
 Generierte Types sind eingecheckt. `--default-non-nullable false` bewahrt die tatsächlich
-optionalen Defaultfelder. Die API-Antworten werden zusätzlich gegen die unveränderten
-OpenAPI-Schemas geprüft; ungültige Antworten erzeugen keinen Scheinerfolg. Antwortgröße
+optionalen Defaultfelder. Validierungsfunktionen werden nach der [offiziellen Ajv-Standalone-Anleitung](https://ajv.js.org/standalone.html)
+bereits beim Entwickeln/Build aus der unveränderten Spezifikation generiert und als
+selbstständiges ESM-Modul eingecheckt. Der Browser importiert fertige Funktionen,
+keinen Schemacompiler; `eval` oder `new Function` sind zur Laufzeit nicht erforderlich.
+Der kleine Ajv-Unicodehelper wird beim Generieren mit Vite eingebündelt, ohne externe
+Imports oder Sourcemaps. `npm run validators:check` prüft deterministisch alle generierten
+Bytes; auch der Build führt diese Driftprüfung aus. Die API-Antworten werden gegen
+die unveränderten OpenAPI-Schemas geprüft; ungültige Antworten erzeugen keinen Scheinerfolg. Antwortgröße
 ist clientseitig auf 8 MiB begrenzt. Rohe Backendfehlermeldungen werden nicht übernommen,
 sondern bekannte Fehlercodes verständlich auf Deutsch dargestellt.
 
@@ -90,6 +97,7 @@ npm test
 npm run build
 npx playwright install chromium
 npm run test:browser
+npm run test:csp
 python3 scripts/check-docs.py
 ```
 
@@ -99,5 +107,10 @@ einen eigenen Vite-Server auf Port 4179, verwendet ausschließlich synthetische 
 Antworten und beendet ihn nach dem Lauf. Browserartefakte liegen unter
 `node_modules/.cache/playwright-results`; optionale Screenshots unter `/tmp`.
 Der Browserfall bei 768 px prüft responsives Layout, kein reales iPad/Safari.
+Ein zusätzlicher Chromiumfall prüft den Produktionsbuild auf Port 4180 mit einer
+Content-Security-Policy ohne Inline-Scripts und ohne `unsafe-eval`: gültige Antwort
+wird gerendert, ungültige Antwort abgelehnt, keine CSP-Verletzung registriert.
+Inline-Stilattribute bleiben für Dialogpositionierung zulässig; die CSP erlaubt keine
+Inline-Scriptattribute.
 Echte Backend-/DB-Integration ist separat nach B1 zu prüfen; Mocktests belegen sie nicht.
 Unabhängige QA-Abnahme bleibt vor Integration/Release erforderlich.

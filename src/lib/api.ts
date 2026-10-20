@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import Ajv2020 from 'ajv/dist/2020.js';
-import spec from './contract/api-v0.1.0.json';
+import * as validators from './contract/validators.js';
 import type { components } from './contract/api-types';
 import type { ConnectionDraft, Driver } from './workbench';
 
@@ -15,22 +14,8 @@ export class ApiError extends Error {
     this.name = 'ApiError';
   }
 }
-const ajv = new Ajv2020({ strict: false });
-const definitions = JSON.parse(
-  JSON.stringify(spec.components.schemas).replaceAll('#/components/schemas/', '#/$defs/'),
-);
-const validators = new Map<SchemaName, ReturnType<typeof ajv.compile>>();
 export function validatePayload<T extends SchemaName>(name: T, value: unknown): Schemas[T] {
-  let validator = validators.get(name);
-  if (!validator) {
-    validator = ajv.compile({
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      $defs: definitions,
-      $ref: `#/$defs/${name}`,
-    });
-    validators.set(name, validator);
-  }
-  if (!validator(value))
+  if (!validators[name](value))
     throw new ApiError('invalid_response', 'Das Backend hat eine ungültige Antwort geliefert.');
   return value as Schemas[T];
 }

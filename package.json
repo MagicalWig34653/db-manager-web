@@ -9,14 +9,17 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "npm run validators:check && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "contract:generate": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts",
-    "contract:check": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts --check",
-    "format:check": "prettier --check \"src/**/*.{ts,svelte,css}\" \"*.{ts,js,json}\" \"tests/**/*.ts\""
+    "contract:generate": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts && npm run validators:generate",
+    "contract:check": "openapi-typescript src/lib/contract/api-v0.1.0.json --default-non-nullable false -o src/lib/contract/api-types.ts --check && npm run validators:check",
+    "format:check": "prettier --check \"src/**/*.{ts,svelte,css}\" \"*.{ts,js,json}\" \"tests/**/*.{ts,mjs}\"",
+    "validators:generate": "node tests/generate-validators.mjs",
+    "validators:check": "node tests/generate-validators.mjs --check",
+    "test:csp": "npm run build && playwright test --config playwright.csp.config.ts"
   },
   "dependencies": {
     "@lucide/svelte": "1.60.0",
