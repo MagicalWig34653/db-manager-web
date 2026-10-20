@@ -1,6 +1,6 @@
 # Einrichtung und Prüfungen
 
-Svelte-Workbench für die freigegebenen APIs `0.1.0` (SQL) und `0.2.0` (Tabellen). Ein sauberer Checkout benötigt keine
+Svelte-Workbench für die freigegebenen APIs `0.1.0` (SQL), `0.2.0` (Tabellen) sowie `0.3.0`/`0.4.0` (Zeilenaktionen). Ein sauberer Checkout benötigt keine
 Geschwister-Repositories. Eigener Code ist AGPL-3.0-only; Fremdlizenzen und exakte
 Versionen stehen in [LIZENZEN](docs/LIZENZEN.md) und `package-lock.json`.
 

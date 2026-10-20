@@ -3,7 +3,7 @@
 Svelte/shadcn-svelte-Weboberfläche. Eigener Projektcode: **AGPL-3.0-only**.
 
 Deutscher SQL-Arbeitsplatz mit flüchtigen Verbindungen, Objektnavigation, expliziter
-SQL-Ausführung und typisierten Ergebnissen. Der freigegebene F1/F1b-Stand wird im
+SQL-Ausführung und typisierten Ergebnissen. Ein separat versionierter freigegebener Stand wird im
 Go-Server eingebettet; das Hauptprojekt prüft den echten SQLite-/PostgreSQL-Pfad.
 Der freigegebene Tabellenarbeitsplatz bietet Daten/Struktur, Pagination, Sortierung
 und getaggte UND-Filter über API0.2.0. F4 ergänzt als noch nicht abgenommenen

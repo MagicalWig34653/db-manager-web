@@ -25,6 +25,9 @@ async function sql(page: Page, driver: string, statement: string) {
   return response.json();
 }
 async function connect(page: Page, driver: string) {
+  await page.setViewportSize(
+    driver === 'sqlite' ? { width: 1440, height: 1000 } : { width: 1024, height: 768 },
+  );
   await page.addInitScript(() => {
     window.cspViolations = [];
     document.addEventListener('securitypolicyviolation', (event) =>
@@ -92,6 +95,13 @@ for (const driver of ['sqlite', 'postgresql']) {
     await confirm(page, 'Zeile verbindlich hinzufügen');
     await expect(
       page.getByRole('dialog').getByText('default-label', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('dialog').getByText(precise, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByRole('button', { name: 'binary: AP8=' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByRole('button', { name: 'null: NULL' }),
     ).toBeVisible();
     expect(writes).toHaveLength(1);
     expect(
