@@ -37,7 +37,9 @@ Abbruch verspricht keinen Rollback bereits erfolgter Datenbankeffekte.
 F1-/F2-Worktrees bleiben saubere Provenienz. F3 startet im Webrepo-Worktree
 `.worktrees/table-workbench`, Branch `feat/table-workbench`, Basis `ec8dcea`.
 Zuerst sichtbare Quellcode-/Lizenzverweise mit tatsächlicher Buildherkunft;
-Tabellenmetadaten/-ansicht erst nach ausdrücklichem API0.2-Freeze durch Lead.
+Tabellenmetadaten/-ansicht mit ausdrücklich freigegebenem API0.2.0-Vertrag.
+Herkunft `427444d7bcb8e30c9563ded2000ec3d5e19646c4`, Schema-SHA256
+`c15a848f01bb779429fd68a2b6eb6bba1575d3e07a4c68e6796cf7840a661838`.
 Besitz Produkt-/Build-/Vertrags-/Test-/Lizenzdateien, README/Einrichtung/Handoff;
 STATUS/ARBEITSPLAN gehören Lead. Keine Mutation oder Credential-/SQL-Persistenz.
 Keine eigenen F1-Browser-/Vitejobs offen. [Handoff F1](handoffs/F1.md),
