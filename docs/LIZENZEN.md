@@ -278,3 +278,11 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `zimmerframe` | `1.1.5` | MIT | Laufzeit/Bündel |
 
 Inventar: 230 aufgelöste Paketpositionen einschließlich optionaler Plattformvarianten.
+
+
+## Sichtbare Hinweise F3
+
+Der Quellen-/Lizenzdialog verweist auf die unveränderten Builddateien `LICENSE.txt`
+und `THIRD-PARTY-NOTICES.txt`. Der Webquelllink ist an den tatsächlich gebauten
+Git-Commit gebunden. Go-Serverprojekt und Buildherkunft sind separat verlinkt;
+kein pauschaler Lizenzwechsel der Bibliotheken und keine zusätzliche Abhängigkeit.

@@ -114,3 +114,19 @@ Inline-Stilattribute bleiben für Dialogpositionierung zulässig; die CSP erlaub
 Inline-Scriptattribute.
 Echte Backend-/DB-Integration ist separat nach B1 zu prüfen; Mocktests belegen sie nicht.
 Unabhängige QA-Abnahme bleibt vor Integration/Release erforderlich.
+
+
+## Quellherkunft im Produktionsbuild
+
+Der sichtbare Quellen-/Lizenzdialog erhält seinen Weblink aus dem tatsächlichen
+Git-Commit beim Vite-Build. Produkt-/Builddateien vor `npm run build` committen;
+uncommittete Dateien unter `src/`, `public/`, Paket-/Buildkonfiguration oder der Lizenz
+verhindern einen Produktionsbuild, statt einen unzutreffenden Quellstand zu zeigen.
+`npm run dev` bleibt für die Arbeit an Änderungen nutzbar. Keine frei überschreibbare
+Commit-/Quell-URL-Umgebungsvariable. Der Build benötigt deshalb einen Git-Checkout.
+Der Hauptrepo-Buildpfad erzeugt diesen ohnehin frisch mit festem öffentlichem Commit.
+
+`npm run test:csp` prüft neben der Standalonevalidierung auch den sichtbaren Quellen-
+Dialog: exakter Commitlink, originale lokale Lizenzbytes, Dialog-/Tastaturfokus und
+strikte Script-CSP. Der neue Tabellenvertrag wird erst nach Freigabe gebunden;
+aktueller Paketstand und offene Prüfungen im [F3-Handoff](docs/handoffs/F3.md).

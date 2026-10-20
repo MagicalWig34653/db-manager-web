@@ -4,10 +4,44 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
+  const repository = 'https://github.com/MagicalWig34653/db-manager-web';
+  let sourceURL = repository;
+  if (command === 'build') {
+    const commit = execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
+      encoding: 'utf8',
+    }).trim();
+    const modified = execFileSync(
+      'git',
+      [
+        'status',
+        '--porcelain',
+        '--untracked-files=all',
+        '--',
+        'src',
+        'public',
+        'LICENSE',
+        'package.json',
+        'package-lock.json',
+        'vite.config.*',
+        'index.html',
+        'svelte.config.*',
+        'tsconfig*.json',
+      ],
+      { encoding: 'utf8' },
+    ).trim();
+    if (!/^[a-f0-9]{40}$/.test(commit) || modified) {
+      throw new Error(
+        'Production source provenance requires committed product and build files. Commit changes before building.',
+      );
+    }
+    sourceURL = `${repository}/tree/${commit}`;
+  }
   const env = loadEnv(mode, process.cwd(), 'DB_MANAGER_');
   return {
+    define: { __WEB_SOURCE_URL__: JSON.stringify(sourceURL) },
     plugins: [
       tailwindcss(),
       svelte(),

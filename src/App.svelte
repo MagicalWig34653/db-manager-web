@@ -32,6 +32,7 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import ConnectionEditor from '$lib/components/ConnectionEditor.svelte';
   import ResultTable from '$lib/components/ResultTable.svelte';
+  import SourceInformation from '$lib/components/SourceInformation.svelte';
   import {
     selectObject,
     type CatalogObject,
@@ -543,7 +544,9 @@
         <span
           ><ShieldCheck size={14} />Zugangsdaten und Abfragen werden hier nicht dauerhaft
           gespeichert.</span
-        ><span><CircleHelp size={14} />⌘ / Strg + Enter ausführen · Escape abbrechen</span>
+        ><SourceInformation /><span
+          ><CircleHelp size={14} />⌘ / Strg + Enter ausführen · Escape abbrechen</span
+        >
       </footer>
     </main>
   </div>
