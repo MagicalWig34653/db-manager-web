@@ -66,6 +66,7 @@
   let sidebarOpen = $state(false);
   let sessionVersion = $state(0);
   let controller: AbortController | undefined;
+  let sessionController = new AbortController();
   const driverNames = { sqlite: 'SQLite', mysql: 'MySQL / MariaDB', postgresql: 'PostgreSQL' };
   const filteredObjects = $derived(
     objects.filter((object) =>
@@ -81,7 +82,7 @@
     connectionOpen = true;
     const version = sessionVersion;
     try {
-      const drivers = await gateway.capabilities(backendToken);
+      const drivers = await gateway.capabilities(backendToken, sessionController.signal);
       if (version === sessionVersion) availableDrivers = drivers;
     } catch (cause) {
       if (version === sessionVersion)
@@ -94,7 +95,7 @@
     connectionBusy = true;
     connectionMessage = '';
     try {
-      const message = await gateway.test(draft, backendToken);
+      const message = await gateway.test(draft, backendToken, sessionController.signal);
       if (version === sessionVersion) connectionMessage = message;
     } catch (cause) {
       if (version === sessionVersion)
@@ -109,7 +110,7 @@
     connectionBusy = true;
     connectionMessage = '';
     try {
-      await gateway.test(draft, backendToken);
+      await gateway.test(draft, backendToken, sessionController.signal);
       if (version !== sessionVersion) return;
       connection = draft;
       execution = null;
@@ -136,7 +137,7 @@
     catalogBusy = true;
     catalogError = '';
     try {
-      const loaded = await gateway.catalog(connection, backendToken);
+      const loaded = await gateway.catalog(connection, backendToken, sessionController.signal);
       if (version === sessionVersion && connection === sourceConnection) objects = loaded;
     } catch (cause) {
       if (version === sessionVersion && connection === sourceConnection)
@@ -185,7 +186,11 @@
     controller?.abort();
   }
   function clearSession() {
+    sessionVersion++;
+    sessionController.abort();
+    sessionController = new AbortController();
     controller?.abort();
+    controller = undefined;
     connection = null;
     backendToken = '';
     tokenDraft = '';
@@ -196,13 +201,24 @@
     cancelled = false;
     catalogError = '';
     objectSearch = '';
-    sessionVersion++;
+    connectionMessage = '';
+    activeResult = 0;
     accessOpen = false;
     connectionOpen = false;
     running = false;
     connectionBusy = false;
     catalogBusy = false;
     availableDrivers = undefined;
+  }
+  function applyToken() {
+    const nextToken = tokenDraft;
+    if (nextToken !== backendToken) {
+      clearSession();
+      backendToken = nextToken;
+    } else {
+      tokenDraft = '';
+      accessOpen = false;
+    }
   }
   function handleKey(event: KeyboardEvent) {
     if (
@@ -234,7 +250,10 @@
       });
     }
   }
-  onDestroy(() => controller?.abort());
+  onDestroy(() => {
+    sessionController.abort();
+    controller?.abort();
+  });
 </script>
 
 <svelte:window onkeydown={handleKey} />
@@ -550,9 +569,7 @@
       autocomplete="off"
       onsubmit={(event) => {
         event.preventDefault();
-        backendToken = tokenDraft;
-        tokenDraft = '';
-        accessOpen = false;
+        applyToken();
       }}
     >
       <div class="form-field">

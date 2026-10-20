@@ -121,8 +121,9 @@ export class ApiClient {
     if (serialized !== undefined && new TextEncoder().encode(serialized).byteLength > 1024 * 1024) {
       throw new ApiError('request_too_large', errorMessages.request_too_large);
     }
-    const timeout = AbortSignal.timeout(75000);
-    const combined = signal ? AbortSignal.any([timeout, signal]) : AbortSignal.timeout(15000);
+    if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
+    const timeout = AbortSignal.timeout(path === '/api/v1/query' ? 75000 : 15000);
+    const combined = signal ? AbortSignal.any([timeout, signal]) : timeout;
     let response: Response;
     try {
       response = await this.fetcher(path, {
@@ -176,24 +177,24 @@ export class ApiClient {
     }
     return validatePayload(schema, payload);
   }
-  capabilities(token: string) {
-    return this.request('/api/v1/capabilities', 'Capabilities', token);
+  capabilities(token: string, signal?: AbortSignal) {
+    return this.request('/api/v1/capabilities', 'Capabilities', token, undefined, signal);
   }
-  test(connection: Schemas['Connection'], token: string) {
+  test(connection: Schemas['Connection'], token: string, signal?: AbortSignal) {
     try {
       validatePayload('Connection', connection);
     } catch {
       throw new ApiError('invalid_connection', errorMessages.invalid_connection);
     }
-    return this.request('/api/v1/connections/test', 'Status', token, { connection });
+    return this.request('/api/v1/connections/test', 'Status', token, { connection }, signal);
   }
-  catalog(connection: Schemas['Connection'], token: string) {
+  catalog(connection: Schemas['Connection'], token: string, signal?: AbortSignal) {
     try {
       validatePayload('Connection', connection);
     } catch {
       throw new ApiError('invalid_connection', errorMessages.invalid_connection);
     }
-    return this.request('/api/v1/catalog', 'CatalogResult', token, { connection });
+    return this.request('/api/v1/catalog', 'CatalogResult', token, { connection }, signal);
   }
   query(input: Schemas['QueryRequest'], token: string, signal: AbortSignal) {
     try {

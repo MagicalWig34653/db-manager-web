@@ -25,4 +25,15 @@ describe('precision-safe result rendering', () => {
     expect(screen.getByText('9007199254740993123456789')).toBeVisible();
     expect(screen.getByRole('button', { name: 'binary: AAEC' })).toBeVisible();
   });
+  it('does not invent a zero affected-row count when the server omits it', () => {
+    render(ResultTable, { result: { columns: [], rows: [], truncated: false } });
+    expect(screen.getByText('Anweisung abgeschlossen')).toBeVisible();
+    expect(screen.getByText('Anzahl betroffener Zeilen nicht gemeldet')).toBeVisible();
+    expect(screen.queryByText('0 betroffene Zeilen')).not.toBeInTheDocument();
+  });
+  it('preserves an explicitly reported zero affected-row count', () => {
+    render(ResultTable, { result: { columns: [], rows: [], truncated: false, affectedRows: '0' } });
+    expect(screen.getByText('0 betroffene Zeilen')).toBeVisible();
+    expect(screen.queryByText('Anzahl betroffener Zeilen nicht gemeldet')).not.toBeInTheDocument();
+  });
 });

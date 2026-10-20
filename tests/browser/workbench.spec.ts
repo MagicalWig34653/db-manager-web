@@ -203,3 +203,89 @@ test('network credentials stay ephemeral and clearing a running session cannot r
   expect(state).not.toMatch(/synthetic-(token|password)/);
   expect(logs.join('\n')).not.toMatch(/synthetic-(token|password)/);
 });
+
+test('changing the backend token invalidates the complete previous session and delayed query', async ({
+  page,
+}) => {
+  let queries = 0;
+  let releaseOldResponse!: () => void;
+  let oldResponseAttempted = false;
+  let latestCapabilityToken = '';
+  const oldResponseGate = new Promise<void>((resolve) => {
+    releaseOldResponse = resolve;
+  });
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request();
+    if (request.url().endsWith('/capabilities')) {
+      latestCapabilityToken = request.headers().authorization;
+      return route.fulfill({ json: capabilities });
+    }
+    if (request.url().endsWith('/connections/test'))
+      return route.fulfill({ json: { status: 'ok' } });
+    if (request.url().endsWith('/catalog'))
+      return route.fulfill({
+        json: { tables: [{ name: 'orders', schema: 'main', kind: 'table' }] },
+      });
+    if (request.url().endsWith('/query')) {
+      queries++;
+      if (queries === 2) {
+        await oldResponseGate;
+        await route.fulfill({ json: result }).catch(() => {});
+        oldResponseAttempted = true;
+        return;
+      }
+      return route.fulfill({ json: result });
+    }
+  });
+  await page.goto('/');
+  await setToken(page);
+  await connect(page);
+  await page
+    .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })
+    .fill('SELECT synthetic_old_session;');
+  await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
+  await expect(page.getByText('9007199254740993123456789', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
+  await expect.poll(() => queries).toBe(2);
+  await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+  await page.getByLabel('Zugriffstoken').fill('synthetic-next-token');
+  await page.getByRole('button', { name: 'Übernehmen' }).click();
+  await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'orders' })).not.toBeVisible();
+  await expect(page.getByText('9007199254740993123456789', { exact: true })).not.toBeVisible();
+  releaseOldResponse();
+  await expect.poll(() => oldResponseAttempted).toBe(true);
+  await expect(page.getByText('Platz für deine Ergebnisse', { exact: true })).toBeVisible();
+  await expect(page.getByText('Abbruch angefordert', { exact: true })).not.toBeVisible();
+  await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
+  await expect.poll(() => latestCapabilityToken).toBe('Bearer synthetic-next-token');
+  expect(queries).toBe(2);
+});
+
+test('a successful DML response without an affected-row count does not display zero', async ({
+  page,
+}) => {
+  await page.route('**/api/v1/**', async (route) => {
+    const url = route.request().url();
+    if (url.endsWith('/capabilities')) return route.fulfill({ json: capabilities });
+    if (url.endsWith('/connections/test')) return route.fulfill({ json: { status: 'ok' } });
+    if (url.endsWith('/catalog')) return route.fulfill({ json: { tables: [] } });
+    if (url.endsWith('/query'))
+      return route.fulfill({
+        json: { duration_ms: 1, results: [{ columns: [], rows: [], truncated: false }] },
+      });
+  });
+  await page.goto('/');
+  await setToken(page);
+  await connect(page);
+  await page
+    .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })
+    .fill('UPDATE synthetic SET value = 1;');
+  await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
+  await expect(page.getByText('Anweisung abgeschlossen', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Anzahl betroffener Zeilen nicht gemeldet', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('0 betroffene Zeilen', { exact: true })).not.toBeVisible();
+});

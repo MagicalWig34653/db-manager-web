@@ -61,7 +61,9 @@
 {:else}
   <div class="mutation-result">
     <Check size={22} /><strong>Anweisung abgeschlossen</strong><span
-      >{result.affectedRows ?? '0'} betroffene Zeilen</span
+      >{result.affectedRows === undefined
+        ? 'Anzahl betroffener Zeilen nicht gemeldet'
+        : `${result.affectedRows} betroffene Zeilen`}</span
     >
   </div>
 {/if}

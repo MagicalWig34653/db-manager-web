@@ -29,6 +29,8 @@ solche. Es gibt keine eingebauten Demoergebnisse.
 
 Den Backend-Zugriffstoken in „Backend-Zugang“ eingeben. Er wird ebenso wie Datenbank-
 Credentials, SQL und Ergebnisse nur im Arbeitsspeicher gehalten; Reload leert die Sitzung.
+Ein geänderter Zugriffstoken eröffnet einen neuen Sitzungskontext: Verbindung, Catalog,
+SQL, Ergebnisse und laufende Anfragen werden vor Übernahme des neuen Tokens abgeräumt.
 Kein localStorage, sessionStorage, Cookie-Login, URL-Token, Service Worker oder Telemetrie.
 Bei entfernten Instanzen HTTPS verwenden; der Client verweigert API-Zugriffe auf nicht
 verschlüsselten Origins außerhalb von localhost/Loopback. Zugriffstoken/Passwörter gehören
@@ -47,6 +49,7 @@ Objektauswahl erzeugt nur einen korrekt gequoteten SELECT-Entwurf; Tippen führt
 `⌘/Strg + K` fokussiert den Editor, `⌘/Strg + Enter` führt aus, `Escape` fordert den Abbruch
 an. Zeilenlimit und Zeitlimit werden mitgeschickt. Tabellenwerte bleiben getaggt; Integer,
 Dezimalwerte und betroffene Zeilen werden nicht in JavaScript-Zahlen umgewandelt.
+Eine nicht gemeldete Anzahl betroffener Zeilen wird als unbekannt angezeigt, nicht als null.
 NULL, Leertext und Base64-Binärwerte sind unterscheidbar; Klick öffnet den vollständigen
 Zellwert. Bei Abbruch ist kein Rollback zugesagt und der Serverstatus bleibt zu prüfen.
 

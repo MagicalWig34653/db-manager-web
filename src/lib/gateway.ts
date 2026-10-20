@@ -6,9 +6,9 @@ export interface RunOptions {
   timeoutMs: number;
 }
 export interface Gateway {
-  capabilities(token: string): Promise<Driver[]>;
-  test(draft: ConnectionDraft, token: string): Promise<string>;
-  catalog(draft: ConnectionDraft, token: string): Promise<CatalogObject[]>;
+  capabilities(token: string, signal?: AbortSignal): Promise<Driver[]>;
+  test(draft: ConnectionDraft, token: string, signal?: AbortSignal): Promise<string>;
+  catalog(draft: ConnectionDraft, token: string, signal?: AbortSignal): Promise<CatalogObject[]>;
   execute(
     draft: ConnectionDraft,
     token: string,
@@ -18,8 +18,8 @@ export interface Gateway {
   ): Promise<Execution>;
 }
 export function createGateway(client = new ApiClient()): Gateway {
-  async function capabilities(token: string): Promise<Driver[]> {
-    const data = await client.capabilities(token);
+  async function capabilities(token: string, signal?: AbortSignal): Promise<Driver[]> {
+    const data = await client.capabilities(token, signal);
     if (data.contract_version !== '0.1.0')
       throw new ApiError(
         'contract_version',
@@ -31,14 +31,14 @@ export function createGateway(client = new ApiClient()): Gateway {
   }
   return {
     capabilities,
-    async test(draft, token) {
-      const available = await capabilities(token);
+    async test(draft, token, signal) {
+      const available = await capabilities(token, signal);
       if (!available.includes(draft.driver))
         throw new ApiError(
           'unsupported_driver',
           'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
         );
-      const data = await client.test(toConnection(draft), token);
+      const data = await client.test(toConnection(draft), token, signal);
       if (data.status !== 'ok')
         throw new ApiError(
           'connection_failed',
@@ -46,8 +46,8 @@ export function createGateway(client = new ApiClient()): Gateway {
         );
       return 'Verbindung erfolgreich. Die Datenbank ist erreichbar.';
     },
-    async catalog(draft, token) {
-      const data = await client.catalog(toConnection(draft), token);
+    async catalog(draft, token, signal) {
+      const data = await client.catalog(toConnection(draft), token, signal);
       return data.tables.map((table) => ({
         name: table.name,
         schema: table.schema,
