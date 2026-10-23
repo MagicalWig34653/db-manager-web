@@ -69,3 +69,8 @@ Originalnotices sowie8echteDownload-/CRUD-/Pagingbrowserfälle und6LegacySQL-/2C
 Browserfälle grün. SaubereröffentlicherBuild bestanden; finaleFrontend-/EchtCIaktiv,
 Docsgrün. UnabhängigeQA alsnächstes; keineSelbstintegration oderRootpinänderung.
 DateibesitzWebSTATUS/Plan bleibt bisLeadneuzuweisungexklusiv;Workerjetztidle.
+
+F6 gezielter Fix QA-F6-01: rote Regression belegt, CSV-Steuerzeichenprofil ausdrücklich
+ablehnen statt ersetzen; JSON unverändert.37Units und8echteBrowserfälle15,9s grün.
+Code eingefroren; öffentliche exakte Fix-CIs und unabhängige P0-Nachprüfung sind die
+nächsten Gates. Kein API0.5-Verbrauch, kein F5-UIumfang in diesem Fixpaket.

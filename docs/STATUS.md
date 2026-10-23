@@ -95,3 +95,11 @@ grün. Frischeröffentlicher893Checkout npmci/Typecheck34Units/Format/Verträge/
 Originalnotices/Docs118/0 bestanden;1e2 ergänzt nur engenBrowsertest. FinaleCI:
 Docs39903194991success, Frontend39903195022 undEchte39903194959aktiv. Keineoffenen
 lokalenJobs/Ressourcen. KeineeigeneFreigabe/Integration;RootpinF6b separat.
+
+QA-F6-01 (niedrig) aus unabhängigem Reviewcd384326: CSV-Steuerzeichen-/Consumergrenze.
+Enger Autorenfix298d080/294bf07 lehnt C0 außer CR/LF, DEL und C1 in Headern/Werten
+beider CSVvarianten vor Blob/Download ab; empfiehlt unverändertes JSON. Zunächst
+rote Regression am unveränderten Code gesichert.37Units/Typecheck/Format/Verträge/
+Build/Docs118/0 und8echteSQLite-/PG-Browserfälle15,9s grün; JSON exakt, CSV-CR/LF/
+Quotes/Literalmarker erhalten. Code eingefroren; unabhängige P0-Nachprüfung und
+exakte Fix-CI offen. Keine Selbstschließung des Findings, kein neuer Rootpin.
