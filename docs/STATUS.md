@@ -159,3 +159,13 @@ nur die fragile Bodybeobachtung; sämtliche fachlichen Assertions bleiben erhalt
 Produktbytes seitf407 unverändert, volle lokale10erSerie erneut18,3sgrün. Exakte
 neue Docs39906977828success, Frontend39906977846/Echte39906977849aktiv. Unabhängiger
 Review und diese neue CI bleiben Gates. Keine eigene Freigabe oder Rootintegration.
+
+## Aktueller enger F5-Fixkandidat – QA-F5-01
+
+Unabhängiger Review bestätigte einen niedrigen bekannten-Leername-Darstellungsbefund.
+Fixkandidat8ef738d zitiert bekannte Spalten-/Objektidentitäten ausdrücklich, einschließlich
+Leerstring und Trennzeichen; unbekannt bleibt unbekannt.47Units/Typecheck0/0/fünf
+Vertragsprüfungen und zehn echte SQLite-/PG-TLS-Browserfälle17,8s grün, darunter
+reale PK-Spalte `""`. Vertrag/Dependencies/F6/CRUD unverändert. Docs39908165711
+success; Frontend39908165762/Echte39908165925 noch aktiv. Unabhängige Nachprüfung
+und exakte CI vor Freigabe erforderlich; keine eigene Integration oder Rooteinbettung.

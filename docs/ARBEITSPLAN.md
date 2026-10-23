@@ -108,3 +108,9 @@ F5 aktueller Reviewkandidat87751cc: enger Testbeobachtungsfix nach Linux-CDPfehl
 keine Produktänderung.10echteLokalfälle erneutgrün; neue exakte CIs/Status imHandoff.
 Lead übernimmtRemoteMonitoring, Workeridle für unabhängigenPeer. f407-EchtCIrot
 nicht als Erfolg zählen; vor Annahme aktuelle Serie prüfen.
+
+QA-F5-01 enger Autorenfix8ef738d eingefroren: bekannte leere/separatorhaltige
+Spalten-/Objektnamen eindeutig zitiert, unbekannt unverändert.47Units und10echte
+SQLite-/PG-Browserfälle grün. Exakte CIs und unabhängiger Nachreview lautHandoff
+bleiben Gates; danach erst freigegebene Webintegration und gemeinsames RootpaketF5b.
+Keine eigenen lokalen Jobs oder Ressourcen offen.
