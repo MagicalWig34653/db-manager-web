@@ -74,3 +74,18 @@ F6 gezielter Fix QA-F6-01: rote Regression belegt, CSV-Steuerzeichenprofil ausdr
 ablehnen statt ersetzen; JSON unverändert.37Units und8echteBrowserfälle15,9s grün.
 Code eingefroren; öffentliche exakte Fix-CIs und unabhängige P0-Nachprüfung sind die
 nächsten Gates. Kein API0.5-Verbrauch, kein F5-UIumfang in diesem Fixpaket.
+
+## F6 integriert, F5 als nächstes begrenztes Paket
+
+F6 nach unabhängiger Fixnachprüfung8301b0c und drei grünen exakten CIs integriert;
+37Units/Typecheck/vier freigegebeneVerträge, Build/Originalnotices und
+Docsprüfungen werden als Kombinationscheck ausgeführt. Neue Main-CIs beobachten.
+Kein separates RootpaketF6b: erst nach unabhängigem F5-Review gemeinsames F5b.
+
+F5 erhält neuen eigenen Worktree/Branch ab integriertemF6-Main: unveränderte API0.5-
+Kopie/Herkunftac9542d, geordneteIndexterms/Rollen/Flags und Constraints/FK/Checks mit
+Coverage/Unknown. ÄlteresBackend behält v2Struktur ohneZusatz. BesitzWebprodukt/
+Vertragskopien/Build/Tests/Doku/HandoffF5 und exklusivSTATUS/Plan; keineRoot/Apple/Go-
+Dateien, keinDDL. EchteSQLite/PG-TLS-Proben, Unitrepräsentationen für weitereTreiber,
+keine pauschaleAllDBbehauptung. LegacyCRUD/F6/Session/CSP erhalten, frischeröffentlicher
+Build/CI und unabhängigeQA vorIntegration. Frist heute10Berlin.

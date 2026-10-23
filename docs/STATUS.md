@@ -103,3 +103,25 @@ rote Regression am unveränderten Code gesichert.37Units/Typecheck/Format/Vertr�
 Build/Docs118/0 und8echteSQLite-/PG-Browserfälle15,9s grün; JSON exakt, CSV-CR/LF/
 Quotes/Literalmarker erhalten. Code eingefroren; unabhängige P0-Nachprüfung und
 exakte Fix-CI offen. Keine Selbstschließung des Findings, kein neuer Rootpin.
+
+## F6 nach unabhängiger Nachprüfung integriert
+
+Stand23.10.2026: Quelle1a8adfa und Handofff94b4d7 nach P0-Nachprüfung angenommen;
+QA-F6-01 geschlossen. Vollständige Reviewprovenienz cd384326/8301b0c bleibt in
+main-Ancestry. Alle drei exakten Fix-CIs erfolgreich. JSON bevorzugt und verlustlos,
+CSV mit ausdrücklichem C0/DEL/C1-Profil und offengelegten Varianten; keine heimliche
+Ersetzung. Integrierte Kombinationschecks und neue Main-CIs werden dokumentiert.
+RootpinF6b wird bewusst nicht separat gebaut: nach unabhängigem F5-Review folgt
+gegebenenfalls gemeinsames Paket F5b(F5+F6). Kein vorzeitiger Rootpin.
+
+F5 startet in neuem eigenen Webworktree ab integriertem F6-Main. API0.5 ausdrücklich
+freigegeben: Referenzbackendac9542d81e6f096626c24bc1e0cb9bccb3a62a7c,
+SHA256b5225339511d80fe4f52f09118fdad2060d8a92f31d44b73dd89fe9f76178c95.
+Lesende Index-/Constraintstruktur, ehrliche Unknown-/Coverageangaben, kein DDL oder
+unechte FK-Navigation. Alte v2Struktur/CRUD/F6/Session/CSP bleiben erhalten.
+Frontend & UX besitzt exklusiv WebSTATUS/Plan; unabhängige QA vor neuem Rootpin.
+
+F6-Kombinationscheck in eigenem Releaseworktree: npmci, Typecheck0/0,37Units,
+vierVerträge/Standalone,Produktionsbuild undDocs119/0 bestanden. Produktbytes nach
+Freigabe unverändert; nur exklusive Statuspflege. Neue Main-CIs nach Veröffentlichung
+noch zu kontrollieren.
