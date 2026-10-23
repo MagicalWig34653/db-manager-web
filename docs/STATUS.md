@@ -1,171 +1,91 @@
-# Status
+# Tatsächlicher Webstand
 
-Stand: 23.10.2026. F1/F1b als Webclient-Inkrement nach unabhängiger QA und CI integriert.
-Svelte5/shadcn-svelte-Workbench mit flüchtigem Backendzugang/Verbindungseditor,
-Objektnavigation, SQL-Einzelanfrage, präzisen typisierten Ergebnissen, Abbruch und
-Zeilenbegrenzung. Keine Credentialpersistenz und kein vorgetäuschter DB-Erfolg.
+Stand: 23.10.2026, F5-Releasecheckpoint. Nutzerrahmen bis heute10:00 Europe/Berlin
+(08:00UTC), Root koordiniert ausschließlich. Agents implementieren, prüfen,
+dokumentieren und übernehmen konkret freigegebene Integrationen.
 
-## Nachweise
+## Integrierter Umfang
 
-- Quelle `4e5abee074d34853b266f20c344f28517d7924d1`, per FastForward in main erhalten.
-- API0.1.0 aus Hauptcommit `80f203b3e0c7fa3f7f4aa5ec06825cb83bc0c5d0`, SHA256
-  `4b598dc69a1904685e67a717997412654440ac10f47c17f7a025ccd114e294be` exakt gepinnt.
-- Unabhängige QA: Cleanclone/npmci, Typecheck ohne Fehler/Warnungen, Format-/Vertrags-
-  und Validator-Byteprüfung, 15 Unit-/Komponententests, Build/Notices und Browserfälle.
-  Sechs funktionale Chromiumfälle sowie gesonderter Produktions-CSP-Test belegt.
-- Tokenwechsel-/Altantwortbefund und falsche Null-Zeilenzahl korrigiert und unabhängig
-  nachgeprüft. Typisierte Integer/NULL/Leer/Binärwerte, Escaping und flüchtige Sitzung geprüft.
-- Standalone-Validatoren buildzeitlich generiert; tatsächlicher Query-/Fehlerpfad unter
-  `script-src 'self'` ohne unsafe-eval/InlineScript und ohne CSP-Verletzungen geprüft.
-- [Frontend-CI](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39491706244)
-  und [Dokumentations-CI](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39491706204)
-  am integrierten Quellcommit erfolgreich. Vollständige Abhängigkeiten inventarisiert.
+Deutscher Svelte5-/shadcn-svelte-Arbeitsplatz für den persönlichen Go-Dienst:
+flüchtige Token-/DBanmeldung, Katalog, einzelne SQLanweisung, begrenzte getaggte
+Ergebnisse und Abbruch; strukturierte Tabellenansicht mit Sortierung, gebundenen
+AND-Filtern und Pagination; bestätigte einzelne Inserts/Updates/Deletes mit
+Konflikt-/Unknown-Behandlung; lokaler JSON-/CSVexport geladener Ergebnisse und
+lesende Index-/Constraintstruktur. Keine zusätzliche DBabfrage beim Export.
 
-## Grenzen und Fortsetzung
+Die neue Strukturansicht zeigt geordnete Indexterme, Key-/Include-/Hilfsrollen,
+Partial-/Expression-/Sort-/Kollationsangaben sowie Constraints/FK-Aktionen und
+ausdrückliche Coverage-/Unknownzustände. Keine SQLdefinitionen oder FK-Navigation
+werden erfunden. Ältere Backends behalten die vorhandene v2-Spaltenansicht, wenn
+v5 fehlt. Die Oberflächenstruktur ist kein DDL-/Schemaänderungseditor.
 
-Die F1-Abnahme verwendet explizite Mock-API-Fixtures. F2a/F2b sind inzwischen im
-Hauptrepo nach unabhängiger QA integriert: reproduzierbares Go-Webpaket und echter
-Browser→Go→SQLite/PostgreSQL-TLS-Pfad, beobachtete Abbruchfreigabe sowie Compose-/
-isolierte-Swarm-Neustartpersistenz. F2b-Quelle `f2c92ee`/`c9ced80`, integriert als
-`df0b291`/`c7e1a1d`, zentraler Hauptrepo-Abnahmecheckpoint `c706741`. Öffentliche
-[Webpfad-CI](https://github.com/MagicalWig34653/db-manager/actions/runs/39495523677)
-sowie Backend-/Engine-/Dokumentations-CI am Kandidaten erfolgreich.
-Keine vollständige Parität, Dateneditor-/Schema-/Import-/Vault-/Teamfunktionen.
-Backendtoken und DB-Passwörter nur im Speicher; Reload/Sessionwechsel verwirft sie.
-Abbruch verspricht keinen Rollback bereits erfolgter Datenbankeffekte.
+## Unabhängige Abnahmen und Provenienz
 
-F3 nach vollständigem P0-Erstreview und unabhängiger P3-Fixnachprüfung integriert,
-Merge `8ab07fb` erhält alle Originalquellcommits. QA-F3-01 (unsichtbarer verworfener
-Filter nach ungültiger Sortierung) durch atomare Zustandsübernahme geschlossen;
-Repro vor Fix auf beiden echten Engines rot, nachher einschließlich Weiter/Refresh grün.
-Freigegebene unveränderliche Quelle für Rootpaket F3b:
-`6c6eb33c93eed355a10cd114f61ce27be7f3f55e`. Alle drei Fix-CIs erfolgreich.
-Integrierte Typecheck-/19-Unit-/Dualvertrags-/Produktionsbuildprüfungen bestanden.
-Daten-/Strukturansicht, Sortierung/Filter/Pagination sowie Quellcode-/Lizenzdialog
-sind Webprodukt; F3b ist inzwischen nach unabhängigem Review im Go-Hauptrepo integriert
-(`0767969`/`22fdf78`/`cc175a5`/`5cb604a`, zentraler Stand `f46cafe`).
+| Paket | Geprüfte Quelle / Nachweis | Tatsächliches Ergebnis |
+| --- | --- | --- |
+| F1/F1b | [F1](handoffs/F1.md), [CSP](handoffs/F1b.md) | SQL-/Sessionschutz und buildzeitliche Standalonevalidatoren, strikte Produktions-CSP ohne unsafe-eval. |
+| F3 | [Handoff](handoffs/F3.md), Quelle6c6eb33 | Tabellenansicht/Quellen-/Originallizenzdialog; atomare Filter-/Sortzustandskorrektur unabhängig geschlossen. |
+| F4 | [Handoff](handoffs/F4.md), [Review](handoffs/F4-review.md), Quelle3a4a3fd | Bestätigte Einzelzeilenmutationen, vollständiger typisierter Snapshot, ehrliche Konflikt-/Commitunsicherheit ohne Retry. |
+| F6 | [Handoff](handoffs/F6.md), [Review](handoffs/F6-review.md), Quelle1a8adfa, bisheriger Main204cb07 | JSON bevorzugt und verlustlos; zwei bewusst getrennte CSVprofile. Steuerzeichenbefund QA-F6-01 geschlossen, keine heimliche Bereinigung. |
+| F5 | [Handoff](handoffs/F5.md), [Review](handoffs/F5-review.md), Quelle8ef738d22a1164291e2c8183d80e72d1f043c0f8 | Index-/Constraintstruktur unabhängig freigegeben; QA-F5-01 geschlossen, bekannte leere Bezeichner bleiben als JSONzitierte Namen sichtbar. |
 
-F3b bestanden: zwei bytegleiche öffentliche Builds, fünf echte Browserfälle,
-Compose und isolierter DinD-Swarm samt SQLitepersistenz, Go-Race/Vet und sauberer
-Go-/Imagebuild ohne Node/npm zur Laufzeit. Alle sechs Feature-CIs erfolgreich;
-kombinierte Haupt-CIs an f46cafe noch kontrollieren. Keine Mutationsoberfläche im
-freigegebenen F3.
+F5-Feature/Handoff bis a5c687f und vollständige Erst-/Fixreviewprovenienz bis
+469653dd bleiben mit den Merges0e75e39/4cbec59 in der Main-Ancestry erhalten.
+Geprüfte Produktbytes unverändert; Releasearbeit nur zentrale Statuspflege und
+[Integrationshandoff](handoffs/F5-integration.md). Der feste freigegebene Webpin für
+RootpaketF5b(F5+F6) ist **8ef738d22a1164291e2c8183d80e72d1f043c0f8**.
 
-F4 ist am 23.10.2026 nach unabhängigem P0-Review ohne Findings integriert.
-Freigegebene unveränderliche Quelle: `3a4a3fd0a345f8c127758ac5eadc4e6feb8d21ec`.
-Alle drei exakten Quell-CIs erfolgreich; unabhängiger Review
-`01933d5c247dd790748e7733b56e5eea12008d55` bleibt in main-Ancestry.
-[Review](handoffs/F4-review.md), [Autorenhandoff](handoffs/F4.md).
-Einzelzeilen-Insert/Edit/Delete mit gültigen v4-Fähigkeiten und frischer v3-Eignung,
-vollständigem typisiertem Snapshot, gesperrten PK/generated-Zielspalten, bestätigten
-Aktionen und echter Nachherzeile. Kein automatischer Retry; Konflikt fordert Neuladen,
-Transportverlust nach Versand meldet möglichen Commit. SQL/v2 bleiben auf älteren
-Backends nutzbar, neue Schreibaktionen gesperrt. Credentials/Entwürfe bleiben flüchtig.
-26 Units, sechs echte SQLite-/PostgreSQL-TLS-Browserfälle einschließlich tatsächlicher
-Commitantwortverluste, sechs SQLregressionen, zwei Produktions-CSP-/Originalnoticefälle
-und sauberer öffentlicher Build unabhängig geprüft. Keine vollständige Parität.
+## Verträge und Grenzen
 
-F4b übernimmt anschließend im eigenen Rootworktree die exakt freigegebene Quelle;
-Rootartefakte, tatsächliche CRUD-Compose-/isolierte-Swarm-Persistenz und unabhängige
-QA stehen dafür separat aus. Neue Web-main-CIs nach Integration kontrollieren.
-Lead koordiniert; Frontend & UX besitzt für dieses Release exklusiv diese beiden
-Web-Status-/Planungsdateien. Keine weiteren Produktänderungen nach Quellpin.
+API1–5 liegen mit unveränderten kanonischen Kopien, Typen, Herkunftsdateien und
+Standalonevalidatoren unter src/lib/contract. API0.5-Referenzbackend
+ac9542d81e6f096626c24bc1e0cb9bccb3a62a7c enthält den unabhängig geschlossenen
+Namespacefix; Schema-SHA256
+b5225339511d80fe4f52f09118fdad2060d8a92f31d44b73dd89fe9f76178c95.
 
-## F6 – lokaler Ergebnisexport, Prüfkandidat
+Neue Schreibaktionen verlangen die geprüften v4-Fähigkeiten und passende v3-Eignung;
+der Referenzbackend72855cf oder eine nachgeprüfte Nachfolge enthält beide v3-
+Integritätsfixes. Keine automatischen Retries;409 verlangt Neuladen, Transportfehler
+nach Versand oder outcome_unknown bedeutet möglichen Commit. Abbruch ist keine
+Rollbackgarantie. Token-/Quellenwechsel räumt Werte auf; kein Credentials-/SQL-/
+Entwurfsspeicher und keine Teamkontentrennung aus dem persönlichen Tokenmodell.
 
-Stand23.10.2026: eigener Branch `feat/result-export`, Basisbf75748. JSON mit
-versioniertem explizitem Snapshot erhält geordnete doppelte Spalten und getaggte
-Zellen; CSV mit offengelegter NULL-/Quote-/Typverlustkonvention sowie bewusst gewählter
-Apostroph-/Rohwertvariante. Ausschließlich expliziter lokaler Download des aktuell
-angezeigten SQLergebnisses oder geladenen Seitenumfangs, keine neue DBabfrage.
-Keine Credentials-/SQL-/Profilserialisierung oder Persistenz. Limit8MiB fertigeUTF8Bytes.
-Frontend & UX besitzt exklusiv diese WebSTATUS/Plan-Dateien. Implementierung und reine
-Tests vorhanden; echte Browserdownloads, sauberer Build/CI und unabhängige QA folgen.
-Kein Rootpin/API0.5-Verbrauch. [Handoff](handoffs/F6.md).
+JSONexport erhält Reihenfolge/doppelte Namen/getaggte Werte und tatsächlichen
+Seiten-/Trunkierungsumfang. CSVprofile dokumentieren NULL-/Quote-/Typverlust und
+Apostroph-/Rohwertwahl; unzulässige Steuerzeichen werden vor Blob/Download explizit
+abgewiesen. Keine allgemeine Excel-Sicherheits-/Roundtripbehauptung. Maximal8MiB
+fertige UTF8Bytes. App-/Backendverbindungsdaten und SQL werden nicht serialisiert.
 
-F6 lokaler Prüfcheckpoint:34Units/Typecheck0/0/vierVerträge/Standalone/Format/Docs118/0,
-sechsLegacySQLbrowser undzweiProduktionsCSPfälle grün. Acht echteSQLite-/PGverify-full-
-Browserfälle inklusive tatsächlicherDownloadinhalte, Requestzählung, Trunkierung/
-Seitenumfang, BlobURL-/Tokenwechsel und bestehenderCRUD-/Konflikt-/Unknownregression
-bestanden. NochkeineunabhängigeQA/Integration; öffentlicherBuild/CI folgen.
+## Tatsächlicher Prüfstand
 
-F6 zur unabhängigenQA bereit: öffentlicherKandidat1e2fbb6, HandoffF6. Acht echteFälle
-inklusiveDateiinhaltsprüfung erstnach sofortigemTokenwechsel/BlobURLwiderruf in16,4s
-grün. Frischeröffentlicher893Checkout npmci/Typecheck34Units/Format/Verträge/Build/
-Originalnotices/Docs118/0 bestanden;1e2 ergänzt nur engenBrowsertest. FinaleCI:
-Docs39903194991success, Frontend39903195022 undEchte39903194959aktiv. Keineoffenen
-lokalenJobs/Ressourcen. KeineeigeneFreigabe/Integration;RootpinF6b separat.
+- F5 unabhängig: ursprüngliche46Units, Typen/Format/fünf Verträge/Standalone,
+  frischer öffentlicher Build/Notices, sechs Legacybrowser, zwei CSPfälle und zehn
+  echte SQLite-/PostgreSQL-verify-full-Browserfälle. MySQL/MariaUI nur synthetische
+  Renderer-/Validatorrepräsentationen, **keine AllDB-Browserabnahme**.
+- Gezielter Fix: elf unabhängige Helper-/Komponententests, Typecheck0/0 und ein
+  tatsächlicher SQLite-Leerbezeichnerbrowserfall; ursprüngliche Nachweise getrennt.
+  Alle drei exakten Fix-CIs [Frontend39908165762](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39908165762), [echte Browser39908165925](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39908165925) und [Docs39908165711](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39908165711) erfolgreich.
+- Kombinierter Releasecheck im eigenen Worktree: npmci mit unverändertem Lock,
+  Typecheck0/0,47Units, fünf Typ-/Standalonebyteprüfungen, Format und Produktionsbuild
+  bestanden. Fünf Originalartefakte, bekannte Vite-Chunkwarnung bei etwa958kBJS.
+  Dokumentations-/Diffcheck bestanden; neue Web-Main-CIs werden durch diesen
+  Veröffentlichungscheckpoint gestartet und noch nicht als erfolgreich behauptet.
+- Main204cb07 hatte bereits alle drei F6-CIs erfolgreich. Frühere F5-Linux-CDP-
+  Beobachtung39906592949 bleibt historisch fehlgeschlagen; späterer Beobachtungsfix
+  ersetzt keine DBantwort und entfernt keine fachliche Assertion.
 
-QA-F6-01 (niedrig) aus unabhängigem Reviewcd384326: CSV-Steuerzeichen-/Consumergrenze.
-Enger Autorenfix298d080/294bf07 lehnt C0 außer CR/LF, DEL und C1 in Headern/Werten
-beider CSVvarianten vor Blob/Download ab; empfiehlt unverändertes JSON. Zunächst
-rote Regression am unveränderten Code gesichert.37Units/Typecheck/Format/Verträge/
-Build/Docs118/0 und8echteSQLite-/PG-Browserfälle15,9s grün; JSON exakt, CSV-CR/LF/
-Quotes/Literalmarker erhalten. Code eingefroren; unabhängige P0-Nachprüfung und
-exakte Fix-CI offen. Keine Selbstschließung des Findings, kein neuer Rootpin.
+## Veröffentlichung und Fortsetzung
 
-## F6 nach unabhängiger Nachprüfung integriert
+F4b ist im Go-/Dockerhauptrepo abgenommen; dessen eingebauter Webpin bleibt bis
+separater Annahme vonF5b noch3a4a3fd. F5/F6-Webintegration bedeutet **keine neue
+Root-Einbettungs-/Compose-/Swarmfreigabe**. F5b wird im eigenen Rootpaket reproduziert
+und unabhängig gegen echte DBs/Container geprüft. Root-API0.6 ist separat akzeptiert;
+dieser Webstand konsumiert nur v1–v5 und bietet keine strukturierte Tabellenanlage.
 
-Stand23.10.2026: Quelle1a8adfa und Handofff94b4d7 nach P0-Nachprüfung angenommen;
-QA-F6-01 geschlossen. Vollständige Reviewprovenienz cd384326/8301b0c bleibt in
-main-Ancestry. Alle drei exakten Fix-CIs erfolgreich. JSON bevorzugt und verlustlos,
-CSV mit ausdrücklichem C0/DEL/C1-Profil und offengelegten Varianten; keine heimliche
-Ersetzung. Integrierte Kombinationschecks und neue Main-CIs werden dokumentiert.
-RootpinF6b wird bewusst nicht separat gebaut: nach unabhängigem F5-Review folgt
-gegebenenfalls gemeinsames Paket F5b(F5+F6). Kein vorzeitiger Rootpin.
-
-F5 startet in neuem eigenen Webworktree ab integriertem F6-Main. API0.5 ausdrücklich
-freigegeben: Referenzbackendac9542d81e6f096626c24bc1e0cb9bccb3a62a7c,
-SHA256b5225339511d80fe4f52f09118fdad2060d8a92f31d44b73dd89fe9f76178c95.
-Lesende Index-/Constraintstruktur, ehrliche Unknown-/Coverageangaben, kein DDL oder
-unechte FK-Navigation. Alte v2Struktur/CRUD/F6/Session/CSP bleiben erhalten.
-Frontend & UX besitzt exklusiv WebSTATUS/Plan; unabhängige QA vor neuem Rootpin.
-
-F6-Kombinationscheck in eigenem Releaseworktree: npmci, Typecheck0/0,37Units,
-vierVerträge/Standalone,Produktionsbuild undDocs119/0 bestanden. Produktbytes nach
-Freigabe unverändert; nur exklusive Statuspflege. Neue Main-CIs nach Veröffentlichung
-noch zu kontrollieren.
-
-F5 wurde auf neue ausdrückliche Nutzerpriorität Swift/TestFlight als WIP gesichert:
-eigener feat/schema-workbench ab204cb07, Vertrag0.5 exakt, lesende Komponente/Client
-und erste Units vorhanden. Erster Unitlauf41grün/2rote Testfixturefehler (fileURL im
-JSDOMkontext und fehlender JSON-Content-Type). Kein fertiger F5-Check, keine Browser-/
-Build-/CI-/QAfreigabe. Details und nächste Schritte: [F5-Handoff](handoffs/F5.md).
-F6-Main204cb07: alle drei neuen CIs inzwischen success. Keine Rootpinänderung.
-
-## F5 – aktueller Autorenabschluss, noch unabhängiger Review erforderlich
-
-Der historische WIP ist fortgesetzt. Lesende Index-/Constraintkomponente mit exakter
-akzeptierter API0.5-Kopie und Backendac9542d ist implementiert.46Units/Typecheck0/0,
-fünf Typ-/Standaloneprüfungen, Format/Build/Docs131/0, sechs alte SQL-/Sessionbrowser-
-und zwei Produktions-CSP-/Sourcefälle bestanden. Zehn echte SQLite-/PGverify-full-
-Browserfälle21,8s einschließlich F5 Partial/Expression/Include/FK/CHECK/Unknown,
-Views/404grenze und verspäteter Antwort nach Tokenwechsel sowie aller bestehenden
-F6-/CRUD-/Konflikt-/Unknown-/F3-Pagingfälle grün. Kein MySQL/MariaDB-UI-Livenachweis;
-entsprechende Renderzustände nur als synthetische Units geprüft.
-Öffentlicher Cleanbuild/CI und unabhängige QA folgen. Code eingefroren, keine Root-
-oder B4-Änderung, keine gemeinsame F5b-Einbettung vor ausdrücklicher Abnahme.
-
-F5 bereit für unabhängigen Review: Quell-/Testkandidatf407e5b öffentlich;
-frischeröffentlicherCheckout npmci/Typecheck46Units/Format/5Verträge/Build/
-Originalnotices/Docs131grün. DocsCI39906592961success, Frontend39906593011 und
-Echte39906592949aktiv. Keine lokalen Jobs/Ressourcen. Code eingefroren;
-Webintegration und gemeinsamer RootpinF5b erst nach Annahme und gezielter Freigabe.
-
-F5-Folgecheckpoint87751cc ersetzt den vorigen Teststand: erste Linux-EchtCI hatte
-allein einen CDP-Bodybeobachtungsfehler im SQLite-Test (9weitereFällegrün), kein
-Produktfehler daraus abgeleitet. Echte unabhängige APIprobe nach gerenderter UI ersetzt
-nur die fragile Bodybeobachtung; sämtliche fachlichen Assertions bleiben erhalten.
-Produktbytes seitf407 unverändert, volle lokale10erSerie erneut18,3sgrün. Exakte
-neue Docs39906977828success, Frontend39906977846/Echte39906977849aktiv. Unabhängiger
-Review und diese neue CI bleiben Gates. Keine eigene Freigabe oder Rootintegration.
-
-## Aktueller enger F5-Fixkandidat – QA-F5-01
-
-Unabhängiger Review bestätigte einen niedrigen bekannten-Leername-Darstellungsbefund.
-Fixkandidat8ef738d zitiert bekannte Spalten-/Objektidentitäten ausdrücklich, einschließlich
-Leerstring und Trennzeichen; unbekannt bleibt unbekannt.47Units/Typecheck0/0/fünf
-Vertragsprüfungen und zehn echte SQLite-/PG-TLS-Browserfälle17,8s grün, darunter
-reale PK-Spalte `""`. Vertrag/Dependencies/F6/CRUD unverändert. Docs39908165711
-success; Frontend39908165762/Echte39908165925 noch aktiv. Unabhängige Nachprüfung
-und exakte CI vor Freigabe erforderlich; keine eigene Integration oder Rooteinbettung.
+Keine vollständige phpMyAdmin-Parität, produktiver Tresor, Passkeys, CloudKit oder
+Teamfunktionen. Keine Geräte-/interaktive OS-/HA-/Exactly-once-Zusage. Originaltexte
+und Inventar bleiben erhalten; eigener Code AGPL-3.0-only. Keine eigenen lokalen
+Releaseprüfjobs, Server, DB-/Browser-/Dockerressourcen offen. Alte saubere Worktrees
+bleiben Provenienz. WebSTATUS/ARBEITSPLAN liegen für diesen Release exklusiv beim
+Releasekoordinator; weitere Zuweisung nur durch Root. [Arbeitsplan](ARBEITSPLAN.md),
+[Einrichtung](../EINRICHTUNG.md), [Hauptprojektstand](https://github.com/MagicalWig34653/db-manager/blob/main/docs/STATUS.md).
