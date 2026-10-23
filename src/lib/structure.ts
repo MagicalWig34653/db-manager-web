@@ -85,10 +85,18 @@ export class StructureClient {
     }
     const body = { connection, table };
     validateStructure('DescribeRequest', body);
-    const data = validateStructure(
-      'TableStructure',
-      await this.client.requestRaw('/api/v5/tables/structure', token, body, signal),
-    );
+    let payload: unknown;
+    try {
+      payload = await this.client.requestRaw('/api/v5/tables/structure', token, body, signal);
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.code === 'unsupported_table')
+        throw new ApiError(
+          'unsupported_table',
+          'Für diese Objektart gibt es keine erweiterten Strukturangaben. Die Spaltenstruktur bleibt verfügbar.',
+        );
+      throw cause;
+    }
+    const data = validateStructure('TableStructure', payload);
     if (
       data.table.name !== table.name ||
       (table.schema !== undefined && data.table.schema !== table.schema)

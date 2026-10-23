@@ -16,7 +16,7 @@ import urllib.request
 import urllib.error
 
 ROOT = Path(__file__).resolve().parent.parent
-PIN = json.loads((ROOT/'src/lib/contract/v4/provenance.json').read_text())
+PIN = json.loads((ROOT/'src/lib/contract/v5/provenance.json').read_text())
 HIDDEN=[]
 
 def redact(value):
@@ -56,7 +56,7 @@ def api(base, path, token=None, body=None, expected=200):
         return json.load(response)
 
 def main():
-    prefix='dbmanager-f6-'+secrets.token_hex(6)
+    prefix='dbmanager-f5-'+secrets.token_hex(6)
     token=secrets.token_urlsafe(48); password=secrets.token_urlsafe(32); invalid=secrets.token_urlsafe(48)
     HIDDEN.extend([token,password,invalid])
     parent=ROOT/'node_modules/.cache';parent.mkdir(parents=True,exist_ok=True)
@@ -72,11 +72,11 @@ def main():
             run(['git','-C',str(source),'checkout','--detach','FETCH_HEAD'])
             assert run(['git','-C',str(source),'rev-parse','HEAD'])==PIN['source_commit']
             assert hashlib.sha256((source/PIN['source_path']).read_bytes()).hexdigest()==PIN['sha256']
-            for version in [1,2,3,4]:
+            for version in [1,2,3,4,5]:
                 folder=ROOT/'src/lib/contract' if version==1 else ROOT/f'src/lib/contract/v{version}'
                 provenance=json.loads((folder/'provenance.json').read_text())
                 assert hashlib.sha256((source/f'contracts/api-v0.{version}.0.json').read_bytes()).hexdigest()==provenance['sha256']
-            print('F6 fixture: exact public backend/schema verified; building native Go CLI.',flush=True)
+            print('F5 fixture: exact public backend/schema verified; building native Go CLI.',flush=True)
             binary=directory/'db-manager';run(['go','build','-trimpath','-o',str(binary),'./cmd/db-manager'],cwd=source)
             tls=directory/'tls';tls.mkdir()
             run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN=DB Manager F3 Fixture CA','-keyout',str(tls/'ca.key'),'-out',str(tls/'ca.pem')])
@@ -85,7 +85,7 @@ def main():
             run(['openssl','x509','-req','-days','1','-in',str(tls/'server.csr'),'-CA',str(tls/'ca.pem'),'-CAkey',str(tls/'ca.key'),'-CAcreateserial','-extfile',str(tls/'extensions'),'-out',str(tls/'server.pem')])
             envfile=directory/'pg.env';envfile.write_text('POSTGRES_PASSWORD='+password+'\nPOSTGRES_DB=f3_probe\n');envfile.chmod(0o600)
             command='chown -R postgres /fixture && chmod 600 /fixture/server.key && exec /usr/local/bin/docker-entrypoint.sh "$@"'
-            run(['docker','create','--name',prefix,'--label','dbmanager.task=F6','-p','127.0.0.1::5432','--env-file',str(envfile),'--entrypoint','sh','postgres:18.6-alpine','-c',command,'fixture','postgres','-c','ssl=on','-c','ssl_cert_file=/fixture/server.pem','-c','ssl_key_file=/fixture/server.key']);created=True
+            run(['docker','create','--name',prefix,'--label','dbmanager.task=F5','-p','127.0.0.1::5432','--env-file',str(envfile),'--entrypoint','sh','postgres:18.6-alpine','-c',command,'fixture','postgres','-c','ssl=on','-c','ssl_cert_file=/fixture/server.pem','-c','ssl_key_file=/fixture/server.key']);created=True
             run(['docker','cp',str(tls),prefix+':/fixture'])
             # Reproduce the official image's socket-only bootstrap phase deterministically.
             barrier=directory/'bootstrap-barrier.sh'
@@ -98,7 +98,7 @@ def main():
             assert tcp.returncode != 0, 'Bootstrap must not be mistaken for final TCP readiness'
             run(['docker','exec',prefix,'touch','/fixture/release_bootstrap'])
             wait(lambda:'accepting connections' in run(['docker','exec',prefix,'pg_isready','-h','127.0.0.1','-U','postgres','-d','f3_probe']),'final PostgreSQL TCP readiness')
-            print('F6 fixture: socket-only bootstrap reproduced; final TCP readiness required.',flush=True)
+            print('F5 fixture: socket-only bootstrap reproduced; final TCP readiness required.',flush=True)
             pgport=int(json.loads(run(['docker','inspect','--format','{{json .NetworkSettings.Ports}}',prefix]))['5432/tcp'][0]['HostPort'])
             tokenfile=directory/'token';tokenfile.write_text(token+'\n');tokenfile.chmod(0o600)
             backendport=port();base=f'http://127.0.0.1:{backendport}'
@@ -109,15 +109,15 @@ def main():
             pg={'driver':'postgres','host':'localhost','port':pgport,'username':'postgres','password':password,'database':'f3_probe','tls_mode':'verify-full'}
             api(base,'/api/v1/connections/test',token,{'connection':pg})
             api(base,'/api/v1/connections/test',token,{'connection':{**pg,'host':'127.0.0.1'}},422)
-            print('F6 fixture: positive verify-full connection followed by wrong-host refusal passed.',flush=True)
+            print('F5 fixture: positive verify-full connection followed by wrong-host refusal passed.',flush=True)
             for driver,connection in [('sqlite',{'driver':'sqlite','database':'f3_fixture'}),('postgres',pg)]:
                 statement=0
                 def query(sql):
                     nonlocal statement
                     statement+=1
                     try: return api(base,'/api/v1/query',token,{'connection':connection,'sql':sql})
-                    except RuntimeError as error: raise RuntimeError(f'F6 synthetic {driver} fixture statement {statement}: {error}') from None
-                print(f'F6 fixture: setting up synthetic {driver} values, metadata and view.',flush=True)
+                    except RuntimeError as error: raise RuntimeError(f'F5 synthetic {driver} fixture statement {statement}: {error}') from None
+                print(f'F5 fixture: setting up synthetic {driver} values, metadata and view.',flush=True)
                 table='"odd""name"'
                 types='id INTEGER PRIMARY KEY, huge TEXT' if driver=='sqlite' else 'id BIGINT PRIMARY KEY, huge NUMERIC(40,20)'
                 payload='BLOB' if driver=='sqlite' else 'BYTEA'
@@ -137,6 +137,13 @@ def main():
                 query('CREATE VIEW f4_view AS SELECT * FROM f4_rows')
                 query('CREATE TABLE f4_no_pk(value TEXT)')
                 query("INSERT INTO f4_no_pk VALUES('read-only')")
+                query('CREATE TABLE f5_parent(id INTEGER PRIMARY KEY)')
+                query("CREATE TABLE f5_child(id INTEGER PRIMARY KEY, parent_id INTEGER, label TEXT NOT NULL, extra TEXT, CONSTRAINT child_unique UNIQUE(label), CONSTRAINT child_fk FOREIGN KEY(parent_id) REFERENCES f5_parent(id) ON UPDATE CASCADE ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED, CONSTRAINT child_check CHECK(length(label)>0))")
+                query('CREATE INDEX f5_expression_partial ON f5_child(lower(label) DESC) WHERE parent_id IS NOT NULL')
+                query('CREATE INDEX f5_column_desc ON f5_child(label DESC)')
+                if driver=='postgres':
+                    query('CREATE INDEX f5_include ON f5_child(parent_id) INCLUDE(extra)')
+                query('CREATE VIEW f5_view AS SELECT id,label FROM f5_child')
                 if driver=='postgres':
                     assert query('SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()')['results'][0]['rows'][0][0]['value']=='true'
             webport=port();webbase=f'http://127.0.0.1:{webport}'
@@ -148,7 +155,7 @@ def main():
             environment=dict(os.environ,DBM_REAL_CONFIG=str(config),CI='1')
             run(['npx','playwright','install','chromium'],cwd=ROOT,env=environment)
             print(redact(run(['npx','playwright','test','--config','playwright.real.config.ts','--reporter=line'],cwd=ROOT,env=environment)),flush=True)
-            print('F6 real: exact public backend/schema, SQLite/PostgreSQL verify-full, structured browse and row insert/update/delete/conflict/lost-commit-response/session checks passed.',flush=True)
+            print('F5 real: exact public backend/schema, SQLite/PostgreSQL verify-full, structured browse and row insert/update/delete/conflict/lost-commit-response/session checks passed.',flush=True)
         finally:
             import signal
             for process in reversed(processes):
@@ -158,7 +165,7 @@ def main():
                     process.wait(timeout=15)
             for log in logs: log.close()
             if created: run(['docker','rm','-fv',prefix])
-    print('F6 task-owned processes, database container/volume, private credentials and pinned temporary checkout removed.',flush=True)
+    print('F5 task-owned processes, database container/volume, private credentials and pinned temporary checkout removed.',flush=True)
 
 if __name__=='__main__':
     try: main()
