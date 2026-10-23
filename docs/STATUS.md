@@ -125,3 +125,10 @@ F6-Kombinationscheck in eigenem Releaseworktree: npmci, Typecheck0/0,37Units,
 vierVerträge/Standalone,Produktionsbuild undDocs119/0 bestanden. Produktbytes nach
 Freigabe unverändert; nur exklusive Statuspflege. Neue Main-CIs nach Veröffentlichung
 noch zu kontrollieren.
+
+F5 wurde auf neue ausdrückliche Nutzerpriorität Swift/TestFlight als WIP gesichert:
+eigener feat/schema-workbench ab204cb07, Vertrag0.5 exakt, lesende Komponente/Client
+und erste Units vorhanden. Erster Unitlauf41grün/2rote Testfixturefehler (fileURL im
+JSDOMkontext und fehlender JSON-Content-Type). Kein fertiger F5-Check, keine Browser-/
+Build-/CI-/QAfreigabe. Details und nächste Schritte: [F5-Handoff](handoffs/F5.md).
+F6-Main204cb07: alle drei neuen CIs inzwischen success. Keine Rootpinänderung.

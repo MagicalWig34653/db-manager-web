@@ -89,3 +89,8 @@ Vertragskopien/Build/Tests/Doku/HandoffF5 und exklusivSTATUS/Plan; keineRoot/App
 Dateien, keinDDL. EchteSQLite/PG-TLS-Proben, Unitrepräsentationen für weitereTreiber,
 keine pauschaleAllDBbehauptung. LegacyCRUD/F6/Session/CSP erhalten, frischeröffentlicher
 Build/CI und unabhängigeQA vorIntegration. Frist heute10Berlin.
+
+Prioritätscheckpoint: F5 jetzt WIP sichern und Slot für Swift/TestFlight freigeben.
+Client/Komponente/v5-Kopie vorhanden;41Units grün,2 Testfixturefehler bekannt.
+Nach neuer Aktivierung diese korrigieren, dann echte Struktur-/Legacyprüfungen und
+unabhängige QA. Keine F5-Freigabe oder gemeinsamer Rootpin vor diesem Gate.

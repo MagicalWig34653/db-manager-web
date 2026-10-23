@@ -1,0 +1,192 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { ApiClient } from './api';
+import {
+  StructureClient,
+  validateStructure,
+  stateLabel,
+  coverageLabel,
+  type TableStructure,
+} from './structure';
+export const syntheticStructure: TableStructure = {
+  table: { schema: 'main', name: 'synthetic' },
+  coverage: { indexes: 'catalog', constraints: 'partial', checks: 'unavailable' },
+  indexes: [
+    {
+      name: 'idx',
+      unique: 'unknown',
+      primary: 'no',
+      method: 'btree',
+      method_known: true,
+      partial: 'yes',
+      valid: 'unknown',
+      nulls_distinct: 'not_applicable',
+      terms: [
+        {
+          position: 2,
+          kind: 'expression',
+          role: 'key',
+          direction: 'desc',
+          collation_state: 'unknown',
+          prefix_state: 'none',
+          prefix_unit: 'not_applicable',
+        },
+        {
+          position: 1,
+          kind: 'column',
+          column: 'label',
+          role: 'key',
+          direction: 'asc',
+          collation_state: 'known',
+          collation: { schema: 'main', name: 'NOCASE' },
+          prefix_state: 'present',
+          prefix_length: 12,
+          prefix_unit: 'unknown',
+        },
+        {
+          position: 3,
+          kind: 'column',
+          column: 'extra',
+          role: 'include',
+          direction: 'not_applicable',
+          collation_state: 'not_applicable',
+          prefix_state: 'none',
+          prefix_unit: 'not_applicable',
+        },
+        {
+          position: 4,
+          kind: 'rowid',
+          role: 'auxiliary',
+          direction: 'unknown',
+          collation_state: 'unknown',
+          prefix_state: 'unknown',
+          prefix_unit: 'unknown',
+        },
+      ],
+    },
+  ],
+  constraints: ['unique', 'foreign_key', 'check'].map((kind) => ({
+    name: 'shared',
+    name_known: true,
+    kind: kind as 'unique' | 'foreign_key' | 'check',
+    columns: kind === 'check' ? [] : ['label'],
+    columns_known: kind !== 'check',
+    referenced_columns: kind === 'foreign_key' ? ['id'] : [],
+    referenced_columns_known: kind === 'foreign_key',
+    ...(kind === 'foreign_key' ? { referenced_table: { schema: 'main', name: 'parent' } } : {}),
+    on_update: kind === 'foreign_key' ? ('cascade' as const) : ('not_applicable' as const),
+    on_delete: kind === 'foreign_key' ? ('set_null' as const) : ('not_applicable' as const),
+    deferrable: 'unknown',
+    initially_deferred: 'unknown',
+    enforced: 'yes',
+    validated: 'unknown',
+  })),
+};
+const cap = {
+  contract_version: '0.5.0',
+  features: ['table_structure'],
+  mutations: false,
+  max_objects_per_section: 1024,
+  max_terms: 8192,
+  timeout_ms: 10000,
+};
+const input = { driver: 'sqlite' as const, database: 'synthetic' };
+describe('read-only structure contract and compatibility', () => {
+  it('pins exact released contract bytes and namespace-fix backend', () => {
+    const provenance = JSON.parse(
+      readFileSync(new URL('./contract/v5/provenance.json', import.meta.url), 'utf8'),
+    );
+    expect(provenance.source_commit).toBe('ac9542d81e6f096626c24bc1e0cb9bccb3a62a7c');
+    expect(
+      createHash('sha256')
+        .update(readFileSync(new URL('./contract/v5/api-v0.5.0.json', import.meta.url)))
+        .digest('hex'),
+    ).toBe('b5225339511d80fe4f52f09118fdad2060d8a92f31d44b73dd89fe9f76178c95');
+  });
+  it('keeps same-name constraint kinds distinct and orders explicit term positions without mutating source', async () => {
+    const requests: { path: string; body: unknown }[] = [];
+    const client = new StructureClient(
+      new ApiClient(async (path, init) => {
+        requests.push({
+          path: String(path),
+          body: init?.body ? JSON.parse(String(init.body)) : undefined,
+        });
+        return new Response(JSON.stringify(requests.length === 1 ? cap : syntheticStructure));
+      }),
+    );
+    const result = await client.read(
+      input,
+      syntheticStructure.table,
+      'synthetic-token',
+      new AbortController().signal,
+    );
+    expect(result.constraints.map((item) => item.kind)).toEqual(['unique', 'foreign_key', 'check']);
+    expect(result.indexes[0].terms.map((term) => term.position)).toEqual([1, 2, 3, 4]);
+    expect(syntheticStructure.indexes[0].terms[0].position).toBe(2);
+    expect(requests.map((item) => item.path)).toEqual([
+      '/api/v5/capabilities',
+      '/api/v5/tables/structure',
+    ]);
+    expect(requests[1].body).toEqual({ connection: input, table: syntheticStructure.table });
+    expect(JSON.stringify(requests[1].body)).not.toContain('sql');
+  });
+  it('missing v5 routes produce a local compatibility message without a structure POST', async () => {
+    let count = 0;
+    const client = new StructureClient(
+      new ApiClient(async () => {
+        count++;
+        return new Response('Not Found', { status: 404 });
+      }),
+    );
+    await expect(
+      client.read(input, syntheticStructure.table, 'token', new AbortController().signal),
+    ).rejects.toMatchObject({ code: 'unsupported_feature' });
+    expect(count).toBe(1);
+  });
+  it('rejects fabricated SQL, contradictory unknown flags and incomplete known metadata', () => {
+    expect(() =>
+      validateStructure('TableStructure', { ...syntheticStructure, ddl: 'private-definition' }),
+    ).toThrow();
+    const term = syntheticStructure.indexes[0].terms[1];
+    expect(() => validateStructure('IndexTerm', { ...term, collation_state: 'unknown' })).toThrow();
+    expect(() => validateStructure('IndexTerm', { ...term, prefix_length: undefined })).toThrow();
+    expect(() =>
+      validateStructure('StructureConstraint', {
+        ...syntheticStructure.constraints[0],
+        columns_known: false,
+      }),
+    ).toThrow();
+  });
+  it('rejects mismatched object identity and duplicate term positions', async () => {
+    for (const data of [
+      { ...syntheticStructure, table: { name: 'other' } },
+      {
+        ...syntheticStructure,
+        indexes: [
+          {
+            ...syntheticStructure.indexes[0],
+            terms: [syntheticStructure.indexes[0].terms[0], syntheticStructure.indexes[0].terms[0]],
+          },
+        ],
+      },
+    ]) {
+      let count = 0;
+      const client = new StructureClient(
+        new ApiClient(async () => new Response(JSON.stringify(++count === 1 ? cap : data))),
+      );
+      await expect(
+        client.read(input, syntheticStructure.table, 'token', new AbortController().signal),
+      ).rejects.toMatchObject({ code: 'invalid_response' });
+    }
+  });
+  it('never equates unknown or partial coverage with false or completeness', () => {
+    expect(stateLabel('unknown')).toBe('Unbekannt');
+    expect(stateLabel('no')).toBe('Nein');
+    expect(stateLabel('not_applicable')).toBe('Nicht anwendbar');
+    expect(coverageLabel('catalog')).toBe('Katalogangaben');
+    expect(coverageLabel('partial')).toBe('Teilweise erfasst');
+    expect(coverageLabel('unavailable')).toBe('Nicht verfügbar');
+  });
+});
