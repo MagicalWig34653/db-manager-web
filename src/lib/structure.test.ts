@@ -71,8 +71,15 @@ describe('read-only structure contract and compatibility', () => {
     expect(() =>
       validateStructure('TableStructure', { ...syntheticStructure, ddl: 'private-definition' }),
     ).toThrow();
+    expect(() =>
+      validateStructure('TableStructure', { ...syntheticStructure, coverage: null }),
+    ).toThrow();
+    expect(() =>
+      validateStructure('TableStructure', { ...syntheticStructure, indexes: null }),
+    ).toThrow();
     const term = syntheticStructure.indexes[0].terms[1];
     expect(() => validateStructure('IndexTerm', { ...term, collation_state: 'unknown' })).toThrow();
+    expect(() => validateStructure('IndexTerm', { ...term, collation: null })).toThrow();
     expect(() => validateStructure('IndexTerm', { ...term, prefix_length: undefined })).toThrow();
     expect(() =>
       validateStructure('StructureConstraint', {

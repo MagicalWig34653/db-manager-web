@@ -308,3 +308,9 @@ unverändert; die zusätzlichen eigenen Produkt-/Testdateien sind AGPL-3.0-only.
 Der lokale Ergebnisexport benötigt keine neuen Abhängigkeiten. Lockfile und
 Originallizenzen bleiben unverändert. Eigene Helper/Komponenten/Tests sind
 AGPL-3.0-only; keine Änderung kopierter Registry-Lizenztexte.
+
+## F5-Nachtrag
+
+Lesende Strukturkomponente und fünfter Standalonevalidator führen keine neuen
+Abhängigkeiten ein. Lockfile und Originaltexte unverändert; eigener Produkt-/Testcode
+AGPL-3.0-only. Vorherige Vertragsvalidatoren bleiben bytegleich.
