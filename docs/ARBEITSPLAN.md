@@ -63,3 +63,9 @@ Abnahme: reine Grenz-/Formatprüfungen, echte SQLite-/PG-Downloads mit Inhaltsbe
 Umfang/Trunkierung/Seitenstatus und Requestzählung, Source-/Tokenwechsel/CSP, bestehende
 CRUDregression, frischeröffentlicherBuild undCI. UnabhängigeQA vorIntegration;
 RootpinF6b bleibt separatesPaket. Frist heute23.10.2026 10:00Berlin.
+
+F6-Autorenabschluss:1e2fbb6 öffentlich,34Units/Typecheck/Format/vierVerträge/Build/
+Originalnotices sowie8echteDownload-/CRUD-/Pagingbrowserfälle und6LegacySQL-/2CSP-
+Browserfälle grün. SaubereröffentlicherBuild bestanden; finaleFrontend-/EchtCIaktiv,
+Docsgrün. UnabhängigeQA alsnächstes; keineSelbstintegration oderRootpinänderung.
+DateibesitzWebSTATUS/Plan bleibt bisLeadneuzuweisungexklusiv;Workerjetztidle.

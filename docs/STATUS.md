@@ -88,3 +88,10 @@ sechsLegacySQLbrowser undzweiProduktionsCSPfälle grün. Acht echteSQLite-/PGver
 Browserfälle inklusive tatsächlicherDownloadinhalte, Requestzählung, Trunkierung/
 Seitenumfang, BlobURL-/Tokenwechsel und bestehenderCRUD-/Konflikt-/Unknownregression
 bestanden. NochkeineunabhängigeQA/Integration; öffentlicherBuild/CI folgen.
+
+F6 zur unabhängigenQA bereit: öffentlicherKandidat1e2fbb6, HandoffF6. Acht echteFälle
+inklusiveDateiinhaltsprüfung erstnach sofortigemTokenwechsel/BlobURLwiderruf in16,4s
+grün. Frischeröffentlicher893Checkout npmci/Typecheck34Units/Format/Verträge/Build/
+Originalnotices/Docs118/0 bestanden;1e2 ergänzt nur engenBrowsertest. FinaleCI:
+Docs39903194991success, Frontend39903195022 undEchte39903194959aktiv. Keineoffenen
+lokalenJobs/Ressourcen. KeineeigeneFreigabe/Integration;RootpinF6b separat.
