@@ -151,3 +151,11 @@ frischeröffentlicherCheckout npmci/Typecheck46Units/Format/5Verträge/Build/
 Originalnotices/Docs131grün. DocsCI39906592961success, Frontend39906593011 und
 Echte39906592949aktiv. Keine lokalen Jobs/Ressourcen. Code eingefroren;
 Webintegration und gemeinsamer RootpinF5b erst nach Annahme und gezielter Freigabe.
+
+F5-Folgecheckpoint87751cc ersetzt den vorigen Teststand: erste Linux-EchtCI hatte
+allein einen CDP-Bodybeobachtungsfehler im SQLite-Test (9weitereFällegrün), kein
+Produktfehler daraus abgeleitet. Echte unabhängige APIprobe nach gerenderter UI ersetzt
+nur die fragile Bodybeobachtung; sämtliche fachlichen Assertions bleiben erhalten.
+Produktbytes seitf407 unverändert, volle lokale10erSerie erneut18,3sgrün. Exakte
+neue Docs39906977828success, Frontend39906977846/Echte39906977849aktiv. Unabhängiger
+Review und diese neue CI bleiben Gates. Keine eigene Freigabe oder Rootintegration.

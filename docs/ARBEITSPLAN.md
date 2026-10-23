@@ -103,3 +103,8 @@ aktuellen Prüfstand verwenden. Rootpaket F5b(F5+F6) bleibt eigenes Gate nach An
 F5-Übergabe: Kandidatf407e5b unverändert, saubereröffentlicherBuild abgeschlossen,
 exakte CIs/nochoffeneReviewgates imHandoff. Frontend & UX gibt aktiven Slot für
 unabhängigen Peerreview frei. Keine eigene Integration/Rootpinänderung.
+
+F5 aktueller Reviewkandidat87751cc: enger Testbeobachtungsfix nach Linux-CDPfehler,
+keine Produktänderung.10echteLokalfälle erneutgrün; neue exakte CIs/Status imHandoff.
+Lead übernimmtRemoteMonitoring, Workeridle für unabhängigenPeer. f407-EchtCIrot
+nicht als Erfolg zählen; vor Annahme aktuelle Serie prüfen.
