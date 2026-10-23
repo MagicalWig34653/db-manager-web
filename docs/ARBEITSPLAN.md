@@ -94,3 +94,8 @@ Prioritätscheckpoint: F5 jetzt WIP sichern und Slot für Swift/TestFlight freig
 Client/Komponente/v5-Kopie vorhanden;41Units grün,2 Testfixturefehler bekannt.
 Nach neuer Aktivierung diese korrigieren, dann echte Struktur-/Legacyprüfungen und
 unabhängige QA. Keine F5-Freigabe oder gemeinsamer Rootpin vor diesem Gate.
+
+F5-Autorenabschluss:46Units und zehn echte SQLite-/PG-TLS-Browserfälle grün, bestehende
+CRUD/F6/CSP/Sessionpfade erhalten. Code und Vertrag eingefroren; jetzt frischer
+öffentlicher Build, exakte CIs und unabhängiger Peerreview. Historischen WIP nicht als
+aktuellen Prüfstand verwenden. Rootpaket F5b(F5+F6) bleibt eigenes Gate nach Annahme.

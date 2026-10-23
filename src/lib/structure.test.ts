@@ -115,6 +115,38 @@ describe('read-only structure contract and compatibility', () => {
       ).rejects.toMatchObject({ code: 'invalid_response' });
     }
   });
+  it('enforces the aggregate term bound across individually valid index arrays', async () => {
+    for (const count of [8, 9]) {
+      const data = {
+        ...syntheticStructure,
+        indexes: Array.from({ length: count }, (_, index) => ({
+          ...syntheticStructure.indexes[0],
+          name: `index-${index}`,
+          terms: Array.from({ length: 1024 }, (_, position) => ({
+            ...syntheticStructure.indexes[0].terms[0],
+            position: position + 1,
+          })),
+        })),
+      };
+      let calls = 0;
+      const client = new StructureClient(
+        new ApiClient(
+          async () =>
+            new Response(JSON.stringify(++calls === 1 ? cap : data), {
+              headers: { 'Content-Type': 'application/json' },
+            }),
+        ),
+      );
+      const request = client.read(
+        input,
+        syntheticStructure.table,
+        'token',
+        new AbortController().signal,
+      );
+      if (count === 8) expect((await request).indexes).toHaveLength(8);
+      else await expect(request).rejects.toMatchObject({ code: 'invalid_response' });
+    }
+  });
   it('never equates unknown or partial coverage with false or completeness', () => {
     expect(stateLabel('unknown')).toBe('Unbekannt');
     expect(stateLabel('no')).toBe('Nein');

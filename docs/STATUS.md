@@ -132,3 +132,16 @@ und erste Units vorhanden. Erster Unitlauf41grün/2rote Testfixturefehler (fileU
 JSDOMkontext und fehlender JSON-Content-Type). Kein fertiger F5-Check, keine Browser-/
 Build-/CI-/QAfreigabe. Details und nächste Schritte: [F5-Handoff](handoffs/F5.md).
 F6-Main204cb07: alle drei neuen CIs inzwischen success. Keine Rootpinänderung.
+
+## F5 – aktueller Autorenabschluss, noch unabhängiger Review erforderlich
+
+Der historische WIP ist fortgesetzt. Lesende Index-/Constraintkomponente mit exakter
+akzeptierter API0.5-Kopie und Backendac9542d ist implementiert.46Units/Typecheck0/0,
+fünf Typ-/Standaloneprüfungen, Format/Build/Docs131/0, sechs alte SQL-/Sessionbrowser-
+und zwei Produktions-CSP-/Sourcefälle bestanden. Zehn echte SQLite-/PGverify-full-
+Browserfälle21,8s einschließlich F5 Partial/Expression/Include/FK/CHECK/Unknown,
+Views/404grenze und verspäteter Antwort nach Tokenwechsel sowie aller bestehenden
+F6-/CRUD-/Konflikt-/Unknown-/F3-Pagingfälle grün. Kein MySQL/MariaDB-UI-Livenachweis;
+entsprechende Renderzustände nur als synthetische Units geprüft.
+Öffentlicher Cleanbuild/CI und unabhängige QA folgen. Code eingefroren, keine Root-
+oder B4-Änderung, keine gemeinsame F5b-Einbettung vor ausdrücklicher Abnahme.
