@@ -51,13 +51,22 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByRole('tab', { name: /Struktur/ }).click();
     const actualResponse = await response;
     expect(actualResponse.status()).toBe(200);
-    const actual = await actualResponse.json();
     const panel = page.getByRole('region', { name: 'Index- und Constraintstruktur', exact: true });
     const expression = panel.getByRole('article', {
       name: 'Index f5_expression_partial',
       exact: true,
     });
     await expect(expression).toBeVisible();
+    // Read the real catalog independently after the UI has consumed its response;
+    // Avoid depending on the lifetime of Chromium CDP's response-body cache.
+    const observed = structureRequests[0] as { connection: unknown; table: unknown };
+    const probe = await page.request.post('/api/v5/tables/structure', {
+      headers: { Authorization: 'Bearer ' + config.token },
+      data: observed,
+    });
+    expect(probe.status()).toBe(200);
+    const actual = await probe.json();
+
     await expect(
       expression.getByText('Ausdruck (Definition nicht geliefert)', { exact: true }),
     ).toBeVisible();
