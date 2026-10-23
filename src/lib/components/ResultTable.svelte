@@ -1,15 +1,19 @@
 <script lang="ts">
+  import ExportControls from './ExportControls.svelte';
+  import type { ExportScope } from '$lib/export';
   import { Binary, Check, Copy } from '@lucide/svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { displayCell, isNumeric, type DisplayCell, type DisplayResult } from '$lib/workbench';
   let {
     result,
+    exportScope,
     onedit,
     ondelete,
     actionsDisabled = false,
   }: {
     result: DisplayResult;
+    exportScope?: ExportScope;
     onedit?: (index: number) => void;
     ondelete?: (index: number) => void;
     actionsDisabled?: boolean;
@@ -30,6 +34,7 @@
 </script>
 
 {#if result.columns.length > 0}
+  {#if exportScope}{#key result}<ExportControls {result} scope={exportScope} />{/key}{/if}
   <div class="table-scroll" role="region" aria-label="Abfrageergebnis, horizontal scrollbar">
     <table class="result-table">
       <thead

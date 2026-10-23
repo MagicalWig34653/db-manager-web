@@ -575,6 +575,7 @@
               </div>{/if}
             {#if currentResult}<ResultTable
                 result={currentResult}
+                exportScope={{ kind: 'sql_result' }}
               />{#if currentResult.truncated}<div class="limit-note" role="status">
                   <TriangleAlert size={16} /><span
                     >Ergebnis begrenzt. Es werden höchstens {rowLimit.toLocaleString('de-DE')} Zeilen

@@ -346,6 +346,12 @@
 </div>
 <ResultTable
   result={display}
+  exportScope={{
+    kind: 'table_page',
+    offset: result.offset,
+    page_size: result.page_size,
+    has_more: result.has_more,
+  }}
   onedit={editAllowed && !needsReload ? (index) => begin('update', index) : undefined}
   ondelete={editAllowed && !needsReload ? (index) => begin('delete', index) : undefined}
   actionsDisabled={busy}

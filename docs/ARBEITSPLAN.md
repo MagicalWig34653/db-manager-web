@@ -50,3 +50,16 @@ isolierter DinD-Swarm mit tatsächlichem Schreibpfad, SQLite-Neustart-/Taskersat
 Keine DB-/Core-/HTTP-/GoMod-/Vertragsänderung, kein Verbrauch des neuen API0.5-Kandidaten.
 Unabhängige QA vor Rootintegration. WebSTATUS/ARBEITSPLAN für dieses Release exklusiv
 Frontend & UX zugewiesen; Lead koordiniert ohne Dateischreiben.
+
+## F6 – begrenzter lokaler Ergebnisexport
+
+`feat/result-export` abbf75748, eigener Worktree. Besitz Helper/Komponente/enge Ergebnis-
+anbindung/Tests/Doku/Handoff sowie exklusiv WebSTATUS/Plan. JSONversion1 bevorzugt,
+CSVroh oder offengelegt präfixiert, unquotedNULL\N versus quotedTextmarker, keine
+gewöhnlicheCSV-Roundtrip-/Excel-Sicherheitsgarantie. Tatsächlicher Snapshot ohne
+Clientstate/SQL/Token/Profile, nur expliziterDownload,8MiB fertigeBytes vorBlobURL,
+saubererURL-/Sessionlebenszyklus. Keine API-/Root-/Apple-/0.5-/Dependencyänderung.
+Abnahme: reine Grenz-/Formatprüfungen, echte SQLite-/PG-Downloads mit Inhaltsbeleg,
+Umfang/Trunkierung/Seitenstatus und Requestzählung, Source-/Tokenwechsel/CSP, bestehende
+CRUDregression, frischeröffentlicherBuild undCI. UnabhängigeQA vorIntegration;
+RootpinF6b bleibt separatesPaket. Frist heute23.10.2026 10:00Berlin.

@@ -70,3 +70,15 @@ Rootartefakte, tatsächliche CRUD-Compose-/isolierte-Swarm-Persistenz und unabh�
 QA stehen dafür separat aus. Neue Web-main-CIs nach Integration kontrollieren.
 Lead koordiniert; Frontend & UX besitzt für dieses Release exklusiv diese beiden
 Web-Status-/Planungsdateien. Keine weiteren Produktänderungen nach Quellpin.
+
+## F6 – lokaler Ergebnisexport, Prüfkandidat
+
+Stand23.10.2026: eigener Branch `feat/result-export`, Basisbf75748. JSON mit
+versioniertem explizitem Snapshot erhält geordnete doppelte Spalten und getaggte
+Zellen; CSV mit offengelegter NULL-/Quote-/Typverlustkonvention sowie bewusst gewählter
+Apostroph-/Rohwertvariante. Ausschließlich expliziter lokaler Download des aktuell
+angezeigten SQLergebnisses oder geladenen Seitenumfangs, keine neue DBabfrage.
+Keine Credentials-/SQL-/Profilserialisierung oder Persistenz. Limit8MiB fertigeUTF8Bytes.
+Frontend & UX besitzt exklusiv diese WebSTATUS/Plan-Dateien. Implementierung und reine
+Tests vorhanden; echte Browserdownloads, sauberer Build/CI und unabhängige QA folgen.
+Kein Rootpin/API0.5-Verbrauch. [Handoff](handoffs/F6.md).
