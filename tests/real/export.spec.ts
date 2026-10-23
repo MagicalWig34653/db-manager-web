@@ -149,6 +149,9 @@ for (const driver of ['sqlite', 'postgresql']) {
       'scope',
       'truncated',
     ]);
+    const started = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Ergebnis herunterladen', exact: true }).click();
+    const pendingFile = await started;
     await page.getByRole('button', { name: 'Backend-Zugang' }).click();
     await page.getByLabel('Zugriffstoken').fill(config.invalidToken);
     await page.getByRole('button', { name: 'Übernehmen' }).click();
@@ -156,6 +159,7 @@ for (const driver of ['sqlite', 'postgresql']) {
     expect(
       await page.evaluate(() => (window as unknown as { exportURLs: Set<string> }).exportURLs.size),
     ).toBe(0);
+    expect(JSON.parse(readFileSync((await pendingFile.path())!, 'utf8'))).toEqual(paged);
     expect(await page.evaluate(() => window.cspViolations)).toEqual([]);
   });
 }
