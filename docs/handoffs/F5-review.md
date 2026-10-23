@@ -7,15 +7,17 @@ Stand: 23.10.2026. Reviewer ist nicht F5-Autor. Eigener Worktree
 unverändert; der spätere CDP-Beobachtungsfix ändert nur Test und Dokumentation.
 Keine Produktdatei vom Reviewer geändert.
 
-## Urteil des Erstreviews
+## Endurteil nach gezielter Fixnachprüfung
 
-Ein bestätigter **niedriger Darstellungsbefund QA-F5-01** ist offen. Vor der
-Quellfreigabe ist eine gezielte Korrektur/Nachprüfung vorgesehen. Alle anderen
-hier geprüften Kriterien bestanden; kein bestätigter Datenintegritäts- oder
-Sicherheitsbefund. Keine Root-Einbettungs-, AllDB-Browser-, DDL- oder
-Gesamtparitätsfreigabe aus diesem Review.
+**F5 ist im geprüften begrenzten Umfang ohne offene Findings freigegeben.**
+Der anfänglich niedrige Darstellungsbefund QA-F5-01 ist am unveränderten öffentlichen
+Fixcommit `8ef738d22a1164291e2c8183d80e72d1f043c0f8` unabhängig geschlossen;
+alle drei exakten Fix-CIs sind tatsächlich erfolgreich. Diese unveränderliche
+Webquelle darf integriert und für das separat zu prüfende Rootpaket F5b(F5+F6)
+gepinnt werden. Kein Root-Einbettungs-/Deployment-, AllDB-Browser-, DDL- oder
+Gesamtparitätsnachweis daraus. Erstreview und genaue Fixnachweise folgen getrennt.
 
-## QA-F5-01 – bekannte leere Spaltennamen werden unsichtbar
+## Historischer Befund QA-F5-01 – inzwischen geschlossen
 
 Echte eigene SQLite-Probe über den tatsächlichen gepinnten Go-Server:
 
@@ -123,3 +125,64 @@ entfernt. Nur dieser Reviewhandoff wird committed.
 Nächster Schritt: Autor korrigiert QA-F5-01 eng mit zunächst roter Regression;
 unabhängige enge Nachprüfung und genaue neue CI vor Quellfreigabe. Erst danach
 separate Webintegration und Rootpaket F5b(F5+F6) nach Leadfreigabe.
+
+## Gezielte unabhängige Fixnachprüfung QA-F5-01
+
+Geprüfter öffentlicher Produktfix:
+`8ef738d22a1164291e2c8183d80e72d1f043c0f8`, reiner Autorenhandoff `a5c687f`.
+Die Prüfung erfolgte im eigenen Reviewworktree vorübergehend auf dem exakten
+unveränderten Fixcommit, anschließend zurück auf diesem Reviewbranch.
+
+**QA-F5-01 ist fachlich geschlossen.** Bekannte Spaltenlisten und Objekt-/
+Schemareferenzen verwenden explizite JSONzitierte Bezeichner. Leere Namen,
+Anführungszeichen und Separatoren bleiben sichtbar. „Unbekannt“ und eine
+bekannte leere Liste „Keine Spalten“ bleiben verschiedene Zustände. Der Fix
+ändert ausschließlich die neue F5-Darstellung und entsprechende Regressionen;
+keine SQL-Erzeugung, Vertrags-/Dependency-/F6-/CRUDänderung.
+
+Unabhängig bestanden:
+
+- Elf gezielte Helper-/Komponententests: bestehende Client-/Validator-/Lifecycle-
+  und neue Darstellungsfälle sowie eigene zusätzliche Roundtripvektoren für
+  leere Namen, Komma, Anführungszeichen, Punktseparator, Zeilenumbruch,
+  Backslash, HTMLzeichen und Unicode. `JSON.parse(identifierLabel(value))`
+  ergibt denselben Wert; fehlendes Schema und bekanntes leeres Schema bleiben
+  erkennbar. Temporäre eigene Probe anschließend entfernt.
+- Typecheck0Fehler/0Warnungen.
+- Genau ein gefilterter echter SQLite-Struktur-Browserfall aus dem vorhandenen
+  Runner (1/1,1,6s) mit dem öffentlichen Backendac9542d und tatsächlicher
+  `CREATE TABLE f5_empty_identifier("" TEXT PRIMARY KEY NOT NULL)`-Fixture.
+  Die ursprüngliche PK-Leernamegegenprobe zeigt jetzt `""` statt leerem Wert.
+  Partial-/Expression-/FK-/Coverage-/404-/Sessionassertions desselben Falls
+  bleiben grün. Der Runner baut zusätzlich seine kleine PG-TLS-Fixture und
+  prüft positiveTLS/falschenHost; daraus wird kein erneut gelaufener
+  PostgreSQLbrowserfall behauptet. Keine unnötige Wiederholung der vollständigen
+  alten Zehner-Serie.
+- Alle eigenen Fixturecontainer/Volumes/Server-/Browserprozesse, Token-/
+  Passwortdateien und temporären Backendclones wieder entfernt. Kein laufender
+  eigener Job und kein belegter Heavytestslot.
+
+Exakte Fix-CIs: Dokumentation39908165711 und echteBrowser39908165925 sind
+unabhängig `completed/success` auf8ef738d bestätigt. Frontend39908165762 ist
+beim Zwischencheckpoint noch `in_progress`: Node24 vollständig erfolgreich;
+Node22 nach bereits grünen Units/Typen/Build/Docs noch im echten
+Playwright-/OS-Paketinstallationsschritt. Kein vorweggenommener Gesamt-CIerfolg,
+kein Neustart eines nachweislich aktiven Jobs. Finale Quellfreigabe folgt erst
+nach tatsächlichem Abschluss dieses unveränderten Gates.
+
+
+### Abschließendes exaktes CI-Gate
+
+Der oben ausdrücklich noch aktive Frontendlauf ist inzwischen ebenfalls
+`completed/success` am identischen Fix-SHA8ef738d; beide Node22-/Node24-Jobs
+sind tatsächlich erfolgreich. Kein Rerun und keine Produktänderung für diesen
+Abschluss. Damit alle drei exakten Fix-CIs unabhängig bestätigt:
+
+- [Frontend39908165762](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39908165762)
+- [Echte Browser39908165925](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39908165925)
+- [Dokumentation39908165711](https://github.com/MagicalWig34653/db-manager-web/actions/runs/39908165711)
+
+Endgültige Quellfreigabe: `8ef738d22a1164291e2c8183d80e72d1f043c0f8`.
+Keine eigenen lokalen Jobs, Fixturecontainer/Volumes oder privaten Testdaten
+verbleiben. Nur dieser unabhängige Reviewhandoff wird geändert; zentrale
+Statusdateien und Produktdateien bleiben unangetastet.
