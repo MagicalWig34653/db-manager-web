@@ -302,3 +302,9 @@ PostgreSQL18.6 ist eine isolierte Testfixture und kein Teil des Webartefakts.
 Der Zeileneditor und die zusätzlichen Vertragsvalidatoren führen keine neuen
 Abhängigkeiten ein. Lockfile, Original-Lizenztexte und Fremdcodezuordnung bleiben
 unverändert; die zusätzlichen eigenen Produkt-/Testdateien sind AGPL-3.0-only.
+
+## F6-Nachtrag
+
+Der lokale Ergebnisexport benötigt keine neuen Abhängigkeiten. Lockfile und
+Originallizenzen bleiben unverändert. Eigene Helper/Komponenten/Tests sind
+AGPL-3.0-only; keine Änderung kopierter Registry-Lizenztexte.

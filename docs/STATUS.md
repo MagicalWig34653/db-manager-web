@@ -70,3 +70,36 @@ Rootartefakte, tatsächliche CRUD-Compose-/isolierte-Swarm-Persistenz und unabh�
 QA stehen dafür separat aus. Neue Web-main-CIs nach Integration kontrollieren.
 Lead koordiniert; Frontend & UX besitzt für dieses Release exklusiv diese beiden
 Web-Status-/Planungsdateien. Keine weiteren Produktänderungen nach Quellpin.
+
+## F6 – lokaler Ergebnisexport, Prüfkandidat
+
+Stand23.10.2026: eigener Branch `feat/result-export`, Basisbf75748. JSON mit
+versioniertem explizitem Snapshot erhält geordnete doppelte Spalten und getaggte
+Zellen; CSV mit offengelegter NULL-/Quote-/Typverlustkonvention sowie bewusst gewählter
+Apostroph-/Rohwertvariante. Ausschließlich expliziter lokaler Download des aktuell
+angezeigten SQLergebnisses oder geladenen Seitenumfangs, keine neue DBabfrage.
+Keine Credentials-/SQL-/Profilserialisierung oder Persistenz. Limit8MiB fertigeUTF8Bytes.
+Frontend & UX besitzt exklusiv diese WebSTATUS/Plan-Dateien. Implementierung und reine
+Tests vorhanden; echte Browserdownloads, sauberer Build/CI und unabhängige QA folgen.
+Kein Rootpin/API0.5-Verbrauch. [Handoff](handoffs/F6.md).
+
+F6 lokaler Prüfcheckpoint:34Units/Typecheck0/0/vierVerträge/Standalone/Format/Docs118/0,
+sechsLegacySQLbrowser undzweiProduktionsCSPfälle grün. Acht echteSQLite-/PGverify-full-
+Browserfälle inklusive tatsächlicherDownloadinhalte, Requestzählung, Trunkierung/
+Seitenumfang, BlobURL-/Tokenwechsel und bestehenderCRUD-/Konflikt-/Unknownregression
+bestanden. NochkeineunabhängigeQA/Integration; öffentlicherBuild/CI folgen.
+
+F6 zur unabhängigenQA bereit: öffentlicherKandidat1e2fbb6, HandoffF6. Acht echteFälle
+inklusiveDateiinhaltsprüfung erstnach sofortigemTokenwechsel/BlobURLwiderruf in16,4s
+grün. Frischeröffentlicher893Checkout npmci/Typecheck34Units/Format/Verträge/Build/
+Originalnotices/Docs118/0 bestanden;1e2 ergänzt nur engenBrowsertest. FinaleCI:
+Docs39903194991success, Frontend39903195022 undEchte39903194959aktiv. Keineoffenen
+lokalenJobs/Ressourcen. KeineeigeneFreigabe/Integration;RootpinF6b separat.
+
+QA-F6-01 (niedrig) aus unabhängigem Reviewcd384326: CSV-Steuerzeichen-/Consumergrenze.
+Enger Autorenfix298d080/294bf07 lehnt C0 außer CR/LF, DEL und C1 in Headern/Werten
+beider CSVvarianten vor Blob/Download ab; empfiehlt unverändertes JSON. Zunächst
+rote Regression am unveränderten Code gesichert.37Units/Typecheck/Format/Verträge/
+Build/Docs118/0 und8echteSQLite-/PG-Browserfälle15,9s grün; JSON exakt, CSV-CR/LF/
+Quotes/Literalmarker erhalten. Code eingefroren; unabhängige P0-Nachprüfung und
+exakte Fix-CI offen. Keine Selbstschließung des Findings, kein neuer Rootpin.

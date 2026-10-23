@@ -20,3 +20,9 @@ vor `npm run build` committen. Gemeinsame Anforderungen und Verträge liegen im
 - [Agent-Einstieg](AGENTS.md), [Claude Code](CLAUDE.md)
 - [Status](docs/STATUS.md), [Arbeitsplan](docs/ARBEITSPLAN.md)
 - [Einrichtung](EINRICHTUNG.md), [Lizenz](LICENSE)
+
+F6-Prüfkandidat: „Ergebnis herunterladen“ exportiert ausschließlich das aktuell
+angezeigte SQLergebnis oder die geladene Tabellenseite, ohne neue DBabfrage. JSON
+bewahrt getaggte Werte und doppelte Spaltennamen. CSV bietet ausdrücklich gewählte
+Apostroph-/Rohwertvarianten mit Typverlust-/Formelhinweisen. Kein vollständiger
+Tabellendump. Format, Prüfstand und Grenzen: [F6](docs/handoffs/F6.md).
