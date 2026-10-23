@@ -26,3 +26,8 @@ angezeigte SQLergebnis oder die geladene Tabellenseite, ohne neue DBabfrage. JSO
 bewahrt getaggte Werte und doppelte Spaltennamen. CSV bietet ausdrücklich gewählte
 Apostroph-/Rohwertvarianten mit Typverlust-/Formelhinweisen. Kein vollständiger
 Tabellendump. Format, Prüfstand und Grenzen: [F6](docs/handoffs/F6.md).
+
+F5-Prüfkandidat erweitert „Struktur“ um lesende Index-/Constraintangaben auf API0.5:
+Termpositionen/-rollen, Teil-/Ausdrucksindexe, INCLUDE, PK/UNIQUE/FK/CHECK und explizite
+Katalogabdeckung. Keine DDL oder erfundenen Definitionen. Ältere Backends behalten die
+Spaltenstruktur; Details und tatsächliche Enginegrenzen: [F5](docs/handoffs/F5.md).

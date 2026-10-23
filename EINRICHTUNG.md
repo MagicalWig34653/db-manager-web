@@ -226,3 +226,27 @@ CR/LF sowie DEL U+007F und C1 U+0080–U+009F in Headern und Werten vor dem Down
 Dazu zählen NUL, SOH und TAB. Keine stille Ersetzung oder Abschneidung; stattdessen
 unverändertes JSON exportieren. CR/LF, Quotes und druckbares Unicode bleiben gemäß
 UTF8-/Quoteprofil erhalten. JSON bewahrt auch die genannten Steuerzeichen exakt.
+
+## Lesende Index-/Constraintstruktur (F5-Prüfkandidat)
+
+Objekt öffnen und „Struktur“ auswählen. Die bestehende Spaltenansicht bleibt erhalten;
+Indexe/Constraints werden separat aus der akzeptierten API0.5 gelesen. „Erweiterte
+Struktur neu laden“ aktualisiert ausschließlich Katalogmetadaten. Fehlende v5-Routen
+oder nicht unterstützte Objektarten sperren diesen Zusatz, nicht den SQL-/v2-Betrieb.
+Keine DDL, keine automatische FK-Navigation und keine Ausdrucks-/CHECK-SQLdefinitionen.
+
+Indexterms werden nach gemeldeter Position geordnet. Schlüssel-, INCLUDE- und
+Hilfsterme, Spalte/Ausdruck/rowid/unknown, Richtung, Kollation und Präfix werden getrennt
+gezeigt. Bei Präfixlängen bleibt die Einheit ausdrücklich unbekannt, wenn der Server
+sie nicht belegt. Ja/Nein/Unbekannt/Nicht anwendbar sind verschiedene Angaben.
+Constraints gleichen Namens und unterschiedlichen Typs bleiben getrennt. FK-Ziel und
+Aktionen sowie Aufschiebbarkeit/Durchsetzung/Validierung stammen aus tatsächlichen
+Metadaten. „Katalogangaben“ ist keine Vollständigkeits- oder atomare Snapshotzusage;
+„Teilweise erfasst“/„Nicht verfügbar“ sind keine Aussage, dass keine Objekte existieren.
+SQLite liefert CHECK-Metadaten nicht über diesen Pfad; die Lücke bleibt sichtbar.
+
+Vertragskopie/Provenienz unter `src/lib/contract/v5/`; Backendpin
+`ac9542d81e6f096626c24bc1e0cb9bccb3a62a7c` enthält den unabhängig angenommenen
+Constraint-Namensraumfix. Alle fünf Generierungs-/Byteprüfungen sind in den bestehenden
+Skripten enthalten; keine zusätzlichen Abhängigkeiten. Echte Browsernachweise in F5
+beziehen sich auf SQLite und PostgreSQL verify-full, nicht auf alle angebotenen Treiber.

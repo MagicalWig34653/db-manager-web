@@ -12,6 +12,7 @@
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import StructurePanel from './StructurePanel.svelte';
   import RowWorkspace from './RowWorkspace.svelte';
   import type { WritePhase } from '$lib/rows';
   import { toConnection, ApiError } from '$lib/api';
@@ -271,6 +272,7 @@
           >
         </table>
       </div>
+      <StructurePanel {connection} {table} {token} />
     {:else}
       <form
         class="table-controls"

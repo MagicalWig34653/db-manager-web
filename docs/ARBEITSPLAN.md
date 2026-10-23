@@ -89,3 +89,28 @@ Vertragskopien/Build/Tests/Doku/HandoffF5 und exklusivSTATUS/Plan; keineRoot/App
 Dateien, keinDDL. EchteSQLite/PG-TLS-Proben, Unitrepräsentationen für weitereTreiber,
 keine pauschaleAllDBbehauptung. LegacyCRUD/F6/Session/CSP erhalten, frischeröffentlicher
 Build/CI und unabhängigeQA vorIntegration. Frist heute10Berlin.
+
+Prioritätscheckpoint: F5 jetzt WIP sichern und Slot für Swift/TestFlight freigeben.
+Client/Komponente/v5-Kopie vorhanden;41Units grün,2 Testfixturefehler bekannt.
+Nach neuer Aktivierung diese korrigieren, dann echte Struktur-/Legacyprüfungen und
+unabhängige QA. Keine F5-Freigabe oder gemeinsamer Rootpin vor diesem Gate.
+
+F5-Autorenabschluss:46Units und zehn echte SQLite-/PG-TLS-Browserfälle grün, bestehende
+CRUD/F6/CSP/Sessionpfade erhalten. Code und Vertrag eingefroren; jetzt frischer
+öffentlicher Build, exakte CIs und unabhängiger Peerreview. Historischen WIP nicht als
+aktuellen Prüfstand verwenden. Rootpaket F5b(F5+F6) bleibt eigenes Gate nach Annahme.
+
+F5-Übergabe: Kandidatf407e5b unverändert, saubereröffentlicherBuild abgeschlossen,
+exakte CIs/nochoffeneReviewgates imHandoff. Frontend & UX gibt aktiven Slot für
+unabhängigen Peerreview frei. Keine eigene Integration/Rootpinänderung.
+
+F5 aktueller Reviewkandidat87751cc: enger Testbeobachtungsfix nach Linux-CDPfehler,
+keine Produktänderung.10echteLokalfälle erneutgrün; neue exakte CIs/Status imHandoff.
+Lead übernimmtRemoteMonitoring, Workeridle für unabhängigenPeer. f407-EchtCIrot
+nicht als Erfolg zählen; vor Annahme aktuelle Serie prüfen.
+
+QA-F5-01 enger Autorenfix8ef738d eingefroren: bekannte leere/separatorhaltige
+Spalten-/Objektnamen eindeutig zitiert, unbekannt unverändert.47Units und10echte
+SQLite-/PG-Browserfälle grün. Exakte CIs und unabhängiger Nachreview lautHandoff
+bleiben Gates; danach erst freigegebene Webintegration und gemeinsames RootpaketF5b.
+Keine eigenen lokalen Jobs oder Ressourcen offen.

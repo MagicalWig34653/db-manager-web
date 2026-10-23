@@ -125,3 +125,47 @@ F6-Kombinationscheck in eigenem Releaseworktree: npmci, Typecheck0/0,37Units,
 vierVerträge/Standalone,Produktionsbuild undDocs119/0 bestanden. Produktbytes nach
 Freigabe unverändert; nur exklusive Statuspflege. Neue Main-CIs nach Veröffentlichung
 noch zu kontrollieren.
+
+F5 wurde auf neue ausdrückliche Nutzerpriorität Swift/TestFlight als WIP gesichert:
+eigener feat/schema-workbench ab204cb07, Vertrag0.5 exakt, lesende Komponente/Client
+und erste Units vorhanden. Erster Unitlauf41grün/2rote Testfixturefehler (fileURL im
+JSDOMkontext und fehlender JSON-Content-Type). Kein fertiger F5-Check, keine Browser-/
+Build-/CI-/QAfreigabe. Details und nächste Schritte: [F5-Handoff](handoffs/F5.md).
+F6-Main204cb07: alle drei neuen CIs inzwischen success. Keine Rootpinänderung.
+
+## F5 – aktueller Autorenabschluss, noch unabhängiger Review erforderlich
+
+Der historische WIP ist fortgesetzt. Lesende Index-/Constraintkomponente mit exakter
+akzeptierter API0.5-Kopie und Backendac9542d ist implementiert.46Units/Typecheck0/0,
+fünf Typ-/Standaloneprüfungen, Format/Build/Docs131/0, sechs alte SQL-/Sessionbrowser-
+und zwei Produktions-CSP-/Sourcefälle bestanden. Zehn echte SQLite-/PGverify-full-
+Browserfälle21,8s einschließlich F5 Partial/Expression/Include/FK/CHECK/Unknown,
+Views/404grenze und verspäteter Antwort nach Tokenwechsel sowie aller bestehenden
+F6-/CRUD-/Konflikt-/Unknown-/F3-Pagingfälle grün. Kein MySQL/MariaDB-UI-Livenachweis;
+entsprechende Renderzustände nur als synthetische Units geprüft.
+Öffentlicher Cleanbuild/CI und unabhängige QA folgen. Code eingefroren, keine Root-
+oder B4-Änderung, keine gemeinsame F5b-Einbettung vor ausdrücklicher Abnahme.
+
+F5 bereit für unabhängigen Review: Quell-/Testkandidatf407e5b öffentlich;
+frischeröffentlicherCheckout npmci/Typecheck46Units/Format/5Verträge/Build/
+Originalnotices/Docs131grün. DocsCI39906592961success, Frontend39906593011 und
+Echte39906592949aktiv. Keine lokalen Jobs/Ressourcen. Code eingefroren;
+Webintegration und gemeinsamer RootpinF5b erst nach Annahme und gezielter Freigabe.
+
+F5-Folgecheckpoint87751cc ersetzt den vorigen Teststand: erste Linux-EchtCI hatte
+allein einen CDP-Bodybeobachtungsfehler im SQLite-Test (9weitereFällegrün), kein
+Produktfehler daraus abgeleitet. Echte unabhängige APIprobe nach gerenderter UI ersetzt
+nur die fragile Bodybeobachtung; sämtliche fachlichen Assertions bleiben erhalten.
+Produktbytes seitf407 unverändert, volle lokale10erSerie erneut18,3sgrün. Exakte
+neue Docs39906977828success, Frontend39906977846/Echte39906977849aktiv. Unabhängiger
+Review und diese neue CI bleiben Gates. Keine eigene Freigabe oder Rootintegration.
+
+## Aktueller enger F5-Fixkandidat – QA-F5-01
+
+Unabhängiger Review bestätigte einen niedrigen bekannten-Leername-Darstellungsbefund.
+Fixkandidat8ef738d zitiert bekannte Spalten-/Objektidentitäten ausdrücklich, einschließlich
+Leerstring und Trennzeichen; unbekannt bleibt unbekannt.47Units/Typecheck0/0/fünf
+Vertragsprüfungen und zehn echte SQLite-/PG-TLS-Browserfälle17,8s grün, darunter
+reale PK-Spalte `""`. Vertrag/Dependencies/F6/CRUD unverändert. Docs39908165711
+success; Frontend39908165762/Echte39908165925 noch aktiv. Unabhängige Nachprüfung
+und exakte CI vor Freigabe erforderlich; keine eigene Integration oder Rooteinbettung.
