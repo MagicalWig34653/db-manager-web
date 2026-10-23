@@ -1,6 +1,6 @@
 # Status
 
-Stand: 20.10.2026. F1/F1b als Webclient-Inkrement nach unabhängiger QA und CI integriert.
+Stand: 23.10.2026. F1/F1b als Webclient-Inkrement nach unabhängiger QA und CI integriert.
 Svelte5/shadcn-svelte-Workbench mit flüchtigem Backendzugang/Verbindungseditor,
 Objektnavigation, SQL-Einzelanfrage, präzisen typisierten Ergebnissen, Abbruch und
 Zeilenbegrenzung. Keine Credentialpersistenz und kein vorgetäuschter DB-Erfolg.
@@ -51,15 +51,22 @@ Go-/Imagebuild ohne Node/npm zur Laufzeit. Alle sechs Feature-CIs erfolgreich;
 kombinierte Haupt-CIs an f46cafe noch kontrollieren. Keine Mutationsoberfläche im
 freigegebenen F3.
 
-F4 ist aktiv in feat/row-workbench/.worktrees/row-workbench ab ffdd2a0. Bestätigtes
-Einzelzeilen-Insert/Edit/Delete auf unabhängig freigegebenen API0.3/0.4-Verträgen;
-Referenzbackend72855cf enthält beide v3-Integritätsfixes. Schreibaktionen benötigen
-validierte v4-Fähigkeiten und passende v3-Eignung; ältere Backendstände behalten
-SQL-/v2-Tabellenbetrieb ohne neue Schreibaktionen. Vollständiger typisierter Snapshot,
-keine automatischen Retries, Konflikt fordert Neuladen, Transportabbruch nach Versand
-meldet möglichen Commit. Besitz Produkt/Vertragskopien/Build/Tests/Lizenzen/README/
-Einrichtung/Handoff; zentrale Statusdateien beim Lead. Echte SQLite-/PG-TLS-Browser-
-und unabhängige QA vor Integration, später eigener RootpinF4b.
-F1-/F2-/F3-Worktrees bleiben saubere Provenienz, zentrale Dateien beim Lead.
-Keine eigenen F1-Browser-/Vitejobs offen. [Handoff F1](handoffs/F1.md),
-[Handoff F1b](handoffs/F1b.md), [Einrichtung](../EINRICHTUNG.md).
+F4 ist am 23.10.2026 nach unabhängigem P0-Review ohne Findings integriert.
+Freigegebene unveränderliche Quelle: `3a4a3fd0a345f8c127758ac5eadc4e6feb8d21ec`.
+Alle drei exakten Quell-CIs erfolgreich; unabhängiger Review
+`01933d5c247dd790748e7733b56e5eea12008d55` bleibt in main-Ancestry.
+[Review](handoffs/F4-review.md), [Autorenhandoff](handoffs/F4.md).
+Einzelzeilen-Insert/Edit/Delete mit gültigen v4-Fähigkeiten und frischer v3-Eignung,
+vollständigem typisiertem Snapshot, gesperrten PK/generated-Zielspalten, bestätigten
+Aktionen und echter Nachherzeile. Kein automatischer Retry; Konflikt fordert Neuladen,
+Transportverlust nach Versand meldet möglichen Commit. SQL/v2 bleiben auf älteren
+Backends nutzbar, neue Schreibaktionen gesperrt. Credentials/Entwürfe bleiben flüchtig.
+26 Units, sechs echte SQLite-/PostgreSQL-TLS-Browserfälle einschließlich tatsächlicher
+Commitantwortverluste, sechs SQLregressionen, zwei Produktions-CSP-/Originalnoticefälle
+und sauberer öffentlicher Build unabhängig geprüft. Keine vollständige Parität.
+
+F4b übernimmt anschließend im eigenen Rootworktree die exakt freigegebene Quelle;
+Rootartefakte, tatsächliche CRUD-Compose-/isolierte-Swarm-Persistenz und unabhängige
+QA stehen dafür separat aus. Neue Web-main-CIs nach Integration kontrollieren.
+Lead koordiniert; Frontend & UX besitzt für dieses Release exklusiv diese beiden
+Web-Status-/Planungsdateien. Keine weiteren Produktänderungen nach Quellpin.

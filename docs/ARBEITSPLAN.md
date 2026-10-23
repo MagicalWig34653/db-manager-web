@@ -1,6 +1,6 @@
 # Arbeitsplan
 
-Stand: 20.10.2026. Lead koordiniert und pflegt zentrale Statusdateien;
+Stand: 23.10.2026. Lead koordiniert; freigegebene Integrationsagents pflegen zugewiesene Statusdateien;
 Frontend & UX implementiert in eigenen Worktrees, QA prüft unabhängig.
 
 | ID | Auftrag | Status | Abnahme |
@@ -34,26 +34,19 @@ F3b neuer Root-Webpin und TCP-/TLS-Testreadiness nach eigener Hauptrepo-Zuweisun
 keine nachträgliche Veränderung freigegebener Webartefakte. F4-Schreiboberfläche
 benötigt eigenen Auftrag und sicheren gepinnten Backendstand.
 
-## Aktueller Auftrag F4 und F3b-Abnahme
+## F4-Abnahme und F4b-Integration
 
-F3b ist nach unabhängiger Prüfung im Go-Hauptrepo integriert, zentraler Stand
-f46cafe. Alle sechs Feature-CIs erfolgreich; neue kombinierte Main-CIs kontrollieren.
-Freigegebene Quelle6c6eb33 bleibt unverändert. Kein Mutationsumfang in diesem Build.
+F4 ist nach unabhängigem P0-Review ohne Findings und drei erfolgreichen exakten
+Quell-CIs integriert. Quelle `3a4a3fd0a345f8c127758ac5eadc4e6feb8d21ec` und Review
+`01933d5c247dd790748e7733b56e5eea12008d55` bleiben in main-Ancestry.
+[Review](handoffs/F4-review.md), [Handoff](handoffs/F4.md).
+Neue Web-main-CIs kontrollieren; keine nachträglichen Produktbyteänderungen.
 
-F4 beauftragt: feat/row-workbench, .worktrees/row-workbench, Basisffdd2a0. Besitz
-Webprodukt/Vertragskopien/Build/Tests/Lizenzen/README/Einrichtung/Handoff; keine
-zentralen Statusdateien. API0.3-SHA ec77c9739cda11df3f4cb9fe756a632e67840fdc0f6190deee1aa1d1333dc308,
-API0.4-SHA 4763ebf8632a9ef977cf7d3a6037299fc4dafde0a581fe10cb34d844f8356fbf,
-Referenzbackend72855cf57ceb6620dead42856ee6c9d52d0612bd enthält beide v3-Fixes.
-V4-Fähigkeiten und passende v3-Eignung sind Schreibgate. Ältere Backendstände behalten
-bisherige Funktionen ohne neue Schreibaktionen. Einzelzeilen-Insert/Edit/Delete,
-Default/NULL/Leer/Präzision explizit, alte vollständige Snapshots, bestätigte Aktionen,
-frische Eignung, 409 verlangt Neuladen; unbekannter Ausgang und Transportfehler nach
-Versand bedeuten möglichen Commit, keine automatischen Retries. Quellen-/Tokenwechsel
-verwirft Editorwerte; generischer Unknown-Hinweis ohne alte Werte darf bleiben.
-
-Abnahme: echte SQLite-/PG-TLS-Browserfälle für CRUD, konkurrierende Fremdänderung,
-Default/Null/AutoPK/Präzision/Unsupported und Tokenwechsel während Request. Realen
-Commit mit verlorener Browserantwort prüfen, nur ein Request; keine erfundene
-Mock-DB-Antwort. CSP-/Session-/Lizenzregression erhalten. Unabhängige QA vor Webmerge,
-Rootartefaktpin F4b als eigenes Folgepaket. Keine Schema-/Export-/Vaultfunktionen.
+F4b: eigener Hauptrepo-Worktree/Branch. Exakte öffentliche Quelle reproduzieren,
+API1–4-/npm-Pins und Originalnotices/Manifest prüfen. Echter eingebetteter Go-Browserpfad
+gegen SQLite/PostgreSQL verify-full mit CRUD, Konflikt, Default/NULL/Präzision,
+verlorener tatsächlicher Commitantwort und Sitzungswechsel. Compose und eigener
+isolierter DinD-Swarm mit tatsächlichem Schreibpfad, SQLite-Neustart-/Taskersatzpersistenz.
+Keine DB-/Core-/HTTP-/GoMod-/Vertragsänderung, kein Verbrauch des neuen API0.5-Kandidaten.
+Unabhängige QA vor Rootintegration. WebSTATUS/ARBEITSPLAN für dieses Release exklusiv
+Frontend & UX zugewiesen; Lead koordiniert ohne Dateischreiben.
