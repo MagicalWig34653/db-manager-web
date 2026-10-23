@@ -48,10 +48,12 @@ for (const driver of ['sqlite', 'postgresql']) {
   }) => {
     await page.addInitScript(() => {
       const active = new Set<string>();
+      (window as unknown as { exportCreates: number }).exportCreates = 0;
       const create = URL.createObjectURL.bind(URL);
       const revoke = URL.revokeObjectURL.bind(URL);
       (window as unknown as { exportURLs: Set<string> }).exportURLs = active;
       URL.createObjectURL = (blob) => {
+        (window as unknown as { exportCreates: number }).exportCreates++;
         const url = create(blob);
         active.add(url);
         return url;
@@ -113,6 +115,48 @@ for (const driver of ['sqlite', 'postgresql']) {
     expect(
       await page.evaluate(() => (window as unknown as { exportURLs: Set<string> }).exportURLs.size),
     ).toBe(1);
+
+    // QA-F6-01: actual DB control characters remain exact in JSON but never start CSV.
+    const controls = driver === 'sqlite' ? [0, 1, 9] : [1, 9]; // PostgreSQL text prohibits NUL.
+    const chars = controls
+      .map((code) => `${driver === 'sqlite' ? 'char' : 'chr'}(${code})`)
+      .join(' || ');
+    await page
+      .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })
+      .fill(`SELECT ${chars} AS controls`);
+    await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
+    await expect(page.getByRole('button', { name: 'Ergebnis herunterladen' })).toBeVisible();
+    const controlled = JSON.parse(await download(page, 'json'));
+    expect(controlled.rows[0][0]).toEqual({
+      kind: 'text',
+      value: String.fromCharCode(...controls),
+    });
+    for (const variant of ['csv-raw', 'csv-spreadsheet']) {
+      const creates = await page.evaluate(
+        () => (window as unknown as { exportCreates: number }).exportCreates,
+      );
+      await page.getByLabel('Exportformat', { exact: true }).selectOption(variant);
+      await page.getByRole('button', { name: 'Ergebnis herunterladen' }).click();
+      await expect(page.getByRole('alert')).toContainText('JSON unverändert');
+      expect(
+        await page.evaluate(() => (window as unknown as { exportCreates: number }).exportCreates),
+      ).toBe(creates);
+    }
+    const char = driver === 'sqlite' ? 'char' : 'chr';
+    await page
+      .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })
+      .fill(`SELECT ${char}(13)||${char}(10)||'"\N' AS allowed`);
+    await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
+    await expect(page.getByRole('button', { name: 'Ergebnis herunterladen' })).toBeVisible();
+    const allowed = JSON.parse(await download(page, 'json'));
+    expect(allowed.rows[0][0]).toEqual({
+      kind: 'text',
+      value: '\r\n"\\N',
+    });
+    const allowedRaw = await download(page, 'csv-raw');
+    expect(allowedRaw).toContain('\r\n');
+    expect(allowedRaw).toContain('""\\N');
+    await download(page, 'csv-spreadsheet');
     // A new SQL result destroys the previous export controls and URL.
     await page.getByLabel('Zeilenlimit', { exact: true }).selectOption('100');
     await page

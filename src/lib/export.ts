@@ -45,8 +45,13 @@ export function encodeExport(result: DisplayResult, scope: ExportScope, format: 
   let content: string;
   if (format === 'json') content = JSON.stringify(data, null, 2) + '\n';
   else {
-    const quote = (value: string) =>
-      '"' + ((format === 'csv-spreadsheet' ? "'" : '') + value).replaceAll('"', '""') + '"';
+    const quote = (value: string) => {
+      if (/[\u0000-\u0009\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(value))
+        throw new Error(
+          'Dieses Ergebnis enthält Steuerzeichen, die CSV hier nicht unterstützt. Lade es als JSON unverändert herunter.',
+        );
+      return '"' + ((format === 'csv-spreadsheet' ? "'" : '') + value).replaceAll('"', '""') + '"';
+    };
     content =
       [
         data.columns.map((column) => quote(column.name)).join(','),

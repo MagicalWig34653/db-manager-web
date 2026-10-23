@@ -116,3 +116,38 @@ describe('explicit local result export', () => {
     ).toThrow('Zellwert');
   });
 });
+
+it('QA-F6-01: rejects C0 except CR/LF, DEL and C1 controls in both CSV variants and headers', () => {
+  const codes = [
+    ...Array.from({ length: 32 }, (_, index) => index).filter((code) => code !== 10 && code !== 13),
+    ...Array.from({ length: 33 }, (_, index) => 127 + index),
+  ];
+  for (const format of ['csv-raw', 'csv-spreadsheet'] as const)
+    for (const code of codes) {
+      const input: DisplayResult = {
+        columns: [{ name: 'header', type: '' }],
+        rows: [[{ kind: 'text', value: String.fromCharCode(code) }]],
+        truncated: false,
+      };
+      expect(() => encodeExport(input, { kind: 'sql_result' }, format)).toThrow('JSON');
+      input.columns[0].name = String.fromCharCode(code);
+      input.rows[0][0].value = 'ordinary';
+      expect(() => encodeExport(input, { kind: 'sql_result' }, format)).toThrow('JSON');
+    }
+});
+it('QA-F6-01: JSON preserves control characters and CSV still preserves CR LF quotes and literal marker', () => {
+  const control = '\u0000\u0001\t\r\n"\\N\u007f\u0085';
+  const input: DisplayResult = {
+    columns: [{ name: control, type: '' }],
+    rows: [[{ kind: 'text', value: control }]],
+    truncated: false,
+  };
+  const data = JSON.parse(text(encodeExport(input, { kind: 'sql_result' }, 'json')));
+  expect(data.columns[0].name).toBe(control);
+  expect(data.rows[0][0].value).toBe(control);
+  input.columns[0].name = 'header';
+  input.rows[0][0].value = '\r\n"\\N';
+  expect(text(encodeExport(input, { kind: 'sql_result' }, 'csv-raw'))).toBe(
+    '"header"\r\n"\r\n""\\N"\r\n',
+  );
+});

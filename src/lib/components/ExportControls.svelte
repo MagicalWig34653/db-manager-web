@@ -59,7 +59,8 @@
   </p>
   {#if format !== 'json'}<p>
       CSV verliert Zelltypen. NULL: ungequotetes \N; Text „\N“: gequotet. UTF-8, Komma, CRLF,
-      Binärwerte als Base64. Für verlustlosen Austausch JSON verwenden.
+      Binärwerte als Base64. Andere Steuerzeichen als CR/LF (etwa TAB oder NUL) verlangen JSON. Für
+      verlustlosen Austausch JSON verwenden.
     </p>{/if}
   {#if format === 'csv-spreadsheet'}<p>
       Jeder Spaltenname und Nicht-NULL-Wert erhält ein Apostrophpräfix. Das verändert die Daten;

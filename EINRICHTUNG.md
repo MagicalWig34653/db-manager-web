@@ -220,3 +220,9 @@ BlobURLs werden beim nächstenDownload, nach30s und beim Ergebnis-/Sessionwechse
 widerrufen. Bereits ausdrücklich heruntergeladene Dateien liegen außerhalb der
 flüchtigen App-Sitzung; ein Tokenwechsel entfernt diese Dateien nicht. Quellcode- und
 Originalnoticelinks sowie bestehende CRUD-/Sessiongrenzen bleiben erhalten.
+
+CSV-Steuerzeichenprofil (QA-F6-01): beide Varianten lehnen C0 U+0000–U+001F außer
+CR/LF sowie DEL U+007F und C1 U+0080–U+009F in Headern und Werten vor dem Download ab.
+Dazu zählen NUL, SOH und TAB. Keine stille Ersetzung oder Abschneidung; stattdessen
+unverändertes JSON exportieren. CR/LF, Quotes und druckbares Unicode bleiben gemäß
+UTF8-/Quoteprofil erhalten. JSON bewahrt auch die genannten Steuerzeichen exakt.
