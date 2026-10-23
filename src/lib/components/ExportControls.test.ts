@@ -31,6 +31,8 @@ it('rejects an oversized final export before any Blob URL is created', async () 
 
 it('QA-F6-01: refuses both CSV variants before Blob URL creation and recommends unchanged JSON', async () => {
   const create = vi.fn();
+  const blob = vi.fn();
+  vi.stubGlobal('Blob', blob);
   vi.stubGlobal(
     'URL',
     class {
@@ -52,6 +54,7 @@ it('QA-F6-01: refuses both CSV variants before Blob URL creation and recommends 
       await fireEvent.click(screen.getByRole('button', { name: 'Ergebnis herunterladen' }));
       expect(screen.getByRole('alert')).toHaveTextContent('JSON unverändert');
       expect(create).not.toHaveBeenCalled();
+      expect(blob).not.toHaveBeenCalled();
     }
     view.unmount();
   } finally {

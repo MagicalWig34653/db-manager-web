@@ -145,7 +145,7 @@ for (const driver of ['sqlite', 'postgresql']) {
     const char = driver === 'sqlite' ? 'char' : 'chr';
     await page
       .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })
-      .fill(`SELECT ${char}(13)||${char}(10)||'"\N' AS allowed`);
+      .fill(`SELECT ${char}(13)||${char}(10)||'"'||${char}(92)||'N' AS allowed`);
     await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
     await expect(page.getByRole('button', { name: 'Ergebnis herunterladen' })).toBeVisible();
     const allowed = JSON.parse(await download(page, 'json'));
