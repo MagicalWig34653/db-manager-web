@@ -12,7 +12,8 @@
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import ResultTable from './ResultTable.svelte';
+  import RowWorkspace from './RowWorkspace.svelte';
+  import type { WritePhase } from '$lib/rows';
   import { toConnection, ApiError } from '$lib/api';
   import {
     tables,
@@ -32,11 +33,18 @@
     token,
     object,
     onsql,
-  }: { connection: ConnectionDraft; token: string; object: CatalogObject; onsql: () => void } =
-    $props();
+    onwritephase,
+  }: {
+    connection: ConnectionDraft;
+    token: string;
+    object: CatalogObject;
+    onsql: () => void;
+    onwritephase: (phase: WritePhase) => void;
+  } = $props();
   let description = $state<TableDescription | null>(null);
   let result = $state<BrowseResult | null>(null);
   let busy = $state(false);
+  let writing = $state(false);
   let error = $state('');
   let cancelled = $state(false);
   let unsupported = $state(false);
@@ -140,7 +148,7 @@
     }
   }
   function apply() {
-    if (!description || busy) return;
+    if (!description || busy || writing) return;
     try {
       const nextFilters = prepareFilters(
         filters,
@@ -203,11 +211,11 @@
     <div>
       <p class="eyebrow">{description ? kindNames[description.kind] : 'OBJEKT'}</p>
       <h2><Table2 size={20} />{object.schema ? `${object.schema}.` : ''}{object.name}</h2>
-      <p>Diese Tabellenansicht ist schreibgeschützt.</p>
+      <p>Einzelzeilenaktionen werden für geeignete Tabellen gesondert freigegeben.</p>
     </div>
     <Button
       variant="outline"
-      disabled={busy || !description || dirty}
+      disabled={writing || busy || !description || dirty}
       onclick={() => loadPage(result?.offset ?? 0)}><RefreshCw size={15} />Aktualisieren</Button
     >
   </div>
@@ -277,7 +285,7 @@
               ? `(${sort.length} / ${filters.length})`
               : ''}</summary
           >
-          <fieldset disabled={busy}>
+          <fieldset disabled={writing || busy}>
             <legend>Sortierung</legend>
             {#each sort as order, index}<div class="sort-row">
                 <label
@@ -318,7 +326,7 @@
                 ])}><Plus size={14} />Sortierung hinzufügen</Button
             >
           </fieldset>
-          <fieldset disabled={busy}>
+          <fieldset disabled={writing || busy}>
             <legend>Filter · alle Bedingungen gelten gemeinsam (UND)</legend>
             {#each filters as filter, index}<div class="filter-row">
                 <label
@@ -375,17 +383,26 @@
         </details>
         <div class="table-actions">
           <label
-            >Zeilen pro Seite<select bind:value={pageSize} disabled={busy}
+            >Zeilen pro Seite<select bind:value={pageSize} disabled={writing || busy}
               ><option value={25}>25</option><option value={100}>100</option><option value={500}
                 >500</option
               ><option value={1000}>1.000</option></select
             ></label
-          ><Button type="submit" disabled={busy}>Anwenden</Button>{#if dirty}<span
+          ><Button type="submit" disabled={writing || busy}>Anwenden</Button>{#if dirty}<span
               class="control-hint">Änderungen noch nicht angewendet.</span
             >{/if}
         </div>
       </form>
-      {#if result && display}<ResultTable result={display} />
+      {#if result && display}<RowWorkspace
+          {connection}
+          {token}
+          {result}
+          onreload={() => loadPage(result?.offset ?? 0)}
+          onwritephase={(phase) => {
+            writing = phase === 'sending';
+            onwritephase(phase);
+          }}
+        />
         <div class="pagination" aria-label="Seitennavigation">
           <span
             >{result.result.rows.length
@@ -396,13 +413,14 @@
             <Button
               variant="outline"
               size="sm"
-              disabled={busy || dirty || result.offset === 0}
+              disabled={writing || busy || dirty || result.offset === 0}
               onclick={() => loadPage(Math.max(0, result!.offset - result!.page_size))}
               ><ArrowLeft size={14} />Zurück</Button
             ><Button
               variant="outline"
               size="sm"
-              disabled={busy ||
+              disabled={writing ||
+                busy ||
                 dirty ||
                 !result.has_more ||
                 result.offset + result.page_size > 1000000}

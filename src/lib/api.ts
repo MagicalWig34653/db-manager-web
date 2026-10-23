@@ -43,6 +43,16 @@ const errorMessages: Record<string, string> = {
     'Die Abfrage wurde abgebrochen oder ihr Zeitlimit wurde erreicht. Bereits ausgeführte Änderungen können bestehen bleiben.',
   database_error:
     'Die Datenbankoperation ist fehlgeschlagen. Prüfe Verbindung, SQL und Datenbankrechte.',
+  row_conflict:
+    'Die Zeile wurde zwischenzeitlich geändert oder entfernt. Lade die Daten neu; diese Änderung wird nicht automatisch erneut gesendet.',
+  insert_conflict:
+    'Die neue Zeile kollidiert mit vorhandenen Daten. Lade die Daten neu und prüfe eindeutige Werte.',
+  outcome_unknown:
+    'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
+  unsupported_table: 'Diese Tabelle unterstützt den Zeileneditor nicht.',
+  unsupported_inheritance: 'Vererbte Tabellen werden für Zeilenänderungen nicht unterstützt.',
+  unsupported_identity: 'Diese Schlüsselvergabe wird für neue Zeilen nicht unterstützt.',
+  invalid_changes: 'Die ausgewählten Spalten oder Werte können nicht übernommen werden.',
   database_busy:
     'Diese SQLite-Datenbank wird gerade verwendet. Warte auf die laufende Anfrage oder brich sie ab.',
   table_not_found: 'Das Objekt ist nicht mehr verfügbar. Aktualisiere den Katalog.',
@@ -102,6 +112,7 @@ export class ApiClient {
     token: string,
     body?: unknown,
     signal?: AbortSignal,
+    write?: { onDispatch: () => void },
   ): Promise<unknown> {
     if (
       typeof location !== 'undefined' &&
@@ -119,11 +130,12 @@ export class ApiClient {
     }
     if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
     const timeout = AbortSignal.timeout(
-      ['/api/v1/query', '/api/v2/tables/browse'].includes(path) ? 75000 : 15000,
+      write || ['/api/v1/query', '/api/v2/tables/browse'].includes(path) ? 75000 : 15000,
     );
     const combined = signal ? AbortSignal.any([timeout, signal]) : timeout;
     let response: Response;
     try {
+      write?.onDispatch();
       response = await this.fetcher(path, {
         method: body === undefined ? 'GET' : 'POST',
         headers: {
@@ -138,6 +150,11 @@ export class ApiClient {
         referrerPolicy: 'no-referrer',
       });
     } catch {
+      if (write)
+        throw new ApiError(
+          'outcome_unknown',
+          'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
+        );
       if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
       if (combined.aborted)
         throw new ApiError(
@@ -159,6 +176,11 @@ export class ApiClient {
     try {
       payload = await readJson(response);
     } catch (cause) {
+      if (write)
+        throw new ApiError(
+          'outcome_unknown',
+          'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
+        );
       if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
       if (combined.aborted)
         throw new ApiError(

@@ -42,7 +42,10 @@
   } from '$lib/workbench';
   import { gateway } from '$lib/gateway';
   import { onDestroy, tick } from 'svelte';
+  import type { WritePhase } from '$lib/rows';
 
+  let writeInFlight = $state(false);
+  let writeNotice = $state(false);
   let connection = $state<ConnectionDraft | null>(null);
   let selectedObject = $state<CatalogObject | null>(null);
   let workspaceMode = $state<'sql' | 'table'>('sql');
@@ -79,6 +82,17 @@
   const lineCount = $derived(Math.min(Math.max(sql.split('\n').length, 10), 10000));
   const currentResult = $derived(execution?.results[activeResult]);
 
+  function separateWriteContext() {
+    if (writeInFlight) writeNotice = true;
+    writeInFlight = false;
+  }
+  function writeReceiver(source: CatalogObject, version: number) {
+    return (phase: WritePhase) => {
+      if (source !== selectedObject || version !== sessionVersion) return;
+      writeInFlight = phase === 'sending';
+      if (phase === 'unknown') writeNotice = true;
+    };
+  }
   async function openConnection() {
     connectionMessage = '';
     availableDrivers = undefined;
@@ -115,6 +129,7 @@
     try {
       await gateway.test(draft, backendToken, sessionController.signal);
       if (version !== sessionVersion) return;
+      separateWriteContext();
       connection = draft;
       selectedObject = null;
       workspaceMode = 'sql';
@@ -154,6 +169,7 @@
   }
   function openObject(object: CatalogObject) {
     if (!connection) return;
+    separateWriteContext();
     selectedObject = object;
     workspaceMode = 'table';
     sidebarOpen = false;
@@ -191,6 +207,7 @@
     controller?.abort();
   }
   function clearSession() {
+    separateWriteContext();
     sessionVersion++;
     sessionController.abort();
     sessionController = new AbortController();
@@ -265,7 +282,15 @@
   });
 </script>
 
-<svelte:window onkeydown={handleKey} />
+<svelte:window
+  onkeydown={handleKey}
+  onbeforeunload={(event) => {
+    if (writeInFlight) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }}
+/>
 <a class="skip-link" href={workspaceMode === 'sql' ? '#sql-editor' : '#table-workspace'}
   >Zum Arbeitsbereich</a
 >
@@ -386,6 +411,14 @@
       >
     </header>
     <main>
+      {#if writeNotice}<div class="global-write-notice" role="alert">
+          <TriangleAlert size={20} /><span
+            >Der Ausgang eines gesendeten Schreibvorgangs ist unbekannt. Er kann bereits übernommen
+            worden sein. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.</span
+          ><Button variant="outline" size="sm" onclick={() => (writeNotice = false)}
+            >Hinweis schließen</Button
+          >
+        </div>{/if}
       <div class="page-heading">
         <div>
           <p class="eyebrow">DEINE DATEN. DEIN ARBEITSBEREICH.</p>
@@ -425,6 +458,7 @@
             token={backendToken}
             object={selectedObject}
             onsql={() => (workspaceMode = 'sql')}
+            onwritephase={writeReceiver(selectedObject, sessionVersion)}
           />{/key}
       {:else}
         <section class="editor-panel" aria-label="SQL-Abfrage">

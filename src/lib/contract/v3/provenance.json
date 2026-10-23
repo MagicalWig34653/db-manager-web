@@ -1,0 +1,8 @@
+{
+  "version": "0.3.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "72855cf57ceb6620dead42856ee6c9d52d0612bd",
+  "source_path": "contracts/api-v0.3.0.json",
+  "sha256": "ec77c9739cda11df3f4cb9fe756a632e67840fdc0f6190deee1aa1d1333dc308",
+  "review": "Explicit lead freeze 03926cc after independent backend protection fixes; 2026-10-20"
+}
