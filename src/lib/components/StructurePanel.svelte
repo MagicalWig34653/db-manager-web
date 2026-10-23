@@ -11,6 +11,7 @@
     roleLabel,
     directionLabel,
     objectLabel,
+    identifierLabel,
     type TableStructure,
     type StructureSchemas,
   } from '$lib/structure';
@@ -27,7 +28,11 @@
   let generation = 0;
   let destroyed = false;
   const names = (values: string[], known: boolean) =>
-    known ? (values.length ? values.join(' · ') : 'Keine Spalten') : 'Unbekannt';
+    known
+      ? values.length
+        ? values.map(identifierLabel).join(' · ')
+        : 'Keine Spalten'
+      : 'Unbekannt';
   async function load() {
     controller.abort();
     controller = new AbortController();

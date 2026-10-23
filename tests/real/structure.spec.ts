@@ -112,6 +112,21 @@ for (const driver of ['sqlite', 'postgresql']) {
     expect(structureRequests[0]).not.toHaveProperty('sql');
     expect(sqlRequests).toBe(0);
     expect(writes).toBe(0);
+    if (driver === 'sqlite') {
+      await page.getByRole('button', { name: /f5_empty_identifier$/ }).click();
+      await page.getByRole('tab', { name: /Struktur/ }).click();
+      const primary = panel.getByRole('article', { name: /^Primärschlüssel/ });
+      await expect(primary).toBeVisible();
+      await expect(
+        primary
+          .locator('dt')
+          .filter({ hasText: /^Spalten$/ })
+          .locator('..'),
+      ).toContainText('""');
+      await page.getByRole('button', { name: /f5_child$/ }).click();
+      await page.getByRole('tab', { name: /Struktur/ }).click();
+      await expect(expression).toBeVisible();
+    }
     await page.getByRole('button', { name: /f5_view\s*View$/ }).click();
     await page.getByRole('tab', { name: /Struktur/ }).click();
     await expect(page.getByRole('rowheader', { name: 'label', exact: true })).toBeVisible();

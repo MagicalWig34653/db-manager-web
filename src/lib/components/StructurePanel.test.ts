@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { render, screen, waitFor, within } from '@testing-library/svelte';
 import { it, expect, vi } from 'vitest';
 import StructurePanel from './StructurePanel.svelte';
 import { structure } from '$lib/structure';
@@ -53,6 +53,33 @@ it('unmount aborts the structure request and rejects late old-session data', asy
     finish(syntheticStructure);
     await Promise.resolve();
     expect(screen.queryByRole('article', { name: 'Index idx' })).not.toBeInTheDocument();
+  } finally {
+    read.mockRestore();
+  }
+});
+
+it('distinguishes known empty and separator-containing identifiers from missing metadata', async () => {
+  const data = structuredClone(syntheticStructure);
+  data.constraints[0].columns = ['', 'comma,name', 'quote"name', 'dot · name'];
+  data.constraints[1].referenced_columns = [''];
+  data.constraints[1].referenced_table = { schema: '', name: '' };
+  const read = vi.spyOn(structure, 'read').mockResolvedValue(data);
+  try {
+    render(StructurePanel, {
+      connection: { ...emptyConnection(), database: 'synthetic' },
+      table: data.table,
+      token: 'synthetic-token',
+    });
+    const unique = await screen.findByRole('article', { name: 'Eindeutigkeit shared' });
+    const columnValue = within(unique).getByText('Spalten').nextElementSibling;
+    expect(columnValue).toHaveTextContent('"" · "comma,name" · "quote\\"name" · "dot · name"');
+    const foreign = screen.getByRole('article', { name: 'Fremdschlüssel shared' });
+    expect(within(foreign).getByText('Zielspalten').nextElementSibling).toHaveTextContent('""');
+    expect(within(foreign).getByText('Zieltabelle').nextElementSibling).toHaveTextContent(
+      '"" · ""',
+    );
+    const check = screen.getByRole('article', { name: 'Prüfbedingung (CHECK) shared' });
+    expect(within(check).getByText('Spalten').nextElementSibling).toHaveTextContent('Unbekannt');
   } finally {
     read.mockRestore();
   }

@@ -137,6 +137,8 @@ def main():
                 query('CREATE VIEW f4_view AS SELECT * FROM f4_rows')
                 query('CREATE TABLE f4_no_pk(value TEXT)')
                 query("INSERT INTO f4_no_pk VALUES('read-only')")
+                if driver == 'sqlite':
+                    query('CREATE TABLE f5_empty_identifier("" TEXT PRIMARY KEY NOT NULL)')
                 query('CREATE TABLE f5_parent(id INTEGER PRIMARY KEY)')
                 query("CREATE TABLE f5_child(id INTEGER PRIMARY KEY, parent_id INTEGER, label TEXT NOT NULL, extra TEXT, CONSTRAINT child_unique UNIQUE(label), CONSTRAINT child_fk FOREIGN KEY(parent_id) REFERENCES f5_parent(id) ON UPDATE CASCADE ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED, CONSTRAINT child_check CHECK(length(label)>0))")
                 query('CREATE INDEX f5_expression_partial ON f5_child(lower(label) DESC) WHERE parent_id IS NOT NULL')

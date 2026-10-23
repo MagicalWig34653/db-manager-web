@@ -44,8 +44,11 @@ export const directionLabel = (value: string) =>
     unknown: 'Unbekannt',
     not_applicable: 'Nicht anwendbar',
   })[value] ?? 'Unbekannt';
+export const identifierLabel = (value: string): string => JSON.stringify(value);
 export const objectLabel = (value: StructureSchemas['StructureObjectRef']) =>
-  value.schema === undefined ? value.name : `${value.schema} · ${value.name}`;
+  value.schema === undefined
+    ? identifierLabel(value.name)
+    : `${identifierLabel(value.schema)} · ${identifierLabel(value.name)}`;
 export function validateStructure<T extends keyof StructureSchemas>(
   name: T,
   data: unknown,
