@@ -34,6 +34,7 @@
   import ResultTable from '$lib/components/ResultTable.svelte';
   import SourceInformation from '$lib/components/SourceInformation.svelte';
   import TableWorkbench from '$lib/components/TableWorkbench.svelte';
+  import CreateTableDialog from '$lib/components/CreateTableDialog.svelte';
   import {
     type CatalogObject,
     type ConnectionDraft,
@@ -44,6 +45,7 @@
   import { onDestroy, tick } from 'svelte';
   import type { WritePhase } from '$lib/rows';
 
+  let createOpen = $state(false);
   let writeInFlight = $state(false);
   let writeNotice = $state(false);
   let connection = $state<ConnectionDraft | null>(null);
@@ -130,6 +132,7 @@
       await gateway.test(draft, backendToken, sessionController.signal);
       if (version !== sessionVersion) return;
       separateWriteContext();
+      createOpen = false;
       connection = draft;
       selectedObject = null;
       workspaceMode = 'sql';
@@ -170,12 +173,13 @@
   function openObject(object: CatalogObject) {
     if (!connection) return;
     separateWriteContext();
+    createOpen = false;
     selectedObject = object;
     workspaceMode = 'table';
     sidebarOpen = false;
   }
   async function execute() {
-    if (!connection || !sql.trim() || running || connectionBusy) return;
+    if (!connection || !sql.trim() || running || connectionBusy || createOpen) return;
     const version = sessionVersion;
     const requestController = new AbortController();
     controller = requestController;
@@ -208,6 +212,7 @@
   }
   function clearSession() {
     separateWriteContext();
+    createOpen = false;
     sessionVersion++;
     sessionController.abort();
     sessionController = new AbortController();
@@ -341,6 +346,12 @@
         >
       </div>
       {#if connection}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={running || writeInFlight || catalogBusy}
+          onclick={() => (createOpen = true)}>Neue Tabelle</Button
+        >
         <div class="search-field">
           <Search size={15} /><input
             aria-label="Objekte filtern"
@@ -659,3 +670,24 @@
     </form>
   </Dialog.Content>
 </Dialog.Root>
+
+{#if createOpen && connection}
+  {#key sessionVersion}
+    <CreateTableDialog
+      {connection}
+      token={backendToken}
+      onclose={() => {
+        separateWriteContext();
+        createOpen = false;
+      }}
+      oncreated={async () => {
+        await loadCatalog();
+        return !catalogError;
+      }}
+      onwritephase={(phase) => {
+        writeInFlight = phase === 'sending';
+        if (phase === 'unknown') writeNotice = true;
+      }}
+    />
+  {/key}
+{/if}
