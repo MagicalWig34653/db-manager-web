@@ -46,6 +46,7 @@
   import type { WritePhase } from '$lib/rows';
 
   let createOpen = $state(false);
+  let createController = $state.raw(new AbortController());
   let writeInFlight = $state(false);
   let writeNotice = $state(false);
   let connection = $state<ConnectionDraft | null>(null);
@@ -95,6 +96,23 @@
       if (phase === 'unknown') writeNotice = true;
     };
   }
+  function openCreation() {
+    createController.abort();
+    createController = new AbortController();
+    createOpen = true;
+  }
+  function closeCreation() {
+    if (createOpen) separateWriteContext();
+    createController.abort();
+    createOpen = false;
+  }
+  function createPhaseReceiver(source: ConnectionDraft, version: number) {
+    return (phase: WritePhase) => {
+      if (source !== connection || version !== sessionVersion) return;
+      writeInFlight = phase === 'sending';
+      if (phase === 'unknown') writeNotice = true;
+    };
+  }
   async function openConnection() {
     connectionMessage = '';
     availableDrivers = undefined;
@@ -132,7 +150,7 @@
       await gateway.test(draft, backendToken, sessionController.signal);
       if (version !== sessionVersion) return;
       separateWriteContext();
-      createOpen = false;
+      closeCreation();
       connection = draft;
       selectedObject = null;
       workspaceMode = 'sql';
@@ -173,7 +191,7 @@
   function openObject(object: CatalogObject) {
     if (!connection) return;
     separateWriteContext();
-    createOpen = false;
+    closeCreation();
     selectedObject = object;
     workspaceMode = 'table';
     sidebarOpen = false;
@@ -212,7 +230,7 @@
   }
   function clearSession() {
     separateWriteContext();
-    createOpen = false;
+    closeCreation();
     sessionVersion++;
     sessionController.abort();
     sessionController = new AbortController();
@@ -350,7 +368,7 @@
           variant="outline"
           size="sm"
           disabled={running || writeInFlight || catalogBusy}
-          onclick={() => (createOpen = true)}>Neue Tabelle</Button
+          onclick={openCreation}>Neue Tabelle</Button
         >
         <div class="search-field">
           <Search size={15} /><input
@@ -676,18 +694,13 @@
     <CreateTableDialog
       {connection}
       token={backendToken}
-      onclose={() => {
-        separateWriteContext();
-        createOpen = false;
-      }}
+      signal={createController.signal}
+      onclose={closeCreation}
       oncreated={async () => {
         await loadCatalog();
         return !catalogError;
       }}
-      onwritephase={(phase) => {
-        writeInFlight = phase === 'sending';
-        if (phase === 'unknown') writeNotice = true;
-      }}
+      onwritephase={createPhaseReceiver(connection, sessionVersion)}
     />
   {/key}
 {/if}

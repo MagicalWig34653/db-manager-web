@@ -17,12 +17,14 @@
   let {
     connection,
     token,
+    signal,
     onclose,
     oncreated,
     onwritephase,
   }: {
     connection: ConnectionDraft;
     token: string;
+    signal: AbortSignal;
     onclose: () => void;
     oncreated: () => Promise<boolean>;
     onwritephase: (phase: WritePhase) => void;
@@ -48,6 +50,7 @@
   let sent = false;
   let destroyed = false;
   const controller = new AbortController();
+  const contextSignal = () => AbortSignal.any([controller.signal, signal]);
   const busy = $derived(['loading', 'checking', 'sending'].includes(phase));
   const checkLabels = {
     transactional: 'Struktur innerhalb derselben DDL-Transaktion geprüft.',
@@ -70,7 +73,7 @@
         : typeLabels[type.kind];
   onMount(() => {
     void createTable
-      .capabilities(token, controller.signal)
+      .capabilities(token, contextSignal())
       .then(() => {
         if (!destroyed) phase = 'editing';
       })
@@ -127,7 +130,7 @@
     phase = 'checking';
     message = '';
     try {
-      const created = await createTable.create(pending, token, controller.signal, () => {
+      const created = await createTable.create(pending, token, contextSignal(), () => {
         sent = true;
         if (!destroyed) {
           phase = 'sending';

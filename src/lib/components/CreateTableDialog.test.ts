@@ -23,6 +23,7 @@ it('keeps a confirmed create visible when the subsequent readonly catalog refres
     render(CreateTableDialog, {
       connection: { ...emptyConnection(), database: 'synthetic' },
       token: 'synthetic-token',
+      signal: new AbortController().signal,
       onclose: vi.fn(),
       oncreated: refresh,
       onwritephase: phases,

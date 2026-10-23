@@ -181,6 +181,28 @@ describe('confirmed structured new-table creation', () => {
     ).rejects.toMatchObject({ code: 'unsupported_feature' });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+  it('never dispatches a create when the session aborts during fresh capabilities', async () => {
+    let finish!: (value: Response) => void;
+    const fetcher = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const controller = new AbortController();
+    const dispatch = vi.fn();
+    const pending = new CreateTableClient(new ApiClient(fetcher)).create(
+      prepareCreate(valid(), connection),
+      'token',
+      controller.signal,
+      dispatch,
+    );
+    controller.abort();
+    finish(response(createCap));
+    await expect(pending).rejects.toThrow();
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
   it('does not reinterpret confirmed creation with unavailable metadata as a failed operation', async () => {
     const fetcher = vi
       .fn()
