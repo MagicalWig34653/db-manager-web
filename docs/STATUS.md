@@ -145,3 +145,9 @@ F6-/CRUD-/Konflikt-/Unknown-/F3-Pagingfälle grün. Kein MySQL/MariaDB-UI-Livena
 entsprechende Renderzustände nur als synthetische Units geprüft.
 Öffentlicher Cleanbuild/CI und unabhängige QA folgen. Code eingefroren, keine Root-
 oder B4-Änderung, keine gemeinsame F5b-Einbettung vor ausdrücklicher Abnahme.
+
+F5 bereit für unabhängigen Review: Quell-/Testkandidatf407e5b öffentlich;
+frischeröffentlicherCheckout npmci/Typecheck46Units/Format/5Verträge/Build/
+Originalnotices/Docs131grün. DocsCI39906592961success, Frontend39906593011 und
+Echte39906592949aktiv. Keine lokalen Jobs/Ressourcen. Code eingefroren;
+Webintegration und gemeinsamer RootpinF5b erst nach Annahme und gezielter Freigabe.

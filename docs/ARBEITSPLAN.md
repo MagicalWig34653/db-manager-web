@@ -99,3 +99,7 @@ F5-Autorenabschluss:46Units und zehn echte SQLite-/PG-TLS-Browserfälle grün, b
 CRUD/F6/CSP/Sessionpfade erhalten. Code und Vertrag eingefroren; jetzt frischer
 öffentlicher Build, exakte CIs und unabhängiger Peerreview. Historischen WIP nicht als
 aktuellen Prüfstand verwenden. Rootpaket F5b(F5+F6) bleibt eigenes Gate nach Annahme.
+
+F5-Übergabe: Kandidatf407e5b unverändert, saubereröffentlicherBuild abgeschlossen,
+exakte CIs/nochoffeneReviewgates imHandoff. Frontend & UX gibt aktiven Slot für
+unabhängigen Peerreview frei. Keine eigene Integration/Rootpinänderung.
