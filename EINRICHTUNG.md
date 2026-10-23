@@ -194,3 +194,29 @@ baut einen frischen öffentlichen Backendcheckout und verwendet eigene SQLite-/
 PostgreSQL-TLS-Wegwerfdaten. Browserproben prüfen echte Schreibanfragen, parallele
 Konflikte und den Verlust echter bestätigter Commitantworten. Ein Frontendbuild
 ersetzt keine unabhängige QA oder erneute Root-/Compose-/Swarm-Artefaktabnahme.
+
+## Lokaler Export sichtbarer Ergebnisse (F6-Prüfkandidat)
+
+Im angezeigten Ergebnis ein Format wählen und „Ergebnis herunterladen“ ausdrücklich
+betätigen. Keine neue Abfrage oder serverseitige Speicherung. JSON ist bevorzugt:
+Version1 mit geordneten Spalten (auch doppelte Namen), getaggten Zellarrays und
+truncated-/Seitenumfang. Integer/Decimal bleiben Strings, NULL und leerer Text bleiben
+verschieden; Binary ist Base64. SQL, Zugangsdaten und Profile sind keine Exportfelder.
+Dateinamen sind fest, fertige UTF8Datei maximal8MiB einschließlich allerMetadaten.
+
+CSV: UTF8 ohneBOM, Komma, CRLF. AlleHeader und NichtNULLfelder gequotet, innereQuotes
+verdoppelt; eingebetteteNewlines bleiben erhalten. NULL ist ungequotetes `\N`, Text
+`\N` ist gequotet. Standardparser können diese Unterscheidung verlieren, ebenso
+Zelltypen; für verlustlosen Austausch JSON. CSV enthält nur tabellarische Daten,
+Umfang/Trunkierung wird vor dem Download sichtbar angegeben. Es ist kein Dump aller
+Tabellenzeilen und kein konsistenter Snapshot paralleler DBänderungen.
+
+CSVmitApostroph verändert jedenHeader und jedenNichtNULLwert durch ein führendes
+Apostroph. Keine allgemeine Sicherheits-/Excel-/Roundtripgarantie. CSVroh verändert
+Werte nicht; Tabellenkalkulationen können Formeln ausführen. Diese Variante bewusst
+wählen und nur mit passenden Programmen öffnen. Keine heimliche Bereinigung.
+
+BlobURLs werden beim nächstenDownload, nach30s und beim Ergebnis-/Sessionwechsel
+widerrufen. Bereits ausdrücklich heruntergeladene Dateien liegen außerhalb der
+flüchtigen App-Sitzung; ein Tokenwechsel entfernt diese Dateien nicht. Quellcode- und
+Originalnoticelinks sowie bestehende CRUD-/Sessiongrenzen bleiben erhalten.

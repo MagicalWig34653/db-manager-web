@@ -133,6 +133,7 @@ for (const driver of ['sqlite', 'postgresql']) {
     await expect(page.getByText(/Nur geladene Seite: 25 Zeilen ab Position 1/)).toBeVisible();
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     await expect(page.getByText(/Nur geladene Seite: 25 Zeilen ab Position 26/)).toBeVisible();
+    await page.waitForLoadState('networkidle');
     const pageBefore = requests;
     const paged = JSON.parse(await download(page, 'json'));
     expect(requests).toBe(pageBefore);

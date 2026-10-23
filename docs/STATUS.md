@@ -82,3 +82,9 @@ Keine Credentials-/SQL-/Profilserialisierung oder Persistenz. Limit8MiB fertigeU
 Frontend & UX besitzt exklusiv diese WebSTATUS/Plan-Dateien. Implementierung und reine
 Tests vorhanden; echte Browserdownloads, sauberer Build/CI und unabhängige QA folgen.
 Kein Rootpin/API0.5-Verbrauch. [Handoff](handoffs/F6.md).
+
+F6 lokaler Prüfcheckpoint:34Units/Typecheck0/0/vierVerträge/Standalone/Format/Docs118/0,
+sechsLegacySQLbrowser undzweiProduktionsCSPfälle grün. Acht echteSQLite-/PGverify-full-
+Browserfälle inklusive tatsächlicherDownloadinhalte, Requestzählung, Trunkierung/
+Seitenumfang, BlobURL-/Tokenwechsel und bestehenderCRUD-/Konflikt-/Unknownregression
+bestanden. NochkeineunabhängigeQA/Integration; öffentlicherBuild/CI folgen.
