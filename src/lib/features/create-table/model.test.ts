@@ -212,3 +212,32 @@ describe('client-side pre-check mirrors the documented limits', () => {
     ).toContain('primary-key');
   });
 });
+
+describe('reserved targets and "-0" (mirror of the server rules)', () => {
+  const sqlite = { driver: 'sqlite' as const, database: 'd' };
+  it('rejects sqlite_ table names case-insensitively on SQLite only', () => {
+    expect(validateDraft(draft({ name: 'SQLite_x' }), sqlite)).not.toEqual([]);
+    expect(
+      validateDraft(draft({ name: 'sqlite_x' }), { driver: 'postgresql', database: 'd' }),
+    ).toEqual([]);
+    expect(validateDraft(draft({ name: 'my_sqlite_x' }), sqlite)).toEqual([]);
+  });
+  it('rejects reserved MySQL and PostgreSQL schemas, also via the connection database', () => {
+    const my = { driver: 'mysql' as const, database: 'app' };
+    for (const schema of ['mysql', 'SYS', 'information_schema', 'performance_schema'])
+      expect(validateDraft(draft({ schema }), my)).not.toEqual([]);
+    expect(validateDraft(draft({}), { driver: 'mysql', database: 'Mysql' })).not.toEqual([]);
+    expect(validateDraft(draft({ schema: 'app2' }), my)).toEqual([]);
+    const pg = { driver: 'postgresql' as const, database: 'd' };
+    for (const schema of ['pg_catalog', 'PG_temp', 'information_schema'])
+      expect(validateDraft(draft({ schema }), pg)).not.toEqual([]);
+    expect(validateDraft(draft({ schema: 'public' }), pg)).toEqual([]);
+  });
+  it('rejects the integer default -0', () => {
+    expect(
+      validateDraft(
+        draft({}, [column({ name: 'x', kind: 'int64', defaultMode: 'value', defaultValue: '-0' })]),
+      ),
+    ).not.toEqual([]);
+  });
+});

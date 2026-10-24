@@ -17,6 +17,8 @@ import urllib.error
 
 ROOT = Path(__file__).resolve().parent.parent
 PIN = json.loads((ROOT/'src/lib/contract/v5/provenance.json').read_text())
+# Explicit list: feature-specific specs (table-create, overview, ...) bring their own fixtures and runners.
+SPECS=['tests/real/table.spec.ts','tests/real/rows.spec.ts','tests/real/structure.spec.ts','tests/real/export.spec.ts']
 HIDDEN=[]
 
 def redact(value):
@@ -156,7 +158,7 @@ def main():
             config=directory/'config.json';config.write_text(json.dumps({'baseURL':webbase,'token':token,'password':password,'invalidToken':invalid,'postgresPort':pgport,'backendURL':base,'outputDir':str(directory/'results')}));config.chmod(0o600)
             environment=dict(os.environ,DBM_REAL_CONFIG=str(config),CI='1')
             run(['npx','playwright','install','chromium'],cwd=ROOT,env=environment)
-            print(redact(run(['npx','playwright','test','--config','playwright.real.config.ts','--reporter=line'],cwd=ROOT,env=environment)),flush=True)
+            print(redact(run(['npx','playwright','test','--config','playwright.real.config.ts','--reporter=line',*SPECS],cwd=ROOT,env=environment)),flush=True)
             print('F5 real: exact public backend/schema, SQLite/PostgreSQL verify-full, structured browse and row insert/update/delete/conflict/lost-commit-response/session checks passed.',flush=True)
         finally:
             import signal

@@ -266,6 +266,8 @@ export const de = {
     errColumnNameEmpty: 'Gib jeder Spalte einen Namen.',
     errNameLong: 'Der Name darf höchstens {max} Bytes (UTF-8) lang sein.',
     errNameInvalid: 'Der Name enthält ein Nullzeichen oder ungültige Zeichen.',
+    errReservedName: 'Namen mit dem Präfix „sqlite_“ sind in SQLite reserviert.',
+    errReservedSchema: 'Dieses Schema ist reserviert; dort werden keine Tabellen angelegt.',
     errNoColumns: 'Mindestens eine Spalte ist erforderlich.',
     errTooManyColumns: 'Es sind höchstens {max} Spalten erlaubt.',
     errDuplicateColumn: 'Spaltennamen müssen sich auch ohne Groß-/Kleinschreibung unterscheiden.',

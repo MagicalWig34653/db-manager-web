@@ -40,7 +40,12 @@
   // Bumped whenever token or connection change; answers of an older generation are discarded.
   let generation = 0;
 
-  const issues = $derived(validateDraft(draft));
+  const issues = $derived(
+    validateDraft(
+      draft,
+      connection ? { driver: connection.driver, database: connection.database } : undefined,
+    ),
+  );
   const driver = $derived(connection?.driver ?? 'sqlite');
   const columnNames = $derived(new Map(draft.columns.map((c) => [c.key, c.name])));
   const nameExists = $derived(
@@ -138,7 +143,7 @@
   async function submit() {
     // The flag is set before the first await so that a double click can never send twice.
     if (sending || frozen || step !== 'review' || !confirmed || !connection) return;
-    if (validateDraft(draft).length > 0) {
+    if (issues.length > 0) {
       step = 'edit';
       return;
     }
