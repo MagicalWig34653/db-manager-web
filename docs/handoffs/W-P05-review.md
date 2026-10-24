@@ -82,3 +82,17 @@ Fix: `test-real-tables.py` mit expliziter Liste der vier Bestandsspecs aufrufen 
    Warnungen `role=status`; 320 px ohne horizontales Scrollen (Browsertest). Texte über `t()`, keine festen deutschen Literale
    im Panel gefunden; `de.ts` nur angehängt (`table-create`-Block), Probemerge siehe Bericht zu W-P06-web.
 5. Doku: ehrlich und konsistent mit den Läufen (112 Tests, 19 Browserfälle stimmen).
+
+## Nachreview (`feat/w-p05-create-table` bbe0f60, Fixes ae8393f; eingemergt)
+
+**Urteil: Freigabe.** Befunde F1, F2 und F4 sind geschlossen, keine neuen Befunde mit Auswirkung.
+
+- F1 geschlossen: `Session.databaseWriteReceiver(version)` (an die Sitzungsversion gebunden, ignoriert ältere Sitzungen) wird für
+  Datenbankreiter übergeben; Reiter, Tabellenknopf und Objektknöpfe sind bei `writeInFlight` gesperrt. Das Panel meldet
+  `settled`/`unknown` auch nach einem Unmount (Fortsetzung ohne Generationswechsel), der Zustand bleibt also nicht hängen.
+  Unit-Tests (Phase, `unknown`-Hinweis, ältere Sitzung) und Browsertest ergänzt.
+- F2 geschlossen: Vorabprüfung spiegelt `sqlite_*`, reservierte MySQL-/PostgreSQL-Schemas und lehnt `-0` ab (Tests).
+  Bleibt Server-autoritativ; kleine Restabweichung bei Unicode-Kleinschreibung (sichere Richtung).
+- F4 geschlossen: `SPECS` in `scripts/test-real-tables.py` mit den vier Bestandsspecs.
+- Hinweis: Reiter sind während des Sendens gesperrt, die Seitenverlassen-Warnung greift über `writeInFlight`.
+Läufe und Probemerge siehe Abschnitt „Probemerge aller drei Branches“ in `W-P06-web-review.md`.
