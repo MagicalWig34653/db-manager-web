@@ -74,7 +74,6 @@ export default defineConfig(({ mode, command }) => {
             .sort()
             .map((name) => `assets/${name}`);
           const shell = [
-            './',
             'index.html',
             'manifest.webmanifest',
             'icon.svg',

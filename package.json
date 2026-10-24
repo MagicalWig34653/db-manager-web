@@ -19,7 +19,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,svelte,css}\" \"*.{ts,js,json}\" \"tests/**/*.{ts,mjs}\"",
     "validators:generate": "node scripts/contracts.mjs validators-generate",
     "validators:check": "node scripts/contracts.mjs validators-check",
-    "test:csp": "npm run build && playwright test --config playwright.csp.config.ts"
+    "test:csp": "npm run build && playwright test --config playwright.csp.config.ts",
+    "test:pwa": "npm run build && playwright test --config playwright.pwa.config.ts"
   },
   "dependencies": {
     "@lucide/svelte": "1.60.0",
