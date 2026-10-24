@@ -124,7 +124,7 @@ function parseType(column: ColumnDraft): CreateType | null {
 function defaultProblem(column: ColumnDraft, type: CreateType): string | null {
   const value = column.defaultValue;
   if (type.kind === 'int64') {
-    if (!integerPattern.test(value)) return t('table-create.errDefaultInteger');
+    if (!integerPattern.test(value) || value === '-0') return t('table-create.errDefaultInteger');
     const parsed = BigInt(value);
     return parsed < SIGNED64_MIN || parsed > SIGNED64_MAX
       ? t('table-create.errDefaultRange')
@@ -149,7 +149,30 @@ function defaultProblem(column: ColumnDraft, type: CreateType): string | null {
 }
 
 /** All blocking problems of a draft. An empty list means the request can be built. */
-export function validateDraft(draft: TableDraft): Issue[] {
+export interface Target {
+  driver: 'sqlite' | 'mysql' | 'postgresql';
+  /** Connection database; MySQL uses it as the default schema. */
+  database: string;
+}
+const mysqlReserved = new Set(['mysql', 'sys', 'information_schema', 'performance_schema']);
+
+/** Mirrors the server's createRef rules (reserved targets). Server stays authoritative. */
+function targetIssues(draft: TableDraft, target: Target): string[] {
+  const schema = (draft.schema === '' ? '' : draft.schema).toLowerCase();
+  if (target.driver === 'sqlite')
+    return draft.name.toLowerCase().startsWith('sqlite_')
+      ? [t('table-create.errReservedName')]
+      : [];
+  if (target.driver === 'mysql') {
+    const effective = (draft.schema === '' ? target.database : draft.schema).toLowerCase();
+    return mysqlReserved.has(effective) ? [t('table-create.errReservedSchema')] : [];
+  }
+  return schema.startsWith('pg_') || schema === 'information_schema'
+    ? [t('table-create.errReservedSchema')]
+    : [];
+}
+
+export function validateDraft(draft: TableDraft, target?: Target): Issue[] {
   const issues: Issue[] = [];
   const table = (message: string, field = 'name') =>
     issues.push({ scope: 'table', field, message });
@@ -163,6 +186,13 @@ export function validateDraft(draft: TableDraft): Issue[] {
       table(t('table-create.errNameLong', { max: LIMITS.nameBytes }), 'schema');
     else if (schemaProblem) table(t('table-create.errNameInvalid'), 'schema');
   }
+  if (target && tableProblem === null)
+    for (const message of targetIssues(draft, target))
+      issues.push({
+        scope: 'table',
+        field: message === t('table-create.errReservedName') ? 'name' : 'schema',
+        message,
+      });
   if (draft.columns.length < 1)
     issues.push({ scope: 'form', message: t('table-create.errNoColumns') });
   if (draft.columns.length > LIMITS.columns)
@@ -240,13 +270,21 @@ export function validateDraft(draft: TableDraft): Issue[] {
   return issues;
 }
 
+function targetOf(connection: Schemas['Connection']): Target {
+  return {
+    driver: connection.driver === 'postgres' ? 'postgresql' : connection.driver,
+    database: connection.database ?? '',
+  };
+}
+
 /** Builds the request body. Throws when the draft is not valid; call validateDraft first. */
 export function buildRequest(
   draft: TableDraft,
   connection: Schemas['Connection'],
   includeSchema = true,
 ): CreateTableRequest {
-  if (validateDraft(draft).length > 0) throw new Error('The table definition is not valid.');
+  if (validateDraft(draft, targetOf(connection)).length > 0)
+    throw new Error('The table definition is not valid.');
   const byKey = new Map(draft.columns.map((column) => [column.key, column]));
   const columns: CreateColumn[] = draft.columns.map((column) => {
     const type = parseType(column)!;

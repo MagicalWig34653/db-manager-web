@@ -186,4 +186,20 @@ describe('create table panel', () => {
     expect(screen.queryByLabelText('Spaltenname 33')).toBeNull();
     expect(screen.getByRole('button', { name: 'Spalte hinzufügen' })).toBeDisabled();
   });
+  it('reports write phases to the shell: sending, settled and unknown', async () => {
+    const phases: string[] = [];
+    let release: (value: unknown) => void = () => {};
+    create.mockImplementation(((_r: unknown, _t: unknown, dispatch?: () => void) => {
+      dispatch?.();
+      return new Promise((resolve) => (release = resolve));
+    }) as never);
+    render(CreateTablePanel, props({ onwritephase: (p: string) => phases.push(p) }));
+    await fillAndReview();
+    await fireEvent.click(confirm());
+    await fireEvent.click(submit());
+    expect(phases).toEqual(['sending']);
+    release(createResult());
+    await screen.findByTestId('create-result');
+    expect(phases).toEqual(['sending', 'settled']);
+  });
 });

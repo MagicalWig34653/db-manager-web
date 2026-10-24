@@ -169,3 +169,34 @@ test('invalid limits block the review and 320 px has no horizontal scroll', asyn
     fullPage: true,
   });
 });
+
+test('while sending, tabs and objects are locked, leaving warns and an unknown outcome is not lost', async ({
+  page,
+}) => {
+  let answer: (() => void) | undefined;
+  await mockBackend(page, () => 'hang');
+  await page.route('**/api/v6/tables/create', async (route) => {
+    await new Promise<void>((resolve) => (answer = resolve));
+    await route.fulfill({ status: 503, json: errorBody('outcome_unknown') });
+  });
+  await open(page);
+  await review(page, 'racing');
+  await confirmBox(page).check();
+  await submitButton(page).click();
+  const tabs = page.getByRole('navigation', { name: 'Arbeitsbereich' });
+  await expect(tabs.getByRole('button', { name: 'SQL' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /orders/ })).toBeDisabled();
+  const prevented = await page.evaluate(() => {
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(prevented).toBe(true);
+  await expect.poll(() => !!answer).toBe(true);
+  answer?.();
+  await expect(page.getByTestId('create-unknown')).toBeVisible();
+  await expect(
+    page.getByText('Der Ausgang eines gesendeten Schreibvorgangs ist unbekannt'),
+  ).toBeVisible();
+  await expect(tabs.getByRole('button', { name: 'SQL' })).toBeEnabled();
+});

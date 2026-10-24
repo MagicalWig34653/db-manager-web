@@ -62,6 +62,14 @@ export class Session {
       if (phase === 'unknown') this.writeNotice = true;
     };
   }
+  /** Receiver for write features of database tabs: not bound to an object, bound to the session. */
+  databaseWriteReceiver(version: number) {
+    return (phase: WritePhase) => {
+      if (version !== this.sessionVersion) return;
+      this.writeInFlight = phase === 'sending';
+      if (phase === 'unknown') this.writeNotice = true;
+    };
+  }
   async openConnection() {
     this.connectionMessage = '';
     this.availableDrivers = undefined;
