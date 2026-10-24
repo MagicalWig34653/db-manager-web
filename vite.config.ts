@@ -3,12 +3,14 @@ import { defineConfig, loadEnv } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 export default defineConfig(({ mode, command }) => {
   const repository = 'https://github.com/MagicalWig34653/db-manager-web';
   let sourceURL = repository;
+  let buildID = 'dev';
   if (command === 'build') {
     const commit = execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
       encoding: 'utf8',
@@ -38,6 +40,7 @@ export default defineConfig(({ mode, command }) => {
       );
     }
     sourceURL = `${repository}/tree/${commit}`;
+    buildID = commit;
   }
   const env = loadEnv(mode, process.cwd(), 'DB_MANAGER_');
   return {
@@ -60,6 +63,40 @@ export default defineConfig(({ mode, command }) => {
           });
         },
       },
+      {
+        // Emits the service worker (sw.js, stable name, no source map) next to the built shell.
+        name: 'pwa-service-worker',
+        apply: 'build',
+        writeBundle(options) {
+          const out = options.dir ?? 'dist';
+          const hashed = readdirSync(join(out, 'assets'))
+            .filter((name) => /\.(js|css)$/.test(name))
+            .sort()
+            .map((name) => `assets/${name}`);
+          const shell = [
+            './',
+            'index.html',
+            'manifest.webmanifest',
+            'icon.svg',
+            'icon-192.png',
+            'icon-512.png',
+            'icon-maskable-512.png',
+            'apple-touch-icon.png',
+            'favicon-32.png',
+            ...hashed,
+          ];
+          const template = readFileSync(
+            new URL('./src/lib/pwa/sw.template.js', import.meta.url),
+            'utf8',
+          );
+          writeFileSync(
+            join(out, 'sw.js'),
+            template
+              .replace('__BUILD_ID__', buildID)
+              .replace('__PRECACHE__', JSON.stringify(shell)),
+          );
+        },
+      },
     ],
     resolve: { alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) } },
     server: {
@@ -73,7 +110,7 @@ export default defineConfig(({ mode, command }) => {
         : undefined,
       headers: {
         'Content-Security-Policy':
-          "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; connect-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; connect-src 'self'; img-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         'X-Content-Type-Options': 'nosniff',
       },
     },
