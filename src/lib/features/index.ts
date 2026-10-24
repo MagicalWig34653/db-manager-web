@@ -11,7 +11,8 @@ import TableTab from '$lib/shell/builtin/TableTab.svelte';
 import ServerOverviewTab from '$lib/shell/builtin/ServerOverviewTab.svelte';
 
 /** Where a feature is mounted. */
-export type FeatureSlot = 'server-tab' | 'database-tab' | 'table-tab' | 'table-action';
+export type FeatureSlot =
+  'server-tab' | 'server-section' | 'database-tab' | 'table-tab' | 'table-action';
 
 /** Props every feature component receives from the shell. */
 export interface FeatureProps {
@@ -28,7 +29,7 @@ export interface FeatureDefinition {
   /** Unique id, conventionally "<package>.<name>". */
   id: string;
   slot: FeatureSlot;
-  /** Route segment of the tab; required for the *-tab slots, unique per slot. */
+  /** Route segment of the tab; required for the *-tab slots, unique per slot. A 'server-section' is rendered below the built-in server overview and has no tab. */
   tab?: string;
   /** Key in the text catalog (src/lib/i18n/de.ts). */
   titleKey: string;

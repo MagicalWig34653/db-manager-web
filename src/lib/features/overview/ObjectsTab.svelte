@@ -29,6 +29,7 @@
   const objects = new Resource<ObjectsResult>();
   let more = $state<ObjectInfo[]>([]);
   let loadingMore = $state(false);
+  let moreController: AbortController | null = null;
   let moreError = $state('');
   let text = $state('');
   let kind = $state<ObjectFilter['kind']>('all');
@@ -93,17 +94,22 @@
     if (!source || !base) return;
     loadingMore = true;
     moreError = '';
+    moreController?.abort();
+    const controller = (moreController = new AbortController());
     try {
-      const next = await overviewClient.objects(source, token, {
-        schema: schemaOf(source),
-        offset: all.length,
-      });
+      const next = await overviewClient.objects(
+        source,
+        token,
+        { schema: schemaOf(source), offset: all.length },
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
       if (source === connection && base === objects.data) more = [...more, ...next.objects];
     } catch (cause) {
-      if (source === connection)
+      if (source === connection && !controller.signal.aborted)
         moreError = cause instanceof Error ? cause.message : t('overview.objectsFailed');
     } finally {
-      loadingMore = false;
+      if (moreController === controller) loadingMore = false;
     }
   }
 
@@ -113,6 +119,8 @@
     if (!current) return;
     untrack(() => void load(current, secret));
     return () => {
+      moreController?.abort();
+      loadingMore = false;
       capabilities.abort();
       objects.abort();
     };

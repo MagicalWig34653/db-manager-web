@@ -109,7 +109,7 @@
         </p>
         {#if data.warnings.length}
           <ul class="definition-warnings">
-            {#each data.warnings as warning (warning)}<li>{warning}</li>{/each}
+            {#each data.warnings as warning, index (index)}<li>{warning}</li>{/each}
           </ul>
         {/if}
       {/if}

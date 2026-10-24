@@ -67,3 +67,17 @@ Fixtures, `overview.test.ts`, `components.test.ts`), `tests/browser/overview.spe
   holt), weil `feat/w-p06-backend` und Folgestand erst im Root-Repo liegen; der Integrations-Agent stellt auf den
   Pin um, sobald der Vertrag gepinnt ist.
 - Nicht ausgeführt: `scripts/test-real-tables.py` (holt den gepinnten Commit v5 aus GitHub; Code unverändert).
+
+## Nachtrag: Review-Auflagen (Review `review/w-p06-web`, a616589)
+
+- F1: `ServerInfoPanel` fragt Serverinfo und Datenbankliste nacheinander. `Resource.run` wiederholt lesende Anfragen bei
+  `database_busy` einmal automatisch (600 ms Pause, abbrechbar); bleibt es busy, erscheint die Meldung mit "Erneut versuchen".
+  Tests: keine Überlappung plus Wiederholung, dauerhaft busy. Echter Lauf `test-real-overview.py` (SQLite + PostgreSQL) 6 von 6 grün.
+- F3: neuer Registry-Slot `server-section` (tab-los, `src/lib/features/index.ts`). `ServerOverviewTab.svelte` lädt die Registry lazy
+  (kein Importzyklus) und zeigt alle Sektionen in `FeatureHost`; kein Import aus dem Featurepaket mehr. `Shell.svelte` unverändert.
+  Doppelte Kopfzeilen Treiber/Datenbank im Panel entfernt. Registry-Test für tab-lose Sektionen.
+- F4: Fehlertexte in `client.ts` über `t()` (`overview.err*`); Each-Schlüssel per Index (Datenbanken, Warnungen, Listen);
+  "Weitere laden" in Datenbank- und Objektliste abbrechbar. Test mit doppelten Datenbanknamen.
+- F5: Fixtures wieder byteidentisch zum Root, `.prettierignore` nimmt sie aus.
+- F2: nicht hier; der W-P05-Autor stellt eine explizite Spec-Liste in `test-real-tables.py` her. `test-real-overview.py` bleibt.
+- Prüfstand: contract:check, check (0/0), test (94), format:check, test:browser (17, Port 4189 wegen Fremdbelegung), test:csp (2) grün.
