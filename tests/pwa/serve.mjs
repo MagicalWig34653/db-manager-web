@@ -35,7 +35,16 @@ createServer(async (request, response) => {
       .end(JSON.stringify({ apiCalls }));
     return;
   }
-  if (url.pathname === '/api/echo' || url.pathname === '/healthz') {
+  if (url.pathname === '/healthz') {
+    // Never-ending body: the request only finishes when the client discards it.
+    apiCalls += 1;
+    response.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
+    const timer = setInterval(() => response.write('ok\n'), 200);
+    response.on('close', () => clearInterval(timer));
+    response.write('ok\n');
+    return;
+  }
+  if (url.pathname === '/api/echo') {
     apiCalls += 1;
     response.writeHead(200, {
       'content-type': 'application/json',

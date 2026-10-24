@@ -151,3 +151,15 @@ test('a new release is announced and applied only after the user accepts', async
     false,
   );
 });
+
+test('page with a registered worker reaches network idle (health probe body is released)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.reload({ waitUntil: 'networkidle', timeout: 10_000 });
+  await page.waitForLoadState('networkidle', { timeout: 10_000 });
+  await expect(page.locator('#app > *').first()).toBeAttached();
+});
