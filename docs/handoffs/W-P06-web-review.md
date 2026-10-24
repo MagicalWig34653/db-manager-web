@@ -88,3 +88,25 @@ Zwei Postgres-Definitionsfixtures wurden durch Prettier umgebrochen (kein Inhalt
    Branches gegeneinander konfliktfrei (W-P06 fügt am Anfang, W-P05 am Ende von `de.ts` ein).
 5. Doku: überwiegend ehrlich; „Echtlauf bestanden“ ist unter Last nicht reproduzierbar (F1); `test-real-tables.py` ist als offen
    genannt, hätte aber F2 gezeigt.
+
+## Nachreview (`feat/w-p06-web` 87f0b70; eingemergt)
+
+**Urteil: Freigabe.** F1, F3, F4, F5 sind geschlossen.
+
+- F1 geschlossen: `ServerInfoPanel` fragt Serverinfo und Datenbankliste nacheinander; `Resource.run` wiederholt bei `database_busy`
+  genau einmal nach 600 ms (nur lesend, bei Abbruch ohne Wiederholung). Echter Lauf `test-real-overview.py`: 4 von 4 Läufen
+  (SQLite und PostgreSQL) grün, vorher 4 von 5 rot.
+- F3 geschlossen: neuer Registry-Slot `server-section`; `ServerOverviewTab` lädt die Abschnitte per `loadFeatures` (lazy, kein
+  Importzyklus) und rendert jeden in `FeatureHost` (Fehlerisolation). Doppelte Kopfzeilen entfernt. Rest: Abschnitte haben kein
+  Capability-Gating (kein Feld in Verwendung, niedrig) und erscheinen asynchron nach dem Laden.
+- F4 geschlossen: Texte über `t()`, Index-Schlüssel statt Namen, „Weitere laden“ mit `AbortController`.
+- F5 geschlossen (Fixtures wieder byteidentisch bzw. dokumentiert, kein Inhaltsunterschied).
+- Neue Befunde: keine.
+
+## Probemerge aller drei Branches (Wegwerf-Worktree, `main` 6cb9613 + W-P05 bbe0f60 + W-P06-web 87f0b70 + PWA-Fix 7d14c80)
+
+`git merge-tree` und tatsächlicher Merge: **keine Konflikte** (`de.ts`, `Shell.svelte`, `package.json`, `test-real-tables.py` sauber).
+Läufe auf dem Merge-Stand, nacheinander: `contract:check` grün; `check` 0/0; `test` 23 Dateien, 145 Tests; `format:check` grün;
+`test:browser` 25 bestanden; `test:csp` 2; `test:pwa` 6; `test-real-tables.py` 10 bestanden (inkl. `export.spec.ts` gegen das
+Go-Backend, kein networkidle-Timeout mehr); `test-real-create.py` 2; `test-real-overview.py` 2 (insgesamt 4 Wiederholungen grün).
+Backend: Root `main` (5921a9d). Der fremde Container `dbmanager-w-p07-…` gehört nicht zu meinen Läufen und wurde nicht angefasst.
