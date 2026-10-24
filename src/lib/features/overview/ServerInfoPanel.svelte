@@ -188,7 +188,7 @@
             <dd>{data.connection.username}</dd>
           </div>
         {/if}
-        {#if data.connection.tls_mode}
+        {#if data.connection.tls_mode && data.driver !== 'sqlite'}
           <div>
             <dt>{t('serverInfo.tls')}</dt>
             <dd>{data.connection.tls_mode}</dd>
