@@ -4,3 +4,4 @@ coverage/
 src/lib/contract/
 src/third-party-notices.txt
 package-lock.json
+src/lib/features/overview/fixtures/

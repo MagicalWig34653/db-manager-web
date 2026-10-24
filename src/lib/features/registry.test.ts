@@ -80,3 +80,11 @@ it('isolates modules that throw while loading', async () => {
   expect(registry.errors).toHaveLength(1);
   expect(registry.errors[0]).toMatch(/bad\/feature\.ts: failed to load.*boom/);
 });
+
+it('accepts tab-less server sections', () => {
+  const { features: list, errors } = collectFeatures({
+    './p/feature.ts': { default: make({ id: 'p.s', slot: 'server-section', tab: undefined }) },
+  });
+  expect(errors).toEqual([]);
+  expect(featuresFor('server-section', new Set(), list)).toHaveLength(1);
+});
