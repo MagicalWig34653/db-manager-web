@@ -90,7 +90,7 @@ test('special names are sent byte-exact and shown quoted in the review', async (
     json: createResult('transactional', (body.table as { name: string }).name),
   }));
   await open(page);
-  await page.getByLabel('Spaltenname 1').fill('we"ird col');
+  await page.getByLabel('Spaltenname 1', { exact: true }).fill('we"ird col');
   await review(page, name);
   await expect(page.getByTestId('create-review')).toContainText(JSON.stringify(name));
   await confirmBox(page).check();
@@ -160,7 +160,7 @@ test('invalid limits block the review and 320 px has no horizontal scroll', asyn
   await expect(page.getByRole('button', { name: 'Definition prüfen' })).toBeDisabled();
   await expect(page.getByTestId('create-issues')).toContainText('63 Bytes');
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Spalte hinzufügen' }).click();
-  await page.getByLabel('Typ von Spalte 2').selectOption('decimal');
+  await page.getByLabel('Typ von Spalte 2', { exact: true }).selectOption('decimal');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

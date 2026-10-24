@@ -167,7 +167,7 @@ export const de = {
     columnName: 'Spaltenname {n}',
     columnType: 'Typ von Spalte {n}',
     columnLength: 'Länge von Spalte {n}',
-    columnPrecision: 'Stellen von Spalte {n}',
+    columnPrecision: 'Genauigkeit von Spalte {n}',
     columnScale: 'Nachkommastellen von Spalte {n}',
     columnNullable: 'Spalte {n} darf NULL enthalten',
     columnDefaultMode: 'Standardwert von Spalte {n}',
