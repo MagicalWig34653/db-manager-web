@@ -5,7 +5,7 @@ eigener Worktree, `node_modules` als `cp -cR`-Kopie. Autorenbranch unverändert,
 
 ## Urteil
 
-**Freigabe mit Auflage.** Vertrag, Validierung, Ein-Request-Garantie, Bestätigung, 409 und `outcome_unknown` sind korrekt
+**Freigabe mit Auflagen (F1, F4).** Vertrag, Validierung, Ein-Request-Garantie, Bestätigung, 409 und `outcome_unknown` sind korrekt
 und durch echte Läufe belegt. Offen ist ein mittlerer Befund (F1), der in der Shell (nicht im Paket) liegt und vor
 Integration entschieden werden sollte.
 
@@ -21,9 +21,9 @@ Integration entschieden werden sollte.
 | `npm run test:browser` | 19 bestanden |
 | `npm run test:csp` | Build + 2 bestanden |
 | `scripts/test-real-create.py` (`DBM_BACKEND_REPO=<Root>`, `DBM_BACKEND_REV=main`) | Backend 5921a9d, SQLite und PostgreSQL (verify-full): 2 bestanden |
-| `scripts/test-real-tables.py` | 10 bestanden (W-P02/F5-Bestand unverändert) |
+| `scripts/test-real-tables.py` | 10 Bestandsfälle bestanden, 2 fehlgeschlagen: `tests/real/table-create.spec.ts` (siehe F4) |
 
-Ein fremder Container `dbmanager-f5b-web-…-postgres` (gestartet vor meinem Lauf) lief parallel; nicht angefasst. Meine
+Ein fremder Container (später zwei `dbmanager-f5b-web-…`) `dbmanager-f5b-web-…-postgres` (gestartet vor meinem Lauf) lief parallel; nicht angefasst. Meine
 Läufe haben ihre Ressourcen selbst entfernt.
 
 ## Befunde
@@ -52,6 +52,13 @@ und Stellen) sind übernommen. Abweichungen, jeweils nur ein späteres `invalid_
 - Groß-/Kleinschreibung per `toLowerCase` statt Go-`ToLower` (z. B. `İ`): Client kann ein Duplikat übersehen.
 - Doppelte Einträge im Primärschlüssel sind über die UI nicht erzeugbar (Schlüssel-Liste), serverseitig ohnehin abgelehnt.
 Fix (optional): `-0` ablehnen, reservierte Namen/Schemas spiegeln; sonst im Handoff als bewusste Lücke nennen.
+
+### F4 (mittel, Integration) `test-real-tables.py` führt den neuen Echt-Spec mit aus und schlägt fehl
+
+Beleg: `playwright.real.config.ts` hat `testDir: ./tests/real`; `scripts/test-real-tables.py` übergibt keine Dateiliste, startet also
+auch `tests/real/table-create.spec.ts`, das eigene Fixtures (`scripts/test-real-create.py`) erwartet: 2 von 12 fehlgeschlagen
+(zweimal gelaufen, reproduzierbar). Das Handoff nennt den Lauf „nicht ausgeführt“; nach dem Merge wäre der Bestands-Echtlauf rot.
+Fix: `test-real-tables.py` mit expliziter Liste der vier Bestandsspecs aufrufen (oder `testIgnore` je Runner), vor Integration.
 
 ### F3 (niedrig) Handoff-Aussagen
 - „Tab immer sichtbar“ ist dokumentiert; ohne v6-Backend erscheint die CapabilityNotice (browsergetestet).
