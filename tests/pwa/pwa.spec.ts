@@ -143,7 +143,9 @@ test('a new release is announced and applied only after the user accepts', async
     true,
   );
   await page.getByRole('button', { name: 'Neue Version laden' }).click();
-  await expect.poll(() => page.evaluate(() => window.marker)).toBeUndefined();
+  await page.waitForEvent('framenavigated');
+  await page.waitForLoadState('load');
+  expect(await page.evaluate(() => window.marker)).toBeUndefined();
   await expect(page.locator('#app > *').first()).toBeAttached();
   expect(await page.evaluate(async () => !!(await navigator.serviceWorker.ready).waiting)).toBe(
     false,

@@ -39,7 +39,7 @@ createServer(async (request, response) => {
     apiCalls += 1;
     response.writeHead(200, {
       'content-type': 'application/json',
-      'cache-control': 'public, max-age=3600',
+      'cache-control': 'no-store',
     });
     response.end(
       JSON.stringify({ call: apiCalls, authorization: request.headers.authorization ?? null }),
