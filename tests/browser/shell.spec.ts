@@ -87,3 +87,21 @@ test('320 px layout has no horizontal scroll', async ({ page }) => {
     fullPage: true,
   });
 });
+
+test('a table whose name cannot be routed stays open instead of jumping away', async ({ page }) => {
+  await mockBackend(page, [{ name: 'a\tb', schema: 'main', kind: 'table' }]);
+  await page.goto('/');
+  await connect(page);
+  await page.getByRole('button', { name: /a\tb|a b/ }).click();
+  await expect(page.getByRole('heading', { name: 'Tabellenansicht' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Tabellenarbeitsplatz' })).toBeVisible();
+});
+
+test('shortcuts are blocked while a modal dialog is open', async ({ page }) => {
+  await mockBackend(page);
+  await page.goto('/#/server/uebersicht');
+  await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Control+k');
+  await expect(page).toHaveURL(/#\/server\/uebersicht$/);
+});

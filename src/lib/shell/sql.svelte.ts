@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // State and execution of the SQL workspace; lives in the shell so it survives tab changes.
+import { t } from '$lib/i18n';
 import { gateway } from '$lib/gateway';
 import type { Execution } from '$lib/workbench';
 import type { Session } from './session.svelte';
@@ -43,9 +44,7 @@ export class SqlRunner {
     } catch (cause) {
       if (version !== session.sessionVersion) return;
       if (requestController.signal.aborted) this.cancelled = true;
-      else
-        this.error =
-          cause instanceof Error ? cause.message : 'Die Abfrage konnte nicht ausgeführt werden.';
+      else this.error = cause instanceof Error ? cause.message : t('sql.executeFailed');
     } finally {
       if (version === session.sessionVersion) this.running = false;
     }

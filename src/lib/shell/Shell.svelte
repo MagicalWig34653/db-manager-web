@@ -20,24 +20,43 @@
     TriangleAlert,
     X,
   } from '@lucide/svelte';
-  import { onDestroy, tick, untrack } from 'svelte';
+  import { onDestroy, onMount, tick, untrack } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import * as Dialog from '$lib/components/ui/dialog';
   import ConnectionEditor from '$lib/components/ConnectionEditor.svelte';
   import SourceInformation from '$lib/components/SourceInformation.svelte';
   import CapabilityNotice from '$lib/components/shared/CapabilityNotice.svelte';
-  import { featuresFor, findTab } from '$lib/features';
+  import {
+    builtinFeatures,
+    featureLoaders,
+    featuresFor,
+    findTab,
+    loadFeatures,
+    type FeatureRegistry,
+  } from '$lib/features';
+  import FeatureHost from './FeatureHost.svelte';
   import { t } from '$lib/i18n';
   import type { CatalogObject } from '$lib/workbench';
   import { setShellContext } from './context';
   import { formatRoute, parseHash, type Route } from './router';
   import { Session } from './session.svelte';
-  import { dispatch, type Shortcut } from './shortcuts';
+  import { anyModalOpen, dispatch, type Shortcut } from './shortcuts';
   import { SqlRunner } from './sql.svelte';
 
   let route = $state<Route>(parseHash(window.location.hash));
   let sidebarOpen = $state(false);
+  let registry = $state<FeatureRegistry>({ features: builtinFeatures, errors: [] });
+  let registryReady = $state(false);
+  onMount(() => {
+    let alive = true;
+    void loadFeatures(featureLoaders).then((loaded) => {
+      if (!alive) return;
+      registry = loaded;
+      registryReady = true;
+    });
+    return () => (alive = false);
+  });
   const driverNames = { sqlite: 'SQLite', mysql: 'MySQL / MariaDB', postgresql: 'PostgreSQL' };
 
   function navigate(next: Route) {
@@ -93,10 +112,14 @@
       : null,
   );
   const extraDatabaseTabs = $derived(
-    featuresFor('database-tab', session.capabilities).filter((e) => e.feature.tab !== 'sql'),
+    featuresFor('database-tab', session.capabilities, registry.features).filter(
+      (e) => e.feature.tab !== 'sql',
+    ),
   );
   const extraTableTabs = $derived(
-    featuresFor('table-tab', session.capabilities).filter((e) => e.feature.tab !== 'daten'),
+    featuresFor('table-tab', session.capabilities, registry.features).filter(
+      (e) => e.feature.tab !== 'daten',
+    ),
   );
 
   // Resolves the table of a table route once the catalog is available; never from the URL alone.
@@ -144,7 +167,7 @@
     navigate(sqlRoute());
     void tick().then(() => sql.focus());
   }
-  const dialogsClosed = () => !session.connectionOpen && !session.accessOpen;
+  const dialogsClosed = () => !session.connectionOpen && !session.accessOpen && !anyModalOpen();
   const shortcuts: Shortcut[] = [
     {
       id: 'run-query',
@@ -169,7 +192,11 @@
 </script>
 
 <svelte:window
-  onhashchange={() => (route = parseHash(window.location.hash))}
+  onhashchange={() => {
+    // Our own navigation already set the route; re-parsing it would drop names the parser rejects.
+    if (window.location.hash === formatRoute(route)) return;
+    route = parseHash(window.location.hash);
+  }}
   onkeydown={(event) => dispatch(event, shortcuts)}
   onbeforeunload={(event) => {
     if (session.writeInFlight) {
@@ -183,7 +210,7 @@
   <aside class:mobile-open={sidebarOpen} aria-label={t('shell.navigationLabel')}>
     <div class="brand">
       <div class="brand-icon"><Database size={21} strokeWidth={1.8} /></div>
-      <div><strong>DB Manager</strong><small>Dein Datenbank-Arbeitsplatz</small></div>
+      <div><strong>DB Manager</strong><small>{t('shell.tagline')}</small></div>
       <Button
         class="sidebar-close"
         variant="ghost"
@@ -198,7 +225,7 @@
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Verbindung hinzufügen"
+          aria-label={t('nav.addConnection')}
           disabled={sql.running}
           onclick={() => session.openConnection()}><Plus /></Button
         >
@@ -216,7 +243,7 @@
         >
       {:else}
         <button class="add-connection" onclick={() => session.openConnection()}
-          ><Plus size={17} />Verbindung hinzufügen</button
+          ><Plus size={17} />{t('nav.addConnection')}</button
         >
       {/if}
       <div class="sidebar-divider"></div>
@@ -225,7 +252,7 @@
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Objekte aktualisieren"
+          aria-label={t('nav.refreshObjects')}
           disabled={!session.connection || session.catalogBusy || sql.running}
           onclick={() => session.loadCatalog()}
           ><RefreshCw class={session.catalogBusy ? 'animate-spin' : ''} /></Button
@@ -240,8 +267,8 @@
         >
         <div class="search-field">
           <Search size={15} /><input
-            aria-label="Objekte filtern"
-            placeholder="Objekte filtern …"
+            aria-label={t('nav.filterObjects')}
+            placeholder={t('nav.filterPlaceholder')}
             bind:value={session.objectSearch}
           />
         </div>
@@ -256,11 +283,9 @@
           {#if session.catalogError}<p class="catalog-message error-text" role="alert">
               {session.catalogError}
             </p>
-          {:else if session.catalogBusy}<p class="catalog-message">Objekte werden geladen …</p>
+          {:else if session.catalogBusy}<p class="catalog-message">{t('nav.loading')}</p>
           {:else if session.filteredObjects.length === 0}<p class="catalog-message">
-              {session.objectSearch
-                ? 'Keine passenden Objekte.'
-                : 'Keine Tabellen oder Views vorhanden.'}
+              {session.objectSearch ? t('nav.noMatches') : t('nav.noObjects')}
             </p>
           {:else}{#each session.filteredObjects as object}<button
                 class="object-button"
@@ -268,19 +293,19 @@
                 onclick={() => openObject(object)}
                 ><Table2 size={15} /><span
                   >{object.schema ? `${object.schema}.` : ''}{object.name}</span
-                >{#if object.type === 'view'}<small>View</small>{/if}</button
+                >{#if object.type === 'view'}<small>{t('nav.view')}</small>{/if}</button
               >{/each}{/if}
         </div>
       {:else}
         <div class="sidebar-empty">
           <Folder size={25} strokeWidth={1.3} />
-          <p>Deine Tabellen und Views<br />erscheinen nach dem Verbinden.</p>
+          <p>{t('nav.emptyHint')}</p>
         </div>
       {/if}
     </div>
     <div class="sidebar-footer">
       <ShieldCheck size={16} /><span
-        >Nur in dieser Sitzung<small>Keine gespeicherten Zugangsdaten</small></span
+        >{t('nav.sessionOnly')}<small>{t('nav.noStoredCredentials')}</small></span
       >
     </div>
   </aside>
@@ -308,31 +333,40 @@
           session.tokenDraft = session.backendToken;
           session.accessOpen = true;
         }}
-        ><KeyRound />Backend-Zugang{#if session.backendToken}<span
+        ><KeyRound />{t('token.button')}{#if session.backendToken}<span
             class="access-dot"
-            aria-label="Token hinterlegt"
+            aria-label={t('token.set')}
           ></span>{/if}</Button
       >
     </header>
     <main id="main-content" tabindex="-1">
       {#if session.writeNotice}<div class="global-write-notice" role="alert">
+          <TriangleAlert size={20} /><span>{t('shell.writeUnknown')}</span><Button
+            variant="outline"
+            size="sm"
+            onclick={() => (session.writeNotice = false)}>{t('shell.dismissNotice')}</Button
+          >
+        </div>{/if}
+      {#if registry.errors.length}<div
+          class="global-write-notice"
+          role="alert"
+          data-testid="feature-errors"
+        >
           <TriangleAlert size={20} /><span
-            >Der Ausgang eines gesendeten Schreibvorgangs ist unbekannt. Er kann bereits übernommen
-            worden sein. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.</span
-          ><Button variant="outline" size="sm" onclick={() => (session.writeNotice = false)}
-            >Hinweis schließen</Button
+            >{t('shell.featureLoadErrors')}
+            {registry.errors.join(' ')}</span
           >
         </div>{/if}
       <div class="page-heading">
         <div>
-          <p class="eyebrow">DEINE DATEN. DEIN ARBEITSBEREICH.</p>
+          <p class="eyebrow">{t('shell.eyebrow')}</p>
           <h1>{heading}</h1>
           <p>
             {route.kind === 'server'
-              ? 'Verbindung und Server im Überblick.'
+              ? t('shell.subtitleServer')
               : isTableView
-                ? 'Daten erkunden. Struktur verstehen.'
-                : 'Abfragen schreiben. Ergebnisse verstehen.'}
+                ? t('shell.subtitleTable')
+                : t('shell.subtitleSql')}
           </p>
         </div>
         <div class="connection-status" class:connected={!!session.connection}>
@@ -342,11 +376,11 @@
       {#if !session.connection}<div class="onboarding">
           <div class="onboarding-icon"><Database size={22} /></div>
           <div>
-            <strong>Beginne mit einer Verbindung</strong>
-            <p>Verbinde eine Datenbank, um ihre Objekte zu erkunden und SQL auszuführen.</p>
+            <strong>{t('onboarding.title')}</strong>
+            <p>{t('onboarding.text')}</p>
           </div>
           <Button variant="outline" onclick={() => session.openConnection()}
-            >Verbindung hinzufügen <ArrowUpRight /></Button
+            >{t('nav.addConnection')} <ArrowUpRight /></Button
           >
         </div>{/if}
       {#if route.kind !== 'server'}
@@ -372,7 +406,7 @@
         </nav>
       {/if}
       {#if route.kind === 'table' && extraTableTabs.length > 0}
-        <nav class="workspace-tabs" aria-label="Tabellenreiter">
+        <nav class="workspace-tabs" aria-label={t('shell.tableTabsLabel')}>
           <button aria-pressed={route.tab === 'daten'} onclick={openTableTab}
             >{t('shell.tabTable')}</button
           >{#each extraTableTabs as { feature } (feature.id)}<button
@@ -384,25 +418,33 @@
         </nav>
       {/if}
       {#if route.kind === 'server'}
-        {@const entry = findTab('server-tab', route.tab, session.capabilities)}
+        {@const entry = findTab('server-tab', route.tab, session.capabilities, registry.features)}
         {#if !entry}
-          <CapabilityNotice title={t('shell.invalidLinkTitle')} reason={t('shell.unknownTab')} />
+          {#if registryReady}<CapabilityNotice
+              title={t('shell.invalidLinkTitle')}
+              reason={t('shell.unknownTab')}
+            />{:else}<p class="catalog-message" role="status">{t('shared.loading')}</p>{/if}
         {:else if !entry.available}
           <CapabilityNotice />
         {:else}
-          {@const Feature = entry.feature.component}
-          <Feature
-            connection={session.connection}
-            token={session.backendToken}
-            tab={route.tab}
-            onsql={() => navigate(sqlRoute())}
-            onwritephase={() => {}}
+          <FeatureHost
+            component={entry.feature.component}
+            props={{
+              connection: session.connection,
+              token: session.backendToken,
+              tab: route.tab,
+              onsql: () => navigate(sqlRoute()),
+              onwritephase: () => {},
+            }}
           />
         {/if}
       {:else if route.kind === 'table'}
-        {@const entry = findTab('table-tab', route.tab, session.capabilities)}
+        {@const entry = findTab('table-tab', route.tab, session.capabilities, registry.features)}
         {#if !entry}
-          <CapabilityNotice title={t('shell.invalidLinkTitle')} reason={t('shell.unknownTab')} />
+          {#if registryReady}<CapabilityNotice
+              title={t('shell.invalidLinkTitle')}
+              reason={t('shell.unknownTab')}
+            />{:else}<p class="catalog-message" role="status">{t('shared.loading')}</p>{/if}
         {:else if !session.connection || !databaseMatches}
           <CapabilityNotice
             title={t('shell.invalidLinkTitle')}
@@ -411,15 +453,17 @@
         {:else if !entry.available}
           <CapabilityNotice />
         {:else if tableTarget}
-          {@const Feature = entry.feature.component}
-          <Feature
-            connection={session.connection}
-            token={session.backendToken}
-            database={route.database}
-            object={tableTarget}
-            tab={route.tab}
-            onsql={() => navigate(sqlRoute())}
-            onwritephase={session.writeReceiver(tableTarget, session.sessionVersion)}
+          <FeatureHost
+            component={entry.feature.component}
+            props={{
+              connection: session.connection,
+              token: session.backendToken,
+              database: route.database,
+              object: tableTarget,
+              tab: route.tab,
+              onsql: () => navigate(sqlRoute()),
+              onwritephase: session.writeReceiver(tableTarget, session.sessionVersion),
+            }}
           />
         {:else}
           <p class="catalog-message" role="status">
@@ -432,9 +476,12 @@
         {/if}
       {:else}
         {@const tab = route.kind === 'database' ? route.tab : 'sql'}
-        {@const entry = findTab('database-tab', tab, session.capabilities)}
+        {@const entry = findTab('database-tab', tab, session.capabilities, registry.features)}
         {#if !entry}
-          <CapabilityNotice title={t('shell.invalidLinkTitle')} reason={t('shell.unknownTab')} />
+          {#if registryReady}<CapabilityNotice
+              title={t('shell.invalidLinkTitle')}
+              reason={t('shell.unknownTab')}
+            />{:else}<p class="catalog-message" role="status">{t('shared.loading')}</p>{/if}
         {:else if !!session.connection && !databaseMatches}
           <CapabilityNotice
             title={t('shell.invalidLinkTitle')}
@@ -445,22 +492,21 @@
         {:else if !entry.available}
           <CapabilityNotice />
         {:else}
-          {@const Feature = entry.feature.component}
-          <Feature
-            connection={session.connection}
-            token={session.backendToken}
-            database={session.connection?.database}
-            {tab}
-            onsql={() => navigate(sqlRoute())}
-            onwritephase={() => {}}
+          <FeatureHost
+            component={entry.feature.component}
+            props={{
+              connection: session.connection,
+              token: session.backendToken,
+              database: session.connection?.database,
+              tab,
+              onsql: () => navigate(sqlRoute()),
+              onwritephase: () => {},
+            }}
           />
         {/if}
       {/if}
       <footer class="workspace-footer">
-        <span
-          ><ShieldCheck size={14} />Zugangsdaten und Abfragen werden hier nicht dauerhaft
-          gespeichert.</span
-        ><SourceInformation /><span
+        <span><ShieldCheck size={14} />{t('shell.noPersistence')}</span><SourceInformation /><span
           ><CircleHelp size={14} />{t('shortcuts.runQuery')} · {t('shortcuts.cancelQuery')}</span
         >
       </footer>
@@ -479,9 +525,8 @@
   <Dialog.Content class="sm:max-w-[480px] p-7">
     <Dialog.Header
       ><div class="dialog-mark"><KeyRound size={22} /></div>
-      <Dialog.Title class="text-xl">Backend-Zugang</Dialog.Title><Dialog.Description
-        >Gib den Zugriffstoken deiner Instanz ein. Er bleibt ausschließlich für diese Sitzung im
-        Arbeitsspeicher.</Dialog.Description
+      <Dialog.Title class="text-xl">{t('token.button')}</Dialog.Title><Dialog.Description
+        >{t('token.description')}</Dialog.Description
       ></Dialog.Header
     >
     <form
@@ -492,18 +537,18 @@
       }}
     >
       <div class="form-field">
-        <label for="backend-token">Zugriffstoken</label><Input
+        <label for="backend-token">{t('token.label')}</label><Input
           id="backend-token"
           type="password"
           bind:value={session.tokenDraft}
           autocomplete="new-password"
-          placeholder="Token eingeben"
+          placeholder={t('token.placeholder')}
         />
       </div>
       <div class="dialog-actions">
         <Button variant="ghost" type="button" onclick={() => session.clearSession()}
-          ><Trash2 />Sitzung leeren</Button
-        ><Button type="submit">Übernehmen <ArrowRight /></Button>
+          ><Trash2 />{t('token.clear')}</Button
+        ><Button type="submit">{t('token.apply')} <ArrowRight /></Button>
       </div>
     </form>
   </Dialog.Content>
