@@ -3,8 +3,9 @@
   import { Database } from '@lucide/svelte';
   import { t } from '$lib/i18n';
   import type { FeatureProps } from '$lib/features';
+  import ServerInfoPanel from '$lib/features/overview/ServerInfoPanel.svelte';
 
-  let { connection }: FeatureProps = $props();
+  let { connection, token }: FeatureProps = $props();
   const driverNames = { sqlite: 'SQLite', mysql: 'MySQL / MariaDB', postgresql: 'PostgreSQL' };
 </script>
 
@@ -23,3 +24,5 @@
     <p class="catalog-message">{t('server.noConnection')}</p>
   {/if}
 </section>
+
+<ServerInfoPanel {connection} {token} />
