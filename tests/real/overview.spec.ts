@@ -30,6 +30,9 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
     await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
 
+    // Wait for the catalog: its completion still adjusts the route of a fresh connection.
+    await expect(page.getByRole('button', { name: /t_a$/ })).toBeVisible();
+
     // Server context and database list.
     await page.goto('/#/server');
     await expect(page.getByTestId('server-facts')).toContainText(
