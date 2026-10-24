@@ -128,3 +128,26 @@ irgendein Escape); Strg+Enter mit Alt zählt nicht mehr. Praktisch unerheblich; 
 
 F1 und F2 vor dem ersten Feature-Paket (Autor oder Integrations-Agent); F3 bis F5 im selben Zug oder als Folgeticket;
 F6 mit dem i18n-Paket.
+
+## Nachreview (Fixes F1 bis F8, `feat/w-p02-shell` 67925eb, Code-Commit 5ff4d61, eingemergt in `review/w-p02`)
+
+**Urteil: Freigabe, keine blockierenden neuen Befunde.**
+
+Läufe nacheinander auf dem Merge-Stand: `check` 0 Fehler/0 Warnungen; `test` 15 Dateien, 68 Tests; `format:check` bestanden;
+`test:browser` 12 bestanden; `test:csp` Build + 2 bestanden; `scripts/test-real-tables.py` 10 echte Fälle (SQLite/PostgreSQL)
+bestanden, Container danach entfernt. `package.json`/`vite.config.ts`: gegenüber dem Autorenstand nur der bereits geprüfte
+W-P04-Merge aus `main`; keine neue Abhängigkeit.
+
+| Befund | Ergebnis |
+| --- | --- |
+| F1 | Behoben. `loadFeatures` importiert jedes Modul einzeln (`Promise.allSettled`), `collectFeatures` überspringt fehlerhafte/doppelte Definitionen und liefert `errors`, die `Shell` sichtbar anzeigt; jede Feature-Komponente läuft in `FeatureHost` mit `<svelte:boundary>` und `ErrorPanel` (Wiederholen). Tests: Duplikate, fehlender Default-Export, Ladefehler, Renderfehler. Reiter werden erst nach `registryReady` als „unbekannt“ bewertet (kein falscher Hinweis beim Deep-Link). Lücke (gering): kein Browsertest mit echt werfendem Glob-Modul, nur Unit-Tests. |
+| F2 | Behoben. `dialogsClosed()` enthält `anyModalOpen()` (DOM-Suche nach `role=dialog/alertdialog`); Browsertest „shortcuts are blocked while a modal dialog is open“; Normalbedienung durch die unveränderten Bestandstests belegt. Hinweis: `Escape` (Abfrage abbrechen) ist davon nicht berührt. |
+| F3 | Behoben. `onhashchange` ignoriert das Echo des eigenen Hashes; Browsertest „table whose name cannot be routed stays open“. Ein Neuladen/Deep-Link solcher Namen führt weiter zur Startansicht (beabsichtigt, kein Deep-Link). |
+| F4 | Behoben. `oncancel` feuert bei Knopf, Escape, Backdrop/Kreuz, nicht nach Bestätigung (Tests für beides). |
+| F5 | Behoben. `aria-label` entfernt, Feld-Id per `$props.id()`, Anfangsfokus im Namensfeld, Bestätigen nur über den ausdrücklichen Knopf (`type=button`); Enter bei passendem Namen verschiebt nur den Fokus auf den Knopf. Escape/Fokusfalle/Rollen weiter von bits-ui, ohne eigenen Fokusrückgabetest (niedrig, unverändert). |
+| F6 | Behoben. Feste Texte aus Shell/SqlTab in den Katalog; `keys.test.ts` prüft alle `t('…')`- und `titleKey`-Schlüssel gegen `de.ts`. Dynamisch gebildete Schlüssel erfasst der Test nicht (Einschränkung). |
+| F7 | Behoben. `mod: undefined` ignoriert Modifikatoren (Escape mit Strg bricht wieder ab), Alt bleibt ausgeschlossen. |
+| F8 | Dokumentiert im Handoff. |
+
+Token-/Sitzungsverhalten: `session.svelte.ts` (+13 Zeilen) und `sql.svelte.ts` (+5) nur Textkatalog-Anpassungen; die unveränderten
+Sitzungs-/Token-Browsertests und der echte Lauf bestehen.
