@@ -29,6 +29,7 @@
   const databases = new Resource<DatabasesResult>();
   let moreDatabases = $state<DatabaseInfo[]>([]);
   let loadingMore = $state(false);
+  let moreController: AbortController | null = null;
 
   const infoCap = $derived(
     connection && capabilities.data
@@ -54,20 +55,17 @@
     if (!caps) return;
     const driver = (feature: 'server_info' | 'databases') =>
       driverCapability(caps, current, feature).support !== 'unsupported';
-    await Promise.all([
-      driver('server_info')
-        ? info.run(
-            (signal) => overviewClient.serverInfo(current, secret, signal),
-            t('serverInfo.loadFailed'),
-          )
-        : null,
-      driver('databases')
-        ? databases.run(
-            (signal) => overviewClient.databases(current, secret, {}, signal),
-            t('overview.databasesFailed'),
-          )
-        : null,
-    ]);
+    // One request at a time: SQLite answers parallel requests with database_busy.
+    if (driver('server_info'))
+      await info.run(
+        (signal) => overviewClient.serverInfo(current, secret, signal),
+        t('serverInfo.loadFailed'),
+      );
+    if (driver('databases'))
+      await databases.run(
+        (signal) => overviewClient.databases(current, secret, {}, signal),
+        t('overview.databasesFailed'),
+      );
   }
 
   async function loadMore() {
@@ -75,14 +73,22 @@
     const source = connection;
     const base = databases.data;
     loadingMore = true;
+    moreController?.abort();
+    const controller = (moreController = new AbortController());
     try {
-      const next = await overviewClient.databases(source, token, { offset: allDatabases.length });
+      const next = await overviewClient.databases(
+        source,
+        token,
+        { offset: allDatabases.length },
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
       if (source === connection && base === databases.data)
         moreDatabases = [...moreDatabases, ...next.databases];
     } catch {
       /* the visible list stays as it is; the user can retry */
     } finally {
-      loadingMore = false;
+      if (moreController === controller) loadingMore = false;
     }
   }
 
@@ -92,13 +98,14 @@
     if (!current) return;
     untrack(() => void load(current, secret));
     return () => {
+      moreController?.abort();
+      loadingMore = false;
       capabilities.abort();
       info.abort();
       databases.abort();
     };
   });
 
-  const driverNames = { sqlite: 'SQLite', mysql: 'MySQL', postgres: 'PostgreSQL' } as const;
   const variantNames = {
     sqlite: 'SQLite',
     mysql: 'MySQL',
@@ -131,21 +138,15 @@
       />
     {/if}
 
-    <div class="table-facts" data-testid="server-context">
-      <span
-        >{t('server.driverLabel')}: {driverNames[
-          connection.driver === 'postgresql' ? 'postgres' : connection.driver
-        ]}</span
-      >
-      <span>{t('server.databaseLabel')}: {connection.database}</span>
-      {#if info.data}
+    {#if info.data}
+      <div class="table-facts" data-testid="server-context">
         <span>{t('serverInfo.version')}: {variantNames[info.data.variant]} {info.data.version}</span
         >
         {#if info.data.uptime_seconds !== null}
           <span>{t('serverInfo.uptime')}: {formatDuration(info.data.uptime_seconds)}</span>
         {/if}
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     {#if info.busy}<p class="catalog-message" role="status">{t('overview.loading')}</p>{/if}
     {#if info.error}
@@ -194,7 +195,7 @@
             <dd>{data.connection.tls_mode}</dd>
           </div>
         {/if}
-        {#each sessionVariables as variable (variable.name)}
+        {#each sessionVariables as variable, index (index)}
           <div>
             <dt>{variable.name}</dt>
             <dd>{shown(variable.value)}</dd>
@@ -238,7 +239,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each allDatabases as database (database.name)}
+              {#each allDatabases as database, index (index)}
                 <tr>
                   <th scope="row">
                     {#if database.current}
@@ -312,7 +313,7 @@
                 ></thead
               >
               <tbody>
-                {#each data.character_sets as set (set.name)}
+                {#each data.character_sets as set, index (index)}
                   <tr
                     ><th scope="row">{set.name}</th><td>{shown(set.default_collation)}</td><td
                       >{shown(set.description)}</td
@@ -344,7 +345,7 @@
                 ></thead
               >
               <tbody>
-                {#each data.collations as collation (collation.name + (collation.charset ?? ''))}
+                {#each data.collations as collation, index (index)}
                   <tr
                     ><th scope="row">{collation.name}</th><td>{shown(collation.charset)}</td><td
                       >{collation.default ? t('overview.yes') : ''}</td
@@ -376,7 +377,7 @@
                 ></thead
               >
               <tbody>
-                {#each data.engines as engine (engine.name)}
+                {#each data.engines as engine, index (index)}
                   <tr
                     ><th scope="row">{engine.name}</th><td>{engine.support}</td><td
                       >{shown(engine.transactions)}</td
@@ -407,7 +408,7 @@
                 ></thead
               >
               <tbody>
-                {#each data.plugins as plugin (plugin.name + plugin.type)}
+                {#each data.plugins as plugin, index (index)}
                   <tr
                     ><th scope="row">{plugin.name}</th><td>{plugin.type}</td><td>{plugin.status}</td
                     ><td>{shown(plugin.version)}</td></tr

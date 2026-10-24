@@ -2,6 +2,7 @@
 // Client for the read-only overview API 0.7 (databases, objects, definition, server info).
 import { ApiClient, ApiError, toConnection } from '$lib/api';
 import type { ConnectionDraft } from '$lib/workbench';
+import { t } from '$lib/i18n';
 import * as validators from '$lib/contract/v7/validators.js';
 import type { components } from '$lib/contract/v7/api-types';
 
@@ -17,23 +18,19 @@ export type DriverCapabilities = OverviewSchemas['OverviewDriverCapabilities'];
 export type FeatureKey = 'databases' | 'objects' | 'definition' | 'server_info' | 'exact_rows';
 
 const invalid = (name: string) =>
-  new ApiError(
-    'invalid_response',
-    `Das Backend hat eine ungültige Antwort geliefert (${name}). Die Übersicht bleibt leer.`,
-  );
+  new ApiError('invalid_response', t('overview.errInvalidResponse', { name }));
 
-const overviewErrors: Record<string, string> = {
-  invalid_overview:
-    'Die Anfrage für die Übersicht ist ungültig. Prüfe Schemaname, Limit und Zeitgrenze.',
-  object_not_found:
-    'Das Objekt wurde nicht gefunden oder ist für diese Verbindung nicht sichtbar. Aktualisiere die Objektliste.',
-  unsupported_feature: 'Diese Datenbank bietet die gewünschte Übersichtsfunktion nicht an.',
+const overviewErrorKeys: Record<string, string> = {
+  invalid_overview: 'overview.errInvalidOverview',
+  object_not_found: 'overview.errObjectNotFound',
+  unsupported_feature: 'overview.errUnsupportedFeature',
 };
+const overviewError = (code: string) => new ApiError(code, t(overviewErrorKeys[code]));
 
 /** Replaces generic backend texts for the codes that only exist since API 0.7. */
 function mapError(cause: unknown): unknown {
-  if (cause instanceof ApiError && cause.code in overviewErrors)
-    return new ApiError(cause.code, overviewErrors[cause.code]);
+  if (cause instanceof ApiError && cause.code in overviewErrorKeys)
+    return overviewError(cause.code);
   return cause;
 }
 
@@ -79,10 +76,7 @@ export class OverviewClient {
       );
     } catch (cause) {
       if (cause instanceof ApiError && cause.code === 'not_found')
-        throw new ApiError(
-          'unsupported_feature',
-          'Diese Instanz bietet die Übersicht (API 0.7) noch nicht an. Aktualisiere das Backend.',
-        );
+        throw new ApiError('unsupported_feature', t('overview.errNoV7'));
       throw mapError(cause);
     }
   }
@@ -143,7 +137,7 @@ export class OverviewClient {
       signal,
     ).catch((cause: unknown) => {
       if (cause instanceof ApiError && cause.code === 'not_found')
-        throw new ApiError('object_not_found', overviewErrors.object_not_found);
+        throw overviewError('object_not_found');
       throw cause;
     });
   }

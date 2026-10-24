@@ -10,6 +10,8 @@ import {
   type OverviewCapabilities,
   type ServerInfoResult,
 } from './client';
+import { ApiError } from '$lib/api';
+import { retryDelay } from './resource.svelte';
 import ObjectsTab from './ObjectsTab.svelte';
 import DefinitionTab from './DefinitionTab.svelte';
 import ServerInfoPanel from './ServerInfoPanel.svelte';
@@ -170,6 +172,68 @@ describe('ObjectsTab', () => {
 });
 
 describe('ServerInfoPanel', () => {
+  it('sends requests one at a time and retries database_busy once (SQLite)', async () => {
+    retryDelay.ms = 5;
+    vi.spyOn(overviewClient, 'capabilities').mockResolvedValue(caps());
+    let running = 0;
+    let overlap = false;
+    let busyOnce = true;
+    const guard = async <T>(value: T, busy = false): Promise<T> => {
+      if (running > 0) overlap = true;
+      running++;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      running--;
+      if (busy) throw new ApiError('database_busy', 'Datenbank beschäftigt.');
+      if (overlap) throw new ApiError('database_busy', 'Parallel.');
+      return value;
+    };
+    vi.spyOn(overviewClient, 'serverInfo').mockImplementation(() =>
+      guard(fixture<ServerInfoResult>('ServerInfoResult.sqlite-server-info.json')),
+    );
+    const databases = vi.spyOn(overviewClient, 'databases').mockImplementation(async () => {
+      const busy = busyOnce;
+      busyOnce = false;
+      return guard(fixture('DatabasesResult.sqlite-databases.json'), busy);
+    });
+    render(ServerInfoPanel, { connection, token: 'tok' });
+    await waitFor(() => expect(screen.getByTestId('database-table')).toBeVisible());
+    expect(databases).toHaveBeenCalledTimes(2);
+    expect(overlap).toBe(false);
+    retryDelay.ms = 600;
+  });
+
+  it('keeps the error with retry when the database stays busy', async () => {
+    retryDelay.ms = 5;
+    vi.spyOn(overviewClient, 'capabilities').mockResolvedValue(caps());
+    vi.spyOn(overviewClient, 'serverInfo').mockResolvedValue(
+      fixture('ServerInfoResult.sqlite-server-info.json'),
+    );
+    const databases = vi
+      .spyOn(overviewClient, 'databases')
+      .mockRejectedValue(new ApiError('database_busy', 'Datenbank beschäftigt.'));
+    render(ServerInfoPanel, { connection, token: 'tok' });
+    await waitFor(() => expect(screen.getByText('Datenbank beschäftigt.')).toBeVisible());
+    expect(databases).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeVisible();
+    retryDelay.ms = 600;
+  });
+
+  it('survives duplicate database names and duplicate warnings', async () => {
+    vi.spyOn(overviewClient, 'capabilities').mockResolvedValue(caps());
+    vi.spyOn(overviewClient, 'serverInfo').mockResolvedValue(
+      fixture('ServerInfoResult.sqlite-server-info.json'),
+    );
+    const list = fixture<{ databases: { name: string }[] }>(
+      'DatabasesResult.sqlite-databases.json',
+    );
+    vi.spyOn(overviewClient, 'databases').mockResolvedValue({
+      ...list,
+      databases: [list.databases[0], list.databases[0]],
+    } as never);
+    render(ServerInfoPanel, { connection, token: 'tok' });
+    await waitFor(() => expect(screen.getAllByTestId('value-state')).toHaveLength(2));
+  });
+
   it('shows server context, marks database values as estimated and keeps the page limit visible', async () => {
     vi.spyOn(overviewClient, 'capabilities').mockResolvedValue(caps());
     vi.spyOn(overviewClient, 'serverInfo').mockResolvedValue(

@@ -2,6 +2,15 @@
 // Central German text catalog. Feature packages append their own keys under "<name>.*".
 export const de = {
   overview: {
+    errInvalidResponse:
+      'Das Backend hat eine ungültige Antwort geliefert ({name}). Die Übersicht bleibt leer.',
+    errInvalidOverview:
+      'Die Anfrage für die Übersicht ist ungültig. Prüfe Schemaname, Limit und Zeitgrenze.',
+    errObjectNotFound:
+      'Das Objekt wurde nicht gefunden oder ist für diese Verbindung nicht sichtbar. Aktualisiere die Objektliste.',
+    errUnsupportedFeature: 'Diese Datenbank bietet die gewünschte Übersichtsfunktion nicht an.',
+    errNoV7:
+      'Diese Instanz bietet die Übersicht (API 0.7) noch nicht an. Aktualisiere das Backend.',
     title: 'Objekte der Datenbank',
     tabTitle: 'Übersicht',
     definitionTab: 'Definition',

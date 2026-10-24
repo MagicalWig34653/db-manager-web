@@ -9,5 +9,7 @@
   "source": "catalog_reconstruction",
   "derived": true,
   "notice": "Aus dem Katalog rekonstruiert; PostgreSQL besitzt kein SHOW CREATE. Die Anweisung kann von der ursprünglichen abweichen.",
-  "warnings": ["Rechte, Kommentare, Trigger, Regeln und Storage-Parameter sind nicht enthalten."]
+  "warnings": [
+    "Rechte, Kommentare, Trigger, Regeln und Storage-Parameter sind nicht enthalten."
+  ]
 }
