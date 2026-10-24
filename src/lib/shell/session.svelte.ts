@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Connection and session store. Memory only: no localStorage, no IndexedDB, nothing in the URL.
+import { t } from '$lib/i18n';
 import { gateway } from '$lib/gateway';
 import type { WritePhase } from '$lib/rows';
 import type { CatalogObject, ConnectionDraft, Driver } from '$lib/workbench';
@@ -72,7 +73,7 @@ export class Session {
     } catch (cause) {
       if (version === this.sessionVersion)
         this.connectionMessage =
-          cause instanceof Error ? cause.message : 'Das Backend ist nicht erreichbar.';
+          cause instanceof Error ? cause.message : t('session.backendUnreachable');
     }
   }
   async testConnection(draft: ConnectionDraft) {
@@ -84,8 +85,7 @@ export class Session {
       if (version === this.sessionVersion) this.connectionMessage = message;
     } catch (cause) {
       if (version === this.sessionVersion)
-        this.connectionMessage =
-          cause instanceof Error ? cause.message : 'Die Verbindung konnte nicht geprüft werden.';
+        this.connectionMessage = cause instanceof Error ? cause.message : t('session.testFailed');
     } finally {
       if (version === this.sessionVersion) this.connectionBusy = false;
     }
@@ -109,9 +109,7 @@ export class Session {
     } catch (cause) {
       if (version === this.sessionVersion)
         this.connectionMessage =
-          cause instanceof Error
-            ? cause.message
-            : 'Die Verbindung konnte nicht hergestellt werden.';
+          cause instanceof Error ? cause.message : t('session.connectFailed');
     } finally {
       if (version === this.sessionVersion) this.connectionBusy = false;
     }
@@ -130,8 +128,7 @@ export class Session {
       }
     } catch (cause) {
       if (version === this.sessionVersion && this.connection === sourceConnection)
-        this.catalogError =
-          cause instanceof Error ? cause.message : 'Die Objekte konnten nicht geladen werden.';
+        this.catalogError = cause instanceof Error ? cause.message : t('session.catalogFailed');
     } finally {
       if (version === this.sessionVersion && this.connection === sourceConnection)
         this.catalogBusy = false;
