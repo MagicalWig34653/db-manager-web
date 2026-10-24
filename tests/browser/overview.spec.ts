@@ -146,10 +146,9 @@ test('server page shows context and databases with an exact/estimated marker and
   await expect(page.getByTestId('server-facts')).toBeVisible();
   await expect(page.getByTestId('database-table')).toBeVisible();
   await expect(page.getByTestId('value-state').first()).toHaveText('exakt');
-  await expect(page.getByRole('link', { name: 'synthetic' })).toHaveAttribute(
-    'href',
-    '#/db/synthetic/uebersicht',
-  );
+  await expect(
+    page.getByTestId('database-table').getByRole('link', { name: 'synthetic' }),
+  ).toHaveAttribute('href', '#/db/synthetic/uebersicht');
   expect(seen.every((entry) => !entry.url.includes('password'))).toBe(true);
   expect(page.url()).not.toMatch(/password|token|SELECT/i);
 });
@@ -210,10 +209,10 @@ test('unsupported functions are explained instead of hidden', async ({ page }) =
 });
 
 test('320 px: overview and server page do not scroll horizontally', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 640 });
   await mockBackend(page);
   await page.goto('/#/db/synthetic/uebersicht');
   await connect(page);
+  await page.setViewportSize({ width: 320, height: 640 });
   await expect(page.getByTestId('objects-table')).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
   await page.goto('/#/server');
