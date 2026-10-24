@@ -3,6 +3,7 @@
 // module from index.html so the application shell stays untouched. Production builds only.
 // The notices use plain DOM nodes; no credentials, tokens or API data are read or stored here.
 import { createNotices } from './notices';
+import { serverReachable } from './probe';
 
 export function registerServiceWorker(): void {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator)) {
@@ -54,13 +55,7 @@ export function registerServiceWorker(): void {
       notices.setOffline(true);
       return;
     }
-    try {
-      // Only a network failure counts as "no connection"; any HTTP status proves the server answered.
-      await fetch('/healthz', { cache: 'no-store', credentials: 'omit' });
-      notices.setOffline(false);
-    } catch {
-      notices.setOffline(true);
-    }
+    notices.setOffline(!(await serverReachable()));
   };
   window.addEventListener('online', () => void probe());
   window.addEventListener('offline', () => notices.setOffline(true));
