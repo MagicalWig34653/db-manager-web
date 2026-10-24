@@ -289,7 +289,7 @@
             </p>
           {:else}{#each session.filteredObjects as object}<button
                 class="object-button"
-                disabled={sql.running}
+                disabled={sql.running || session.writeInFlight}
                 onclick={() => openObject(object)}
                 ><Table2 size={15} /><span
                   >{object.schema ? `${object.schema}.` : ''}{object.name}</span
@@ -385,15 +385,17 @@
         </div>{/if}
       {#if route.kind !== 'server'}
         <nav class="workspace-tabs" aria-label={t('shell.tabsLabel')}>
-          <button aria-pressed={isSqlView} onclick={() => navigate(sqlRoute())}
-            >{t('shell.tabSql')}</button
+          <button
+            aria-pressed={isSqlView}
+            disabled={session.writeInFlight}
+            onclick={() => navigate(sqlRoute())}>{t('shell.tabSql')}</button
           ><button
             aria-pressed={isTableView}
-            disabled={!session.selectedObject}
+            disabled={!session.selectedObject || session.writeInFlight}
             onclick={openTableTab}>{t('shell.tabTable')}</button
           >{#each extraDatabaseTabs as { feature, available } (feature.id)}<button
               aria-pressed={route.kind === 'database' && route.tab === feature.tab}
-              disabled={!session.connection}
+              disabled={!session.connection || session.writeInFlight}
               onclick={() =>
                 session.connection &&
                 navigate({
@@ -500,7 +502,7 @@
               database: session.connection?.database,
               tab,
               onsql: () => navigate(sqlRoute()),
-              onwritephase: () => {},
+              onwritephase: session.databaseWriteReceiver(session.sessionVersion),
             }}
           />
         {/if}
