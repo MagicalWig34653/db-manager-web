@@ -57,6 +57,8 @@ async function review(page: Page, name: string) {
   await page.getByRole('button', { name: 'Definition prüfen' }).click();
   await expect(page.getByTestId('create-review')).toBeVisible();
 }
+const submitButton = (page: Page) =>
+  page.getByTestId('create-table').getByRole('button', { name: 'Tabelle anlegen' });
 const confirmBox = (page: Page) => page.getByRole('checkbox', { name: /Ich bestätige/ });
 
 test('no request without the explicit confirmation, then one request with confirm:true', async ({
@@ -68,11 +70,11 @@ test('no request without the explicit confirmation, then one request with confir
   }));
   await open(page);
   await review(page, 'orders_new');
-  await expect(page.getByRole('button', { name: 'Tabelle anlegen' })).toBeDisabled();
+  await expect(submitButton(page)).toBeDisabled();
   expect(mock.creates).toHaveLength(0);
   const catalogBefore = mock.catalogRequests;
   await confirmBox(page).check();
-  await page.getByRole('button', { name: 'Tabelle anlegen' }).click();
+  await submitButton(page).click();
   await expect(page.getByTestId('create-result')).toBeVisible();
   expect(mock.creates).toHaveLength(1);
   expect(mock.creates[0]).toMatchObject({ confirm: true, table: { name: 'orders_new' } });
@@ -92,7 +94,7 @@ test('special names are sent byte-exact and shown quoted in the review', async (
   await review(page, name);
   await expect(page.getByTestId('create-review')).toContainText(JSON.stringify(name));
   await confirmBox(page).check();
-  await page.getByRole('button', { name: 'Tabelle anlegen' }).click();
+  await submitButton(page).click();
   await expect(page.getByTestId('create-result')).toBeVisible();
   expect(mock.creates[0]).toMatchObject({
     table: { name },
@@ -105,9 +107,11 @@ test('a double click sends exactly one request', async ({ page }) => {
   await open(page);
   await review(page, 'once');
   await confirmBox(page).check();
-  const button = page.getByRole('button', { name: 'Tabelle anlegen' });
+  const button = submitButton(page);
   await button.dblclick();
-  await expect(page.getByRole('button', { name: 'Wird angelegt …' })).toBeDisabled();
+  await expect(
+    page.getByTestId('create-table').getByRole('button', { name: 'Wird angelegt …' }),
+  ).toBeDisabled();
   await expect.poll(() => mock.creates.length).toBe(1);
   await page.waitForTimeout(300);
   expect(mock.creates).toHaveLength(1);
@@ -119,7 +123,7 @@ test('a name conflict (409) keeps the form and reports nothing as created', asyn
   await review(page, 'orders');
   await expect(page.getByText('laut aktuellem Objektkatalog')).toBeVisible();
   await confirmBox(page).check();
-  await page.getByRole('button', { name: 'Tabelle anlegen' }).click();
+  await submitButton(page).click();
   await expect(page.getByTestId('create-error')).toContainText('nicht verändert');
   await expect(page.getByTestId('create-result')).toHaveCount(0);
   await expect(page.getByLabel('Tabellenname')).toHaveValue('orders');
@@ -131,9 +135,9 @@ test('outcome_unknown offers no retry and locks the form', async ({ page }) => {
   await open(page);
   await review(page, 'maybe');
   await confirmBox(page).check();
-  await page.getByRole('button', { name: 'Tabelle anlegen' }).click();
+  await submitButton(page).click();
   await expect(page.getByTestId('create-unknown')).toContainText('Nicht erneut senden');
-  await expect(page.getByRole('button', { name: 'Tabelle anlegen' })).toHaveCount(0);
+  await expect(submitButton(page)).toHaveCount(0);
   await expect(page.getByRole('button', { name: /erneut|Wiederholen/i })).toHaveCount(0);
   expect(mock.creates).toHaveLength(1);
 });
@@ -149,9 +153,9 @@ test('an instance without API 0.6 explains the missing feature', async ({ page }
 });
 
 test('invalid limits block the review and 320 px has no horizontal scroll', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 640 });
   await mockBackend(page, () => ({ status: 500, json: errorBody('x') }));
   await open(page);
+  await page.setViewportSize({ width: 320, height: 640 });
   await page.getByLabel('Tabellenname').fill('x'.repeat(64));
   await expect(page.getByRole('button', { name: 'Definition prüfen' })).toBeDisabled();
   await expect(page.getByTestId('create-issues')).toContainText('63 Bytes');
