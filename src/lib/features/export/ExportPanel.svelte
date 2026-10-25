@@ -37,6 +37,7 @@
   const form = $state<ExportForm>(defaultForm());
   let caps = $state<ExportCapabilities | null>(null);
   let capsError = $state('');
+  let starting = $state(false);
   let phase = $state<'idle' | 'running' | 'done' | 'failed' | 'canceled'>('idle');
   let progress = $state(0);
   let failure = $state<ExportError | null>(null);
@@ -131,7 +132,8 @@
 
   async function start() {
     const request = built.request;
-    if (!request || running) return;
+    if (!request || running || starting) return;
+    starting = true;
     const mine = ++generation;
     failure = null;
     outcome = null;
@@ -142,9 +144,11 @@
       request.gzip ? 'application/gzip' : 'application/octet-stream',
     );
     if (!sink || mine !== generation) {
+      starting = false;
       if (sink) await sink.abort();
       return;
     }
+    starting = false;
     controller = new AbortController();
     phase = 'running';
     try {
@@ -174,6 +178,10 @@
       phase = failure.kind === 'canceled' ? 'canceled' : 'failed';
     }
   }
+  const failureText = (error: ExportError) =>
+    error.code === 'invalid_export' && form.scope === 'query'
+      ? t('exportDump.err.queryRejected')
+      : error.message;
   const cancel = () => controller?.abort();
   const mib = (bytes: number) =>
     (bytes / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 });
@@ -415,7 +423,10 @@
         {:else}
           <Button
             type="submit"
-            disabled={!built.request || (caps !== null && !caps.available) || !!capsError}
+            disabled={starting ||
+              !built.request ||
+              (caps !== null && !caps.available) ||
+              !!capsError}
             data-testid="start"><Download size={14} />{t('exportDump.start')}</Button
           >
         {/if}
@@ -437,7 +448,7 @@
           <ErrorPanel title={t('exportDump.incompleteTitle')} message={failure.message} />
           <p class="hint" data-testid="incomplete-hint">{t('exportDump.incompleteCauses')}</p>
         {:else}
-          <ErrorPanel title={t('exportDump.failedTitle')} message={failure.message} />
+          <ErrorPanel title={t('exportDump.failedTitle')} message={failureText(failure)} />
         {/if}
       {/if}
     </div>

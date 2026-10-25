@@ -19,8 +19,9 @@ const sqlDoc =
   "-- header\nSET sql_mode='';\nBEGIN;\nCREATE TABLE \"t\" (\"a\" TEXT);\nINSERT INTO \"t\" VALUES ('héllo 😀 ''q'' \n-- not the end\n');\nINSERT INTO \"t\" VALUES ('日本語');\nCOMMIT;\n-- DBMANAGER EXPORT COMPLETE\n";
 const jsonDoc =
   '{"format":"dbmanager-export","version":1,"tables":[{"name":"t","rows":[[{"kind":"text","value":"a\\"b\\\\ \\u00e9 😀 \\ud83d\\ude00 ,\\"complete\\":true}"},{"kind":"null"}],[{"kind":"integer","value":"1"}]]}],"complete":true}\n';
-const csvDoc = '"a","b"\n"x","multi\nline ""q"" 😀"\n"1","2"\n"complete","",""\n';
-const excelDoc = '"\'a","\'b"\n"\'x","\'y"\n"\'complete","\'",""\n';
+const csvDoc =
+  '"_record","a","b"\n"row","x","multi\nline ""q"" 😀"\n"row","1","2"\n"complete","",""\n';
+const excelDoc = '"\'_record","\'a","\'b"\n"\'row","\'x","\'y"\n"\'complete","\'",""\n';
 
 const docs: [ExportFormat, string][] = [
   ['sql', sqlDoc],
@@ -74,17 +75,17 @@ describe('look-alike content', () => {
     expect(verdictOf('json', enc(cut)).complete).toBe(false);
     expect(verdictOf('json', enc(cut + ']]}]')).complete).toBe(false);
   });
-  it.fails('CSV: a data record that looks like the control record (cut right after it)', () => {
-    const cut = '"a","b"\n"x","y"\n"complete",""\n';
-    expect(verdictOf('csv', enc(cut)).complete).toBe(false); // KNOWN GAP if this fails
+  it('CSV: a data record that looks like the control record (cut right after it)', () => {
+    const cut = '"_record","a","b"\n"row","x","y"\n"complete",""\n';
+    expect(verdictOf('csv', enc(cut)).complete).toBe(false);
   });
-  it.fails('CSV: control record must have one more field than the header', () => {
-    const cut = '"a","b","c"\n"1","2","3"\n"complete","",""\n';
+  it('CSV: control record must have one more field than the header', () => {
+    const cut = '"_record","a","b","c"\n"row","1","2","3"\n"complete","",""\n';
     expect(verdictOf('csv', enc(cut)).complete).toBe(false); // control would have 4 fields
   });
-  it.fails('SQL: marker line inside a string literal as the cut point', () => {
+  it('SQL: marker line inside a string literal as the cut point', () => {
     const cut = "INSERT INTO t VALUES ('a\n-- DBMANAGER EXPORT COMPLETE\n";
-    expect(verdictOf('sql', enc(cut)).complete).toBe(false); // KNOWN GAP if this fails
+    expect(verdictOf('sql', enc(cut)).complete).toBe(false);
   });
   it('SQL: CRLF-terminated marker', () => {
     expect(verdictOf('sql', enc('x;\r\n-- DBMANAGER EXPORT COMPLETE\r\n')).complete).toBe(true);
@@ -192,40 +193,37 @@ describe('plain transport', () => {
     tables: [{ name: 't' }],
     format: 'sql',
   } as unknown as ExportRequest;
-  it.fails(
-    'large stream with a slow sink stays within a bounded buffer (tee() buffers everything)',
-    async () => {
-      const chunk = new Uint8Array(64 * 1024).fill(0x61);
-      const total = 600; // ~37 MiB
-      let produced = 0;
-      let written = 0;
-      let peakAhead = 0;
-      const body = new ReadableStream<Uint8Array>({
-        pull(controller) {
-          if (produced < total) {
-            controller.enqueue(chunk);
-            produced++;
-          } else {
-            controller.enqueue(enc('\n-- DBMANAGER EXPORT COMPLETE\n'));
-            controller.close();
-          }
-        },
-      });
-      const sink: ExportSink = {
-        write: async () => {
-          written++;
-          peakAhead = Math.max(peakAhead, produced - written);
-          await new Promise((r) => setTimeout(r, 2));
-        },
-        commit: async () => {},
-        abort: async () => {},
-      };
-      const fetcher = (async () => new Response(body, { status: 200 })) as unknown as typeof fetch;
-      await runExport({ request, token: 't', signal: new AbortController().signal, sink, fetcher });
-      expect(peakAhead).toBeLessThan(64);
-      console.log(
-        `slow sink: produced-ahead peak = ${peakAhead} chunks of 64 KiB (${(peakAhead * 64) / 1024} MiB) of ${total}`,
-      );
-    },
-  );
+  it('large stream with a slow sink stays within a bounded buffer', async () => {
+    const chunk = new Uint8Array(64 * 1024).fill(0x61);
+    const total = 600; // ~37 MiB
+    let produced = 0;
+    let written = 0;
+    let peakAhead = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (produced < total) {
+          controller.enqueue(chunk);
+          produced++;
+        } else {
+          controller.enqueue(enc(';\n-- DBMANAGER EXPORT COMPLETE\n'));
+          controller.close();
+        }
+      },
+    });
+    const sink: ExportSink = {
+      write: async () => {
+        written++;
+        peakAhead = Math.max(peakAhead, produced - written);
+        await new Promise((r) => setTimeout(r, 2));
+      },
+      commit: async () => {},
+      abort: async () => {},
+    };
+    const fetcher = (async () => new Response(body, { status: 200 })) as unknown as typeof fetch;
+    await runExport({ request, token: 't', signal: new AbortController().signal, sink, fetcher });
+    expect(peakAhead).toBeLessThan(64);
+    console.log(
+      `slow sink: produced-ahead peak = ${peakAhead} chunks of 64 KiB (${(peakAhead * 64) / 1024} MiB) of ${total}`,
+    );
+  });
 });

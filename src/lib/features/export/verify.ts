@@ -34,7 +34,11 @@ export class CompletionVerifier {
   private inQuotes = false;
   private record: number[] = [];
   private recordOverflow = false;
-  private lastRecord: { bytes: number[]; overflow: boolean } | null = null;
+  private lastRecord: { bytes: number[]; overflow: boolean; fields: number } | null = null;
+  private fields = 1;
+  private headerFields = 0;
+  private headerOk = false;
+  private recordCount = 0;
 
   constructor(private format: ExportFormat) {}
 
@@ -78,10 +82,21 @@ export class CompletionVerifier {
   private scanCsv(chunk: Uint8Array) {
     for (const byte of chunk) {
       if (byte === QUOTE) this.inQuotes = !this.inQuotes;
+      else if (byte === 0x2c && !this.inQuotes) this.fields++;
       if (!this.inQuotes && byte === NL) {
         // Record ends; a CR before the LF is part of the line ending, not of the record.
         if (this.record[this.record.length - 1] === CR) this.record.pop();
-        this.lastRecord = { bytes: this.record, overflow: this.recordOverflow };
+        this.lastRecord = {
+          bytes: this.record,
+          overflow: this.recordOverflow,
+          fields: this.fields,
+        };
+        if (this.recordCount++ === 0) {
+          this.headerFields = this.fields;
+          // The stream profile starts with the control column "_record" (excel: apostrophe prefix).
+          this.headerOk = /^"'?_record"/.test(decoder.decode(Uint8Array.from(this.record)));
+        }
+        this.fields = 1;
         this.record = [];
         this.recordOverflow = false;
         continue;
@@ -104,9 +119,9 @@ export class CompletionVerifier {
 
   private finishSql(): Verdict {
     const text = this.text().replace(/\r\n/g, '\n');
-    const full = this.total <= TAIL;
-    const marker = `${SQL_MARKER}\n`;
-    if (text.endsWith(`\n${marker}`) || (full && text === marker)) return { complete: true };
+    // The marker follows a finished statement (COMMIT; / SET ...;). A marker line that is part of an
+    // unterminated string literal is preceded by an open line and is not accepted.
+    if (new RegExp(`;[ \\t]*\\n${SQL_MARKER}\\n$`).test(text)) return { complete: true };
     return { complete: false, reason: 'no_marker' };
   }
 
@@ -128,6 +143,9 @@ export class CompletionVerifier {
     // Fields are always enclosed in quotes; the excel profile prefixes each value with an apostrophe.
     const control = /^"'?complete"(,"'?")*$/;
     if (!control.test(line)) return { complete: false, reason: 'no_control_record' };
+    // Same width as the header (the backend writes columns + 1 fields); data records start with "row".
+    if (!this.headerOk || this.recordCount < 2 || last.fields !== this.headerFields)
+      return { complete: false, reason: 'no_control_record' };
     return { complete: true };
   }
 }

@@ -1211,7 +1211,6 @@ kbd {
 .table-tabs,
 .workspace-tabs {
   display: flex;
-  flex-wrap: wrap; /* feature packages add tabs; they must not widen the page at 320 px */
   gap: 5px;
   border-bottom: 1px solid #e0e6f0;
   padding: 0 16px;

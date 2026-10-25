@@ -101,8 +101,16 @@ export function safeFilename(header: string | null, fallback: string): string {
     /* keep the raw value; it is reduced below anyway */
   }
   name = name.split(/[\\/]/).pop() ?? '';
-  name = name.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^[.]+/, '');
-  if (name.length > 150) name = name.slice(0, 150);
+  name = name
+    .replace(/[^A-Za-z0-9._-]/g, '_')
+    .replace(/^[.]+/, '')
+    .replace(/[.]+$/, '');
+  // Keep the extension (".sql.gz") when shortening; avoid reserved Windows device names.
+  if (name.length > 150) {
+    const ext = /(\.[A-Za-z0-9]{1,8}){1,2}$/.exec(name)?.[0] ?? '';
+    name = name.slice(0, 150 - ext.length) + ext;
+  }
+  if (/^(con|prn|aux|nul|com[0-9]|lpt[0-9])([.]|$)/i.test(name)) name = `_${name}`;
   return name === '' ? fallback : name;
 }
 
@@ -175,49 +183,72 @@ export async function runExport(options: RunOptions): Promise<ExportOutcome> {
     defaultFilename(request),
   );
   const verifier = new CompletionVerifier((request.format ?? 'sql') as ExportFormat);
-  const [forSink, forVerifier] = response.body.tee();
   let rawBytes = 0;
-  const sinkReader = forSink.getReader();
-  const decoded = request.gzip
-    ? forVerifier.pipeThrough(new DecompressionStream('gzip'))
-    : forVerifier;
-  const verifyReader = decoded.getReader();
-  // Do not rely on the transport to error the body when the user cancels or the guard fires.
-  const stop = () => {
-    void sinkReader.cancel(combined.reason).catch(() => undefined);
-    void verifyReader.cancel(combined.reason).catch(() => undefined);
-  };
+  // One read loop, no tee(): a chunk is written to the sink first and only then fed to the checker, so
+  // a slow sink slows the network read instead of letting a second branch buffer the whole stream.
+  const reader = response.body.getReader();
+  let gzipWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  let gzipRead: Promise<void> | null = null;
+  if (request.gzip) {
+    const inflate = new DecompressionStream('gzip');
+    gzipWriter = inflate.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>;
+    const out = inflate.readable.getReader();
+    gzipRead = (async () => {
+      for (;;) {
+        const { value, done } = await out.read();
+        if (done) return;
+        verifier.push(value);
+      }
+    })();
+    gzipRead.catch(() => undefined);
+  }
+  const stop = () => void reader.cancel(combined.reason).catch(() => undefined);
   combined.addEventListener('abort', stop, { once: true });
-  const writing = (async () => {
-    const reader = sinkReader;
+  let sinkError: unknown = null;
+  let checkError: unknown = null;
+  try {
     for (;;) {
-      const { value, done } = await reader.read();
-      if (done) return;
-      await sink.write(value);
-      rawBytes += value.length;
+      let step: ReadableStreamReadResult<Uint8Array>;
+      try {
+        step = await reader.read();
+      } catch (cause) {
+        checkError = cause; // cut connection
+        break;
+      }
+      if (step.done) break;
+      try {
+        await sink.write(step.value);
+      } catch (cause) {
+        sinkError = cause;
+        break;
+      }
+      rawBytes += step.value.length;
       options.onProgress?.(rawBytes);
+      if (gzipWriter) {
+        try {
+          await gzipWriter.write(step.value);
+        } catch (cause) {
+          checkError = cause; // damaged container
+          break;
+        }
+      } else verifier.push(step.value);
     }
-  })();
-  const checking = (async () => {
-    const reader = verifyReader;
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) return;
-      verifier.push(value);
+    if (gzipWriter && !sinkError && !checkError) {
+      try {
+        await gzipWriter.close();
+        await gzipRead;
+      } catch (cause) {
+        checkError = cause;
+      }
     }
-  })();
-  const [written, checked] = await Promise.allSettled([writing, checking]);
-  combined.removeEventListener('abort', stop);
+  } finally {
+    combined.removeEventListener('abort', stop);
+    if (sinkError || checkError) void reader.cancel().catch(() => undefined);
+    if (gzipWriter && (sinkError || checkError)) void gzipWriter.abort().catch(() => undefined);
+  }
   if (signal.aborted || limit.aborted) return fail(classify(undefined));
-  if (written.status === 'rejected') {
-    void verifyReader.cancel().catch(() => undefined);
-    return fail(classify(written.reason));
-  }
-  if (checked.status === 'rejected') {
-    if (signal.aborted || limit.aborted) return fail(classify(checked.reason));
-    // A cut connection or a damaged/truncated gzip container: never a finished export.
-    return fail(incomplete(request.gzip ? 'gzip' : 'transport'));
-  }
+  if (sinkError) return fail(classify(sinkError));
+  if (checkError) return fail(incomplete(request.gzip ? 'gzip' : 'transport'));
   const verdict = verifier.finish();
   if (!verdict.complete) return fail(incomplete(verdict.reason ?? 'no_marker'));
   try {

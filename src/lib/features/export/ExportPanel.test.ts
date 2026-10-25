@@ -178,4 +178,26 @@ describe('ExportPanel', () => {
     expect(downloads).toEqual([]);
     expect(screen.getByTestId('export-status')).toHaveAttribute('data-phase', 'idle');
   });
+
+  it('opens only one save dialog on a double click and explains a rejected query', async () => {
+    const picker = vi.fn(() => new Promise(() => undefined));
+    vi.stubGlobal('showSaveFilePicker', picker);
+    (window as unknown as Record<string, unknown>).showSaveFilePicker = picker;
+    stubFetch(() => stream(''));
+    await ready();
+    const start = screen.getByTestId('start');
+    await fireEvent.click(start);
+    await fireEvent.click(start);
+    expect(picker).toHaveBeenCalledTimes(1);
+    delete (window as unknown as Record<string, unknown>).showSaveFilePicker;
+  });
+
+  it('names the reason when a write query is rejected', async () => {
+    stubFetch(() => json({ error: { code: 'invalid_export', message: 'x' } }, 400));
+    await ready();
+    await fireEvent.click(screen.getByLabelText('Ergebnis einer Abfrage'));
+    await fireEvent.input(screen.getByTestId('query-sql'), { target: { value: 'delete from t' } });
+    await fireEvent.click(screen.getByTestId('start'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('nur lesende'));
+  });
 });
