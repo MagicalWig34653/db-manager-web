@@ -486,17 +486,20 @@ export const de = {
     start: 'Export starten',
     cancel: 'Abbrechen',
     running: 'Export läuft … {size} empfangen.',
-    canceled: 'Export abgebrochen. Es wurde keine Datei gespeichert.',
+    canceled:
+      'Export abgebrochen. Es wurden keine Daten gespeichert. Bei direktem Schreiben kann eine leere Datei mit dem gewählten Namen übrig bleiben; sie kann gelöscht werden.',
     done: 'Export vollständig: „{name}“ ({size}).',
     verified:
       'Die Schlussmarke wurde im Datenstrom gefunden und geprüft. Spiele SQL erst nach Prüfung dieser vollständigen Datei ein.',
     failedTitle: 'Export fehlgeschlagen',
     incompleteTitle: 'Export unvollständig und fehlerhaft',
     incompleteBody:
-      'Der Datenstrom endete ohne gültige Schlussmarke. Die Datei ist unvollständig und wurde nicht gespeichert; sie ist keine Sicherung.',
+      'Der Datenstrom endete ohne gültige Schlussmarke. Die Datei ist unvollständig und wurde nicht fertiggestellt (eine leere Datei mit dem gewählten Namen kann übrig bleiben); sie ist keine Sicherung.',
     incompleteCauses:
       'Mögliche Ursachen: Zeitlimit, Byte- oder Zeilenlimit, Datenbankfehler, abgebrochene Verbindung. Erhöhe die Grenzen oder grenze den Umfang ein und starte neu.',
     err: {
+      queryRejected:
+        'Die Abfrage wurde abgewiesen. Exportiert werden nur lesende Abfragen (genau eine SELECT-Anweisung); Schreib- oder Mehrfachanweisungen sind nicht erlaubt.',
       invalid_export: 'Die Exportoptionen sind ungültig. Prüfe Auswahl, Format und Grenzen.',
       invalid_connection: 'Die Verbindungsangaben sind ungültig.',
       unsupported_feature:

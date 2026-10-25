@@ -32,7 +32,7 @@ describe('closing marker: SQL', () => {
   it('accepts the marker line, also split over chunks and with CRLF', () => {
     expect(verdict('sql', `${body}-- DBMANAGER EXPORT COMPLETE\n`, 3).complete).toBe(true);
     expect(verdict('sql', `${body}-- DBMANAGER EXPORT COMPLETE\n`, 1).complete).toBe(true);
-    expect(verdict('sql', '-- DBMANAGER EXPORT COMPLETE\n').complete).toBe(true);
+    expect(verdict('sql', '-- DBMANAGER EXPORT COMPLETE\n').complete).toBe(false);
   });
   it('rejects missing, truncated, unterminated, empty and embedded markers', () => {
     expect(verdict('sql', body).complete).toBe(false);
@@ -81,6 +81,17 @@ describe('closing marker: CSV', () => {
   });
   it('does not take a control-looking line inside a quoted field for the end', () => {
     expect(verdict('csv', `${header}"row","a\n"complete","",""\n`).complete).toBe(false);
+  });
+});
+
+describe('safeFilename extras', () => {
+  it('keeps a long .sql.gz extension, avoids device names and trailing dots', () => {
+    const long = `${'a'.repeat(200)}.sql.gz`;
+    const name = safeFilename(`attachment; filename="${long}"`, 'x');
+    expect(name.length).toBeLessThanOrEqual(150);
+    expect(name.endsWith('.sql.gz')).toBe(true);
+    expect(safeFilename('attachment; filename="CON.sql"', 'x')).toBe('_CON.sql');
+    expect(safeFilename('attachment; filename="dump.sql."', 'x')).toBe('dump.sql');
   });
 });
 
