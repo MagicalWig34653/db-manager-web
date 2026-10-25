@@ -409,10 +409,13 @@
       {/if}
       {#if route.kind === 'table' && extraTableTabs.length > 0}
         <nav class="workspace-tabs" aria-label={t('shell.tableTabsLabel')}>
-          <button aria-pressed={route.tab === 'daten'} onclick={openTableTab}
-            >{t('shell.tabTable')}</button
+          <button
+            aria-pressed={route.tab === 'daten'}
+            disabled={session.writeInFlight}
+            onclick={openTableTab}>{t('shell.tabTable')}</button
           >{#each extraTableTabs as { feature } (feature.id)}<button
               aria-pressed={route.tab === feature.tab}
+              disabled={session.writeInFlight}
               onclick={() =>
                 route.kind === 'table' && navigate({ ...route, tab: feature.tab ?? 'daten' })}
               >{t(feature.titleKey)}</button
