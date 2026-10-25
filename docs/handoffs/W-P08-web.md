@@ -48,7 +48,24 @@ Konflikt mit parallel angehängten Blöcken zu vermeiden).
 
 ## Prüfungen (Worktree `.worktrees/w-p08-web`, nacheinander, Last 80 bis 130)
 
-Siehe Abschnitt Prüfstand am Ende (wird mit dem letzten Commit ergänzt).
+| Befehl | Ausgang |
+| --- | --- |
+| `npm run contract:check` | alle Stände aktuell |
+| `npm run check` | 0 Fehler, 0 Warnungen |
+| `npm test` | 26 Dateien, 218 Tests (neu: Vertragsfixtures, model, operation, Komponenten) |
+| `npm run format:check` | bestanden |
+| `npm run test:browser` | 28 bestanden (3 neu in `tests/browser/columns.spec.ts`: Plan zuerst, Doppelklick = 1 Request, falscher Name, 320 px, Ausgang unbekannt) |
+| `npm run test:csp` | Build und 2 Tests bestanden |
+| `npm run test:pwa` | 6 bestanden |
+| `DBM_BACKEND_REPO=<Root> DBM_BACKEND_REV=main python3 scripts/test-real-columns.py` | Backend main c331c64: SQLite und PostgreSQL 18.6 (TLS verify-full), 2 bestanden |
+| `python3 scripts/test-real-tables.py` | 10 von 10 bestanden |
+| `python3 scripts/check-docs.py` | 0 Fehler |
+
+Echtlauf je Treiber: Spalte mit SQL-Text im Namen hinzufügen (Default mit Apostroph/Backslash als echte Konstante),
+Umbenennen im selben Plan, unabhängiges Nachlesen über pragma_table_info bzw. information_schema, Daten und Nachbartabelle
+unverändert, kein Request vor Bestätigung, Doppelklick = 1 Alter-Request, PostgreSQL: Typänderung als zerstörender Plan mit
+falschem Namen (nichts gesendet) und richtigem Namen (Länge 60 nachgelesen), Entfernen mit getipptem Tabellennamen,
+kollidierender Name vor dem Plan gestoppt, keine CSP-Verstöße, keine fremden Ursprünge.
 
 ## Offen
 
