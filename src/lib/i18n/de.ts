@@ -556,6 +556,7 @@ export const de = {
       memoryCap: 'Ohne direktes Schreiben in eine Datei sind höchstens {mib} MiB möglich.',
       timeout: 'Das Zeitlimit muss zwischen 1 und 300 Sekunden liegen.',
     },
+  },
   'object-ops': {
     databaseTab: 'Datenbankaktionen',
     tableTab: 'Operationen',
