@@ -398,6 +398,163 @@ export const de = {
     errPrimaryKeyNullable: 'Die Spalte {name} darf als Primärschlüssel kein NULL erlauben.',
     errPrimaryKeyBudget: 'Der Primärschlüssel ist zu breit (höchstens {max} Bytes geschätzt).',
   },
+  exportDump: {
+    tab: 'Export',
+    title: 'Export und SQL-Dump',
+    unavailable: 'Export nicht verfügbar',
+    yes: 'ja',
+    no: 'nein',
+    serverDefault: 'Serverstandard',
+    scopeLegend: 'Was exportieren?',
+    scope: {
+      tables: 'Ausgewählte Tabellen',
+      database: 'Ganze Datenbank (alle Tabellen)',
+      query: 'Ergebnis einer Abfrage',
+      server: 'Ausdrücklich gewählte Datenbanken',
+    },
+    tablesLegend: 'Tabellen',
+    noCatalog: 'Es sind keine Tabellen im Katalog. Verbinde dich und aktualisiere die Objektliste.',
+    databaseHint:
+      'Exportiert werden alle regulären Tabellen ({n}) der Datenbank „{database}“. Sichten und andere Objekte sind nicht enthalten.',
+    databasesLabel: 'Datenbanken (eine je Zeile, höchstens 20)',
+    serverHint:
+      'Nicht aufgeführte Datenbanken werden nie automatisch entdeckt oder exportiert. Es gibt keinen gemeinsamen Snapshot über Datenbankgrenzen.',
+    sqlLabel: 'Lesende Abfrage (SELECT)',
+    formatLegend: 'Format',
+    format: { sql: 'SQL-Dump', csv: 'CSV', excelCsv: 'Excel-CSV', json: 'JSON' },
+    sqlLegend: 'SQL-Optionen',
+    structure: 'Struktur',
+    data: 'Daten',
+    optDrop: 'DROP TABLE vor CREATE',
+    extended: 'Erweiterte INSERTs (mehrere Zeilen je Anweisung)',
+    singleInserts: 'ein INSERT je Zeile',
+    transaction: 'In BEGIN/COMMIT einschließen',
+    disableFk: 'Fremdschlüsselprüfung während des Einspielens abschalten',
+    statementKiB: 'Höchstgröße je INSERT in KiB (1 bis 4096)',
+    csvLegend: 'CSV-Optionen',
+    delimiter: 'Trennzeichen',
+    comma: 'Komma',
+    semicolon: 'Semikolon',
+    tabChar: 'Tabulator',
+    crlf: 'Zeilenende CRLF',
+    fileLegend: 'Datei',
+    charset: 'Kodierung',
+    gzip: 'Mit GZip komprimieren (.gz)',
+    filename: 'Dateiname (optional, ohne Endung)',
+    limitsLegend: 'Grenzen',
+    maxRows: 'Zeilen insgesamt (höchstens 10.000.000)',
+    maxMiB: 'Unkomprimierte Größe in MiB (höchstens 1024)',
+    timeoutS: 'Zeitlimit in Sekunden (höchstens 300)',
+    previewTitle: 'Vorschau der Einstellungen',
+    preview: {
+      scope: 'Umfang',
+      format: 'Format',
+      query: 'Abfrage',
+      queryValue: '{n} Zeichen (wird nicht angezeigt oder gespeichert)',
+      databases: 'Datenbanken',
+      tables: 'Tabellen',
+      content: 'Inhalt',
+      sqlOptions: 'SQL-Optionen',
+      csv: 'Trenner und Zeilenende',
+      charset: 'Kodierung',
+      gzip: 'GZip',
+      limits: 'Grenzen',
+      limitsValue: 'Zeilen {rows}, {mib} MiB, {seconds} s',
+      target: 'Speichern',
+    },
+    target: {
+      disk: 'Direkt in die gewählte Datei (Streaming). Erst nach erfolgreicher Prüfung wird die Datei abgeschlossen.',
+      memory: 'Im Arbeitsspeicher gesammelt und nach erfolgreicher Prüfung als Download angeboten.',
+    },
+    memoryHint:
+      'Dieser Browser kann nicht direkt in eine Datei streamen. Der Export wird im Arbeitsspeicher gehalten (höchstens 256 MiB); größere Exporte bitte in einem Browser mit Dateizugriff oder mit kleineren Grenzen ausführen.',
+    notice: {
+      excel:
+        'Excel-CSV setzt vor jedes Feld ein Apostroph (Formelschutz) und ist nicht verlustfrei. Für unveränderte Werte JSON verwenden.',
+      csvFormula:
+        'CSV lässt Formeln als Rohtext stehen. Nur in geeigneten Programmen öffnen oder Excel-CSV wählen.',
+      queryBestEffort:
+        'Abfrageexport ist nur „best effort“ lesend: freie Abfragen laufen mit den tatsächlichen Verbindungsrechten und liefern keinen zugesagten Snapshot.',
+      serverSnapshot: 'Die gewählten Datenbanken werden nacheinander gelesen, nicht atomar.',
+      sqlFidelity:
+        'Der Dump enthält reguläre Tabellen, Spalten, Constraints, Indizes und Daten. Sichten, Routinen, Trigger, Rechte und Sequenzstände sind nicht enthalten; er ist keine vollständige Sicherung.',
+      mysqlDdl:
+        'MySQL und MariaDB: DDL kann auch innerhalb einer Transaktion implizit abschließen.',
+    },
+    start: 'Export starten',
+    cancel: 'Abbrechen',
+    running: 'Export läuft … {size} empfangen.',
+    canceled: 'Export abgebrochen. Es wurde keine Datei gespeichert.',
+    done: 'Export vollständig: „{name}“ ({size}).',
+    verified:
+      'Die Schlussmarke wurde im Datenstrom gefunden und geprüft. Spiele SQL erst nach Prüfung dieser vollständigen Datei ein.',
+    failedTitle: 'Export fehlgeschlagen',
+    incompleteTitle: 'Export unvollständig und fehlerhaft',
+    incompleteBody:
+      'Der Datenstrom endete ohne gültige Schlussmarke. Die Datei ist unvollständig und wurde nicht gespeichert; sie ist keine Sicherung.',
+    incompleteCauses:
+      'Mögliche Ursachen: Zeitlimit, Byte- oder Zeilenlimit, Datenbankfehler, abgebrochene Verbindung. Erhöhe die Grenzen oder grenze den Umfang ein und starte neu.',
+    err: {
+      invalid_export: 'Die Exportoptionen sind ungültig. Prüfe Auswahl, Format und Grenzen.',
+      invalid_connection: 'Die Verbindungsangaben sind ungültig.',
+      unsupported_feature:
+        'Diese Datenbank unterstützt die gewählte Exportfunktion nicht (zum Beispiel nur InnoDB-Tabellen bei MySQL, keine partitionierten Tabellen bei PostgreSQL).',
+      export_busy:
+        'Der Server führt bereits zwei Exporte aus. Warte, bis einer fertig ist, und starte dann erneut.',
+      query_canceled: 'Der Export wurde wegen des Zeitlimits oder durch Abbruch beendet.',
+      export_row_limit:
+        'Das Zeilenlimit wurde überschritten. Erhöhe die Grenze oder wähle weniger Tabellen. Es wird nie stillschweigend gekürzt.',
+      export_byte_limit:
+        'Das Größenlimit wurde überschritten. Erhöhe die Grenze oder wähle weniger Daten.',
+      export_statement_limit:
+        'Eine Zeile passt nicht in die maximale INSERT-Größe. Erhöhe die Anweisungsgrenze.',
+      export_nontransactional:
+        'Eine gewählte Tabelle ist nicht transaktional lesbar und kann nicht konsistent exportiert werden.',
+      export_schema_changed:
+        'Die Struktur hat sich während des Exports geändert. Starte den Export erneut.',
+      export_denied: 'Dir fehlen Rechte für einen Teil des Exports.',
+      database_error: 'Die Datenbankoperation ist fehlgeschlagen. Prüfe Verbindung und Rechte.',
+      unauthorized: 'Der Zugriffstoken fehlt oder ist ungültig. Prüfe den Backend-Zugang.',
+      export_failed: 'Der Export ist fehlgeschlagen.',
+      not_found: 'Diese Instanz bietet den Export (API 0.11) nicht an. Aktualisiere das Backend.',
+      request_too_large: 'Die Anfrage ist zu groß. Kürze die Abfrage.',
+      unknown: 'Der Export wurde abgewiesen.',
+      insecure: 'Für den Zugriff auf entfernte Instanzen ist HTTPS erforderlich.',
+      client_timeout:
+        'Das Backend antwortet nicht mehr. Der Export wurde beendet und nicht gespeichert.',
+      network:
+        'Die Verbindung zum Backend wurde unterbrochen. Der Export ist unvollständig und wurde nicht gespeichert.',
+      save: 'Die Datei konnte nicht gespeichert werden.',
+      memoryLimit:
+        'Der Export ist größer als 256 MiB und passt nicht in den Arbeitsspeicher dieses Browsers. Er wurde nicht gespeichert.',
+      invalidCaps: 'Das Backend hat eine ungültige Antwort zu den Exportfähigkeiten geliefert.',
+      noV11: 'Diese Instanz bietet den Export (API 0.11) noch nicht an. Aktualisiere das Backend.',
+      unavailable: 'Der Export ist auf dieser Instanz nicht verfügbar.',
+    },
+    problem: {
+      querySql: 'Abfrageergebnisse können nur als CSV, Excel-CSV oder JSON exportiert werden.',
+      noQuery: 'Gib eine lesende Abfrage ein.',
+      noTables: 'Wähle mindestens eine Tabelle.',
+      tooManyTables: 'Höchstens 100 Tabellen je Export.',
+      noDatabases: 'Nenne mindestens eine Datenbank.',
+      tooManyDatabases: 'Höchstens 20 Datenbanken je Export.',
+      serverFormat:
+        'Der Datenbankumfang kann nur als SQL (nur MySQL/MariaDB) oder JSON exportiert werden.',
+      serverSql: 'SQL-Export mehrerer Datenbanken gibt es nur bei MySQL und MariaDB. Wähle JSON.',
+      emptyDatabase: 'Die Datenbank hat keine Tabellen im Katalog.',
+      csvOneTable:
+        'CSV enthält genau eine Tabelle. Wähle genau eine Tabelle, eine Abfrage oder JSON.',
+      noContent: 'Wähle Struktur, Daten oder beides.',
+      fkPostgres: 'Das Abschalten der Fremdschlüsselprüfung gibt es bei PostgreSQL nicht.',
+      statement: 'Die INSERT-Größe muss zwischen 1 und 4096 KiB liegen.',
+      filename:
+        'Der Dateiname darf nur Buchstaben, Ziffern, Punkt, Unterstrich und Bindestrich enthalten und nicht mit einem Sonderzeichen beginnen.',
+      maxRows: 'Die Zeilengrenze muss eine ganze Zahl zwischen 1 und 10.000.000 sein.',
+      maxBytes: 'Die Größengrenze muss eine ganze Zahl zwischen 1 und 1024 MiB sein.',
+      memoryCap: 'Ohne direktes Schreiben in eine Datei sind höchstens {mib} MiB möglich.',
+      timeout: 'Das Zeitlimit muss zwischen 1 und 300 Sekunden liegen.',
+    },
+  },
 } as const;
 
 type Join<K extends string, P extends string> = `${K}.${P}`;
