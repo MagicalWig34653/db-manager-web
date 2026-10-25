@@ -136,7 +136,7 @@ describe('definition checks', () => {
       definitionIssues(def({ kind: 'text', length: '5' }), ctx('mysql', 'change' as 'add')).map(
         (i) => i.field,
       ),
-    ).toEqual(['collation', 'replaceAck']);
+    ).toEqual(['replaceAck', 'collation']);
   });
 });
 
