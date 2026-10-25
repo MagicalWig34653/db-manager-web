@@ -36,6 +36,8 @@ export interface DefinitionDraft {
   defaultValue: string;
   /** Whether the comment is sent (always for MySQL/MariaDB change/reorder and for new columns). */
   commentSet: boolean;
+  /** MySQL/MariaDB change/reorder: the user checked that comment and collation get replaced. */
+  replaceAck: boolean;
   comment: string;
   collation: string;
 }
@@ -68,6 +70,7 @@ export const emptyDefinition = (): DefinitionDraft => ({
   defaultMode: 'none',
   defaultValue: '',
   commentSet: true,
+  replaceAck: false,
   comment: '',
   collation: '',
 });
@@ -208,6 +211,8 @@ export function definitionIssues(draft: DefinitionDraft, context: DefinitionCont
   if (context.driver === 'sqlite' && context.action === 'add' && !draft.nullable) {
     if (draft.defaultMode !== 'value') add('default', t('columns.errSqliteNotNull'));
   }
+  if (context.driver === 'mysql' && context.action !== 'add' && !draft.replaceAck)
+    add('replaceAck', t('columns.errReplaceAck'));
   if (draft.commentSet && utf8Bytes(draft.comment) > 2048) add('comment', t('columns.errComment'));
   if (draft.commentSet && (!wellFormed(draft.comment) || draft.comment.includes('\u0000')))
     add('comment', t('columns.errCommentChars'));
@@ -384,20 +389,22 @@ export function batchIssues(changes: readonly PendingChange[], context: BatchCon
 /** Best-effort structured type from the database type text of the table description. */
 export function parseDatabaseType(raw: string, driver: ApiDriver): Partial<DefinitionDraft> {
   const text = raw.trim().toLowerCase();
-  const match = /^([a-z ]+?)\s*(?:\((.*)\))?(?:\s+unsigned)?$/.exec(text);
+  const match = /^([a-z ]+?)\s*(?:\((.*)\))?$/.exec(text);
   const base = match?.[1] ?? text;
   const args = match?.[2] ?? '';
-  if (/^(bigint|int8)$/.test(base)) return { kind: 'int64' };
+  if (/^(bigint|int8)$/.test(base) && (args === '' || /^[0-9]+$/.test(args)))
+    return { kind: 'int64' };
   if (/^(varchar|character varying)$/.test(base) && /^[0-9]+$/.test(args))
     return { kind: 'text', length: args };
   if (/^(decimal|numeric)$/.test(base) && /^[0-9]+(,\s*[0-9]+)?$/.test(args)) {
     const [precision, scale = '0'] = args.split(',').map((part) => part.trim());
     return { kind: 'decimal', precision, scale };
   }
-  if (/^(blob|bytea)$/.test(base)) return { kind: 'binary' };
-  if (/^(boolean|bool)$/.test(base)) return { kind: 'boolean' };
-  if (base === 'date') return { kind: 'date' };
-  if (/^timestamp/.test(base)) return { kind: 'timestamp' };
+  if (/^(blob|bytea)$/.test(base) && args === '') return { kind: 'binary' };
+  if (/^(boolean|bool)$/.test(base) && args === '') return { kind: 'boolean' };
+  if (base === 'date' && args === '') return { kind: 'date' };
+  // Only the plain, zone-less timestamp matches; "with time zone" and precisions are not claimed.
+  if (text === 'timestamp' || text === 'timestamp without time zone') return { kind: 'timestamp' };
   if (driver === 'mysql' && (base === 'enum' || base === 'set')) {
     const raw2 = raw.slice(raw.indexOf('(') + 1, raw.lastIndexOf(')'));
     const values = [...raw2.matchAll(/'((?:[^']|'')*)'/g)].map((m) => m[1].replaceAll("''", "'"));

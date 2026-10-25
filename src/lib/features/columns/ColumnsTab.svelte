@@ -61,6 +61,12 @@
   const types = $derived(caps?.types[driver] ?? []);
   const support = (action: ActionKey) => caps?.drivers[driver][action];
   const isBase = $derived(description?.kind === 'table' && object?.type !== 'view');
+  // MySQL/MariaDB only alter InnoDB tables; the description reports the engine.
+  const engineBlocked = $derived(
+    driver === 'mysql' &&
+      !!description?.storage_engine &&
+      description.storage_engine.toLowerCase() !== 'innodb',
+  );
 
   const operation = new Operation({
     context: () => ({
@@ -224,15 +230,16 @@
     dialogOpen = false;
     void operation.execute(typed);
   }
+  // A completed or unknown write already emptied the list (onfinished); after a rejection the
+  // user keeps the batch and only the plan is discarded.
   function newBatch() {
     operation.reset();
-    pending = [];
     editing = null;
     confirmed = false;
     void loadDescription();
   }
   const actionDisabled = (action: ActionKey) =>
-    locked || writeBusy || !isBase || support(action)?.support === 'unsupported';
+    locked || writeBusy || !isBase || engineBlocked || support(action)?.support === 'unsupported';
   const planCount = $derived(operation.plan?.statements.length ?? 0);
 </script>
 
@@ -280,6 +287,12 @@
     {:else if description}
       {#if !isBase}
         <CapabilityNotice title={t('columns.notBaseTitle')} reason={t('columns.notBase')} />
+      {/if}
+      {#if engineBlocked}
+        <CapabilityNotice
+          title={t('columns.engineTitle')}
+          reason={t('columns.engineBlocked', { engine: description.storage_engine })}
+        />
       {/if}
       <div class="table-scroll">
         <table data-testid="column-list">
@@ -397,6 +410,9 @@
               action={editing.action as 'add' | 'change' | 'reorder'}
               {existing}
               self={editing.column}
+              oldType={editing.action === 'add'
+                ? undefined
+                : columns.find((c) => c.name === editing?.column)?.database_type}
               oldDefault={editing.action === 'add'
                 ? undefined
                 : columns.find((c) => c.name === editing?.column)?.default_value}
@@ -480,6 +496,11 @@
           <p class="note" data-testid="plan-transaction">
             {plan.ddl_transactional ? t('columns.transactional') : t('columns.notTransactional')}
           </p>
+          {#if driver === 'mysql' && pending.some((entry) => entry.action === 'change' || entry.action === 'reorder')}
+            <div class="feedback error-feedback" role="note" data-testid="plan-replaces">
+              <TriangleAlert size={18} /><span>{t('columns.replaceWarnPlan')}</span>
+            </div>
+          {/if}
           {#if plan.destructive}
             <div class="feedback error-feedback" role="note" data-testid="plan-destructive">
               <TriangleAlert size={18} /><span
@@ -575,7 +596,9 @@
               {#if operation.unknown}<p>{t('columns.unknownHint')}</p>{/if}
             </div>
           {/if}
-          <Button variant="outline" onclick={newBatch}>{t('columns.newBatch')}</Button>
+          <Button variant="outline" onclick={newBatch}
+            >{pending.length > 0 ? t('columns.backToList') : t('columns.newBatch')}</Button
+          >
         </div>
       {/if}
     {/if}

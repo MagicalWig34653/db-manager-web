@@ -136,7 +136,7 @@ describe('definition checks', () => {
       definitionIssues(def({ kind: 'text', length: '5' }), ctx('mysql', 'change' as 'add')).map(
         (i) => i.field,
       ),
-    ).toEqual(['collation']);
+    ).toEqual(['replaceAck', 'collation']);
   });
 });
 
@@ -262,6 +262,37 @@ describe('type detection from the catalog', () => {
       values: "a\nit's",
     });
     expect(parseDatabaseType('geometry', 'mysql')).toEqual({});
+  });
+  it('claims only exact matches (no zone, unsigned or precision look-alikes)', () => {
+    for (const [raw, driver] of [
+      ['timestamp with time zone', 'postgres'],
+      ['timestamp(6)', 'mysql'],
+      ['bigint unsigned', 'mysql'],
+      ['bigint(20) unsigned', 'mysql'],
+      ['decimal(10,2) unsigned', 'mysql'],
+      ['tinyint(1)', 'mysql'],
+      ['datetime', 'mysql'],
+      ['integer', 'postgres'],
+      ['double precision', 'postgres'],
+    ] as const)
+      expect(parseDatabaseType(raw, driver), raw).toEqual({});
+    expect(parseDatabaseType('timestamp without time zone', 'postgres')).toEqual({
+      kind: 'timestamp',
+    });
+    expect(parseDatabaseType('bigint', 'postgres')).toEqual({ kind: 'int64' });
+  });
+  it('requires the replace acknowledgement for MySQL change and reorder only', () => {
+    const base = { kind: 'int64' as const };
+    const issues = (driver: 'mysql' | 'postgres', action: 'add' | 'change', ack: boolean) =>
+      definitionIssues(def({ ...base, replaceAck: ack, name: 'c' }), {
+        driver,
+        action,
+        types: myTypes,
+      }).map((i) => i.field);
+    expect(issues('mysql', 'change', false)).toEqual(['replaceAck']);
+    expect(issues('mysql', 'change', true)).toEqual([]);
+    expect(issues('mysql', 'add', false)).toEqual([]);
+    expect(issues('postgres', 'change', false)).toEqual([]);
   });
   it('prefills only simple defaults', () => {
     const base = { name: 'c', database_type: 'integer', nullable: true };
