@@ -103,3 +103,20 @@ Dateiauswahl treffen, die verworfen wird. Fix: ein Flag `starting` sofort beim K
 - File System Access API im echten Browser nur über die Doppel (Mock) getestet; das Verhalten der Swap-Datei ist aus der Spezifikation
   abgeleitet, nicht gemessen. Firefox/Safari nicht geprüft.
 - Keine Messung bei 1 GiB.
+
+## Nachreview der Fixes (`ed0d8dc`, in `review/w-p11-web` eingemergt)
+
+Urteil: **Freigabe ohne offene Auflagen.** Probemerge mit Web-main `f485696` (W-P08): sauber. Die Probes aus `review.test.ts` sind jetzt
+normale Tests (kein `it.fails` mehr).
+
+- F1: `tee()` entfernt, eine Leseschleife (Senke zuerst, dann Prüfer), GZip über `DecompressionStream`-Writer mit `await`. Speicherprobe
+  (600 Blöcke, langsame Senke): Vorlauf vorher 598 Blöcke, jetzt 1 Block (0,06 MiB). Senkenfehler, Lesefehler mitten in der Schleife und
+  Container-Fehler enden in `abort`, nie in `commit`; Abbruch/Wächter brechen den Leser ab. Chunkunabhängigkeit, Schnittsweep und
+  GZip-Fälle weiter grün.
+- F2: Kopfzeile `_record` und Feldzahl des Kontrollsatzes (= Kopfzeile) werden verlangt, auch Excel-Profil; Echtlauf (CSV) grün.
+- F3: SQL-Marke nur nach einer mit `;` beendeten Zeile. Reale Dumps (SQLite, PostgreSQL im Echtlauf; MySQL/MariaDB enden laut Backend-Code
+  mit `SET ...;` bzw. `COMMIT;`) werden akzeptiert, Dump mit Markertext als Dateninhalt vollständig akzeptiert. Restlücke: ein Literal, das
+  selbst `;`-Zeile plus Markerzeile enthält und genau dort endet, bleibt theoretisch ununterscheidbar (nur noch sehr eng, dokumentiert).
+- F4 (`starting`-Flag), F5 (Dateiname, Platzhalter-Hinweis, Fehlergrund, `app.css`-Duplikat entfernt): Browserfälle (36, darunter 320 px) grün.
+- Läufe nacheinander: contract:check, check 0/0, test 227, format:check, test:browser 36, test:csp 2, test-real-export 2, test-real-tables 10/10.
+- Neue Befunde: keine.
