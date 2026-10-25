@@ -56,3 +56,14 @@ mit 200 abschneidet, wird als unvollständig gemeldet und nichts gespeichert.
   Gründe genannt, nicht als einzelner Code.
 - Ohne File System Access (Firefox, Safari) gilt die 256-MiB-Grenze im Arbeitsspeicher.
 - Servertabellenliste für den Bereich "Server" ist ein Textfeld (keine Datenbankliste im Export-Vertrag).
+
+## Nachtrag: Review-Auflagen (Review `review/w-p11-web`, 3e04d89)
+
+- F1: `tee()` entfernt; eine Leseschleife (Block lesen, `await sink.write`, dann Prüfer; GZip über `DecompressionStream`-Writer mit
+  Gegendruck). Test mit langsamer Senke (aus `review.test.ts`, jetzt normaler Test) belegt begrenzten Vorlauf.
+- F2: CSV-Kontrollsatz muss Kopfzeile `_record` haben, mindestens einen weiteren Satz und genau die Feldzahl der Kopfzeile.
+- F3: SQL-Marke zählt nur nach einer mit `;` beendeten Zeile (COMMIT;/SET ...;), nicht innerhalb eines offenen Literals.
+- F4: `starting`-Flag sperrt den Knopf sofort; ein Speicherdialog bei Doppelklick (Test).
+- F5: Meldungen nennen mögliche leere Platzhalterdatei; `safeFilename` erhält `.sql.gz`, schützt Windows-Gerätenamen und endende Punkte;
+  abgewiesene Abfrage im Abfrage-Export zeigt den Grund (nur lesend); `app.css`-Duplikat entfernt.
+- Prüfstand: contract:check, check 0/0, test 227, format:check, test:browser 36, test:csp 2, test-real-export.py 3 von 3, test-real-tables.py 10/10.
