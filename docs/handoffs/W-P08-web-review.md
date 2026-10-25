@@ -83,3 +83,24 @@ neu auf. Komfortlücke, kein Fehler.
    Auto-Inkrement-Hinweis vorhanden (im Vertrag 0.9 nicht enthalten).
 5. Echtläufe: siehe Tabelle.
 6. Doku: ehrlich. Der Handoff nennt den fehlenden MySQL/MariaDB-Browserlauf; er ist durch diese Probe nun belegt.
+
+## Nachreview (`feat/w-p08-web` 9dd0704, Web-main 7a83f0e eingemergt)
+
+**Urteil: Freigabe.** F1 bis F4 geschlossen, keine neuen Befunde mit Auswirkung. Läufe nacheinander: `contract:check` 0; `check` 0/0;
+`test` 254; `format:check` grün; `test:browser` 35; `test:csp` 2; `test:pwa` 6; `test-real-columns.py` 2; `test-real-tables.py` 10.
+Probemerge mit aktuellem Web-main: keine Konflikte (Merge in den Review-Branch ohne Konflikt).
+
+- F1: `parseDatabaseType` belegt nur exakte Treffer vor. Ausgeführt (Auszug): `decimal(10,2)`, `varchar(255)`, `enum('a')`, `set(..)`, `bigint`,
+  `bigint(20)`, `int8`, `timestamp`, `timestamp without time zone`, `date`, `boolean`, `bytea`, `blob` werden erkannt; leer bleiben
+  `varchar(255) character set latin1`, `tinyint(1)`, `bigint unsigned`, `bigint(20) unsigned`, `timestamp(6)`, `timestamp with time zone`,
+  `numeric[]`, `jsonb`, `serial`, `bigserial`, `decimal(10,2) unsigned`, `character varying` ohne Länge, `varchar(10)[]`, SQLite `TEXT`/`INTEGER`.
+  Ohne Typ ist „Zur Änderungsliste hinzufügen“ gesperrt; ein Hinweis nennt den bisherigen Typ. Browserprobe MySQL 8.4/MariaDB 12.3: `id BIGINT UNSIGNED`
+  → Typ leer, Hinweis „bisheriger Typ bigint unsigned … nicht eindeutig erkannt“, Hinzufügen gesperrt. Folge: es kann keine geratene Konvertierung
+  rausgehen; Preis: bei nicht erkannten Typen (z. B. `tinyint(1)`) ist reines Umbenennen über „Ändern“ nicht möglich, dafür gibt es „Umbenennen“
+  (eigene Aktion ohne Typ). Der alte Typ wird nie automatisch als Ersatz gesendet, sondern muss bewusst gewählt werden (zulässig, niedrig).
+- F2: Bei MySQL/MariaDB Ändern/Verschieben erscheint ein roter Hinweis mit Pflicht-Checkbox (`replaceAck`); ohne Haken bleibt Hinzufügen gesperrt;
+  im Plan zusätzlich Hinweis `plan-replaces`. Probe auf beiden Systemen bestanden. Ausreichend.
+- F3: Sperre nur bei `driver === 'mysql'` und `storage_engine` ungleich InnoDB; PostgreSQL/SQLite unberührt (Echtläufe grün).
+- F4: Nach `rejected`/Fehler bleibt die Liste, der Plan wird verworfen („Zurück zur Liste“); nach `completed`/unbekanntem Ausgang wird sie geleert.
+  Ein alter Plan/Hash ist nicht erneut ausführbar: `execute` braucht `phase === 'planned'`, nach `finished` ist die Operation gesperrt,
+  jeder weitere Versuch braucht einen neuen Plan (neuer `plan_sha256`).
