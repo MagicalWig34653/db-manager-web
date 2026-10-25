@@ -232,7 +232,7 @@ describe('Operation state machine', () => {
     expect(op.phase).toBe('idle');
     expect(op.result).toBeNull();
     expect(finished).not.toHaveBeenCalled();
-    expect(phases).toEqual(['sending']);
+    expect(phases).toEqual(['sending', 'settled']);
   });
   it('discards a late plan after reset', async () => {
     let release: (r: Response) => void = () => {};

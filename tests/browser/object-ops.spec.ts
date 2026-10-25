@@ -196,6 +196,13 @@ test('while an execute is running the tabs are locked, leaving warns and an unkn
   await typeAndConfirm(page, 'orders');
   const tabs = page.getByRole('navigation', { name: 'Tabellenreiter' });
   await expect(tabs.getByRole('button', { name: 'Tabelle', exact: true })).toBeDisabled();
+  // No second action can be started from a neighbouring card, and the hash cannot be changed.
+  const copy = card(page, 'table_copy');
+  await copy.getByLabel('Neuer Name').fill('second');
+  await expect(copy.getByRole('button', { name: 'Plan anzeigen' })).toBeDisabled();
+  await page.evaluate(() => (window.location.hash = '#/server/uebersicht'));
+  await expect(page.getByTestId('navigation-blocked')).toBeVisible();
+  await expect(page).toHaveURL(/#\/db\/synthetic\/schema\/main\/tabelle\/orders\/operationen$/);
   const prevented = await page.evaluate(() => {
     const event = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(event);

@@ -8,6 +8,8 @@ import DatabaseOpsTab from './DatabaseOpsTab.svelte';
 import TableOpsTab from './TableOpsTab.svelte';
 import { objectOpsClient } from './client';
 import { fx } from './testing';
+import Host from './testing/Host.svelte';
+import { Session } from '$lib/shell/session.svelte';
 
 const sqlite: ConnectionDraft = {
   name: '',
@@ -241,5 +243,31 @@ describe('tabs', () => {
       table: { schema: 'main', name: 'orders' },
       new_name: 'orders2',
     });
+  });
+});
+
+describe('parallel writes', () => {
+  const hooks = { onConnected: () => {}, onCatalogSettled: () => {}, onCleared: () => {} };
+  const hostProps = (session: Session) => ({
+    session,
+    action: 'table_drop',
+    capability: { support: 'supported' },
+    connection: sqlite,
+    token: 'tok',
+    fields: () => ({ table: { name: 'parent' } }),
+  });
+  it('cannot start a plan or an execution while another write is in flight', async () => {
+    const session = new Session(hooks);
+    render(Host, hostProps(session));
+    await fireEvent.click(await planButton());
+    const run = await screen.findByRole('button', { name: 'Ausführen' });
+    expect(run).toBeEnabled();
+    session.writeCount = 1; // another card or feature has a request in flight
+    await waitFor(() => expect(run).toBeDisabled());
+    expect(execute).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole('button', { name: 'Eingaben ändern' }));
+    expect(await planButton()).toBeDisabled();
+    session.writeCount = 0;
+    await waitFor(async () => expect(await planButton()).toBeEnabled());
   });
 });

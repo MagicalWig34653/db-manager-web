@@ -76,6 +76,21 @@
       depsError = '';
       depsBusy = false;
       finishedName = '';
+      renameName = '';
+      renameSchema = '';
+      copyName = '';
+      copySchema = '';
+      copyMode = 'both';
+      restart = false;
+      useEngine = false;
+      engine = '';
+      useComment = false;
+      comment = '';
+      useCollation = false;
+      collation = '';
+      collationMode = 'default';
+      useAuto = false;
+      autoIncrement = '';
     });
   });
 

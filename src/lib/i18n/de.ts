@@ -137,6 +137,8 @@ export const de = {
     tableTabsLabel: 'Tabellenreiter',
     writeUnknown:
       'Der Ausgang eines gesendeten Schreibvorgangs ist unbekannt. Er kann bereits übernommen worden sein. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
+    navigationBlocked:
+      'Ein Schreibvorgang läuft. Die Ansicht kann erst gewechselt werden, wenn die Antwort vorliegt.',
     dismissNotice: 'Hinweis schließen',
     noPersistence: 'Zugangsdaten und Abfragen werden hier nicht dauerhaft gespeichert.',
     tagline: 'Dein Datenbank-Arbeitsplatz',
@@ -490,6 +492,14 @@ export const de = {
     atomic: 'atomar',
     notAtomic: 'nicht atomar',
     obsState: 'Beobachtung',
+    obsTransactional: 'in derselben Transaktion bestätigt',
+    obsObserved: 'danach getrennt gelesen (kein atomarer Schnappschuss)',
+    obsUnavailable: 'nicht verfügbar',
+    affTable: 'Tabelle',
+    affView: 'Sicht',
+    affDatabase: 'Datenbank',
+    affPartition: 'Partition',
+    affInherited: 'Vererbungskind',
     obsTarget: 'Ziel vorhanden',
     obsSource: 'Quelle vorhanden',
     obsRows: 'Zeilen',

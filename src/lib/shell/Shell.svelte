@@ -59,7 +59,16 @@
   });
   const driverNames = { sqlite: 'SQLite', mysql: 'MySQL / MariaDB', postgresql: 'PostgreSQL' };
 
+  // While a write request is in flight the view must not change: the answer would be lost.
+  let navigationBlocked = $state(false);
+  $effect(() => {
+    if (!session.writeInFlight) navigationBlocked = false;
+  });
   function navigate(next: Route) {
+    if (session.writeInFlight) {
+      navigationBlocked = true;
+      return;
+    }
     const hash = formatRoute(next);
     route = next;
     if (window.location.hash !== hash) window.location.hash = hash;
@@ -195,6 +204,11 @@
   onhashchange={() => {
     // Our own navigation already set the route; re-parsing it would drop names the parser rejects.
     if (window.location.hash === formatRoute(route)) return;
+    if (session.writeInFlight) {
+      navigationBlocked = true;
+      window.location.hash = formatRoute(route);
+      return;
+    }
     route = parseHash(window.location.hash);
   }}
   onkeydown={(event) => dispatch(event, shortcuts)}
@@ -346,6 +360,13 @@
             size="sm"
             onclick={() => (session.writeNotice = false)}>{t('shell.dismissNotice')}</Button
           >
+        </div>{/if}
+      {#if navigationBlocked && session.writeInFlight}<div
+          class="global-write-notice"
+          role="status"
+          data-testid="navigation-blocked"
+        >
+          <TriangleAlert size={20} /><span>{t('shell.navigationBlocked')}</span>
         </div>{/if}
       {#if registry.errors.length}<div
           class="global-write-notice"

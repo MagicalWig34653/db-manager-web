@@ -23,6 +23,18 @@
   const capability = (action: keyof NonNullable<typeof caps.data>['drivers']['sqlite']) =>
     caps.data?.drivers[driver][action];
 
+  // Inputs never survive a connection or token change.
+  $effect(() => {
+    token;
+    connection;
+    untrack(() => {
+      createName = '';
+      createCollation = '';
+      dropName = '';
+      collationName = connection?.database ?? '';
+      collation = '';
+    });
+  });
   $effect(() => {
     token;
     connection;
