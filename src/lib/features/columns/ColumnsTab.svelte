@@ -536,8 +536,8 @@
       {#if operation.phase === 'finished'}
         <div
           class={operation.result?.outcome === 'completed'
-            ? 'feedback success-feedback'
-            : 'feedback error-feedback'}
+            ? 'feedback success-feedback result-box'
+            : 'feedback error-feedback result-box'}
           role="status"
           data-testid="columns-result"
         >
@@ -585,6 +585,7 @@
 <style>
   .columns-panel {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
     min-width: 0;
     padding: 1rem;
@@ -637,6 +638,7 @@
   .pending,
   .plan {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.625rem;
     padding: 0.75rem;
     border: 1px solid var(--color-border);
@@ -676,6 +678,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+  .result-box {
+    flex-wrap: wrap;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .sr-only {
     position: absolute;
