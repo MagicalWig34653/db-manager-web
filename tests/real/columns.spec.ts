@@ -217,8 +217,8 @@ for (const driver of ['sqlite', 'postgresql'] as const) {
     await expect(page.getByTestId('columns-result')).toContainText('ausgeführt');
     expect(alters).toHaveLength(before + 1);
     await page.getByRole('button', { name: 'Neue Änderung vorbereiten' }).click();
-    await expect.poll(() => columnNames(page)).toEqual(expect.not.arrayContaining(['extra']));
-    expect(await columnNames(page)).toContain('amount');
+    await expect.poll(() => columnNames(page)).toContain('amount');
+    expect(await columnNames(page)).not.toContain('extra');
     expect(await query(request, driver, `SELECT amount FROM ${qt} WHERE id = 1`)).toEqual([
       [driver === 'sqlite' ? '1.5' : '1.50'],
     ]);
