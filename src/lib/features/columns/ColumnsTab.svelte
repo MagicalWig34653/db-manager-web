@@ -135,6 +135,7 @@
     objectKey;
     connection;
     token;
+    const ready = capsState === 'ready';
     untrack(() => {
       operation.reset();
       pending = [];
@@ -142,7 +143,7 @@
       confirmed = false;
       dialogOpen = false;
       description = null;
-      void loadDescription();
+      if (ready) void loadDescription();
     });
     return () => {
       loadGeneration++;
