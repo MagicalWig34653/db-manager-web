@@ -37,7 +37,7 @@ Neu: `src/lib/contract/v11/**`, `src/lib/features/export/**` (Panel, `run.ts`, `
 
 ## Prüfungen
 
-Siehe Tabelle im Bericht; Befehle: `contract:check`, `check`, `test`, `format:check`, `test:browser` (Playwright-Port 4199
+Stand nach Abgleich mit Web-`main` `7a83f0e` (W-P07): contract:check aktuell, check 0/0, test 201, format:check ok, check-docs 0 Fehler, test:browser 36, test:csp 2, test-real-tables.py 10/10, test-real-export.py 3 von 3 Läufen grün. Befehle: `contract:check`, `check`, `test`, `format:check`, `test:browser` (Playwright-Port 4199
 über eine unversionierte Konfigurationskopie), `test:csp`, `scripts/test-real-tables.py` (10 Fälle), 
 `DBM_BACKEND_REPO=<Root> DBM_BACKEND_REV=c331c64 python3 scripts/test-real-export.py`.
 Der echte Lauf (SQLite, PostgreSQL 18.6 verify-full, Produktions-Build) lädt über die Oberfläche SQL, SQL+GZip, JSON und
