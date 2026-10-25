@@ -24,6 +24,7 @@
     existing,
     self = '',
     oldDefault,
+    oldType,
     disabled = false,
   }: {
     draft: DefinitionDraft;
@@ -35,6 +36,7 @@
     existing: readonly string[];
     self?: string;
     oldDefault?: string;
+    oldType?: string;
     disabled?: boolean;
   } = $props();
   const uid = $props.id();
@@ -59,6 +61,13 @@
       {#each issueFor('name') as issue (issue.message)}<small class="issue">{issue.message}</small
         >{/each}
     </div>
+  {/if}
+  {#if oldType !== undefined}
+    <small class="wide" data-testid="old-type"
+      >{draft.kind === ''
+        ? t('columns.oldTypeUnknown', { value: oldType })
+        : t('columns.oldType', { value: oldType })}</small
+    >
   {/if}
   <div class="field">
     <label for="{uid}-kind">{t('columns.fieldType')}</label>
@@ -146,6 +155,16 @@
     {#each issueFor('default') as issue (issue.message)}<small class="issue">{issue.message}</small
       >{/each}
   </div>
+  {#if commentForced}
+    <div class="replace-warning wide" role="alert" data-testid="replace-warning">
+      <strong>{t('columns.replaceWarnTitle')}</strong>
+      <span>{t('columns.replaceWarn')}</span>
+      <label class="check">
+        <input type="checkbox" bind:checked={draft.replaceAck} {disabled} />
+        {t('columns.replaceAck')}
+      </label>
+    </div>
+  {/if}
   {#if !commentForced && action === 'change'}
     <label class="check">
       <input type="checkbox" bind:checked={draft.commentSet} {disabled} />
@@ -225,6 +244,15 @@
   }
   .issue {
     color: var(--color-destructive);
+  }
+  .replace-warning {
+    display: grid;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-destructive);
+    border-radius: var(--radius-md);
+    color: var(--color-destructive);
+    font-size: 0.8125rem;
   }
   .check {
     display: inline-flex;

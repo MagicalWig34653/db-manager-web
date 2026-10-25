@@ -292,6 +292,20 @@ export const de = {
     edit_rename: 'Spalte {name} umbenennen',
     edit_reorder: 'Spalte {name} verschieben',
     edit_drop: 'Spalte {name} entfernen',
+    oldType: 'Bisheriger Typ laut Katalog: {value}.',
+    oldTypeUnknown:
+      'Der bisherige Typ {value} wurde nicht eindeutig erkannt. Wähle den neuen Typ bewusst; eine Typkonvertierung wird nur mit deiner Auswahl gesendet.',
+    replaceWarnTitle: 'Bestehender Kommentar und Zeichensatz/Kollation werden ersetzt.',
+    replaceWarn:
+      'Das Backend zeigt sie nicht an. Die Definition unten ersetzt sie vollständig; ein bestehender Kommentar geht verloren, wenn du ihn nicht erneut einträgst.',
+    replaceAck: 'Ich habe Kommentar und Kollation geprüft und möchte sie so ersetzen.',
+    errReplaceAck: 'Bestätige, dass Kommentar und Kollation ersetzt werden.',
+    replaceWarnPlan:
+      'Mindestens eine Änderung ersetzt bestehenden Kommentar und Zeichensatz/Kollation der Spalte. Prüfe die Anweisungen.',
+    engineTitle: 'Tabellen-Engine nicht unterstützt',
+    engineBlocked:
+      'Die Tabelle verwendet die Engine {engine}. Spaltenänderungen sind nur für InnoDB-Tabellen möglich.',
+    backToList: 'Zurück zur Änderungsliste',
     replaceNote:
       'Die Definition ersetzt Typ, NULL-Erlaubnis und Standardwert vollständig. Datenverlust ist möglich.',
     replaceNoteMysql:

@@ -257,9 +257,14 @@ describe('ColumnsTab', () => {
     expect(screen.getByLabelText('Länge')).toHaveValue('80');
     expect(screen.getByTestId('old-default')).toHaveTextContent('x');
     expect(screen.getByRole('button', { name: 'Zur Änderungsliste hinzufügen' })).toBeDisabled();
+    expect(screen.getByTestId('replace-warning')).toBeVisible();
     await fireEvent.input(screen.getByLabelText('Kollation (erforderlich für Text)'), {
       target: { value: 'utf8mb4_bin' },
     });
+    expect(screen.getByRole('button', { name: 'Zur Änderungsliste hinzufügen' })).toBeDisabled();
+    await fireEvent.click(
+      screen.getByRole('checkbox', { name: /Kommentar und Kollation geprüft/ }),
+    );
     await fireEvent.click(screen.getByRole('button', { name: 'Zur Änderungsliste hinzufügen' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Plan anzeigen' }));
     await waitFor(() => expect(spies.plan).toHaveBeenCalled());
@@ -270,6 +275,73 @@ describe('ColumnsTab', () => {
       collation: 'utf8mb4_bin',
       type: { kind: 'text', length: 80 },
     });
+  });
+});
+
+describe('ColumnsTab review rules', () => {
+  it('keeps the change list after a rejected execution and discards only the plan', async () => {
+    const spies = arrange();
+    spies.plan.mockResolvedValue(plan());
+    spies.alter.mockResolvedValue(
+      result({
+        outcome: 'rejected',
+        reason: 'database_error',
+        statements_executed: 0,
+        atomic: false,
+      }),
+    );
+    mount();
+    await ready();
+    await addColumn('n');
+    await fireEvent.click(screen.getByRole('button', { name: 'Plan anzeigen' }));
+    await waitFor(() => expect(screen.getByTestId('columns-plan')).toBeVisible());
+    await fireEvent.click(screen.getByRole('checkbox', { name: /geprüft/ }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Ausführen' }));
+    await waitFor(() => expect(screen.getByTestId('columns-result')).toBeVisible());
+    await fireEvent.click(screen.getByRole('button', { name: 'Zurück zur Änderungsliste' }));
+    expect(screen.queryByTestId('columns-plan')).toBeNull();
+    expect(screen.getByTestId('pending-list')).toHaveTextContent('Spalte n hinzufügen');
+    expect(screen.getByRole('button', { name: 'Plan anzeigen' })).toBeEnabled();
+  });
+
+  it('empties the list after a completed execution', async () => {
+    const spies = arrange();
+    spies.plan.mockResolvedValue(plan());
+    spies.alter.mockResolvedValue(result());
+    mount();
+    await ready();
+    await addColumn('n');
+    await fireEvent.click(screen.getByRole('button', { name: 'Plan anzeigen' }));
+    await waitFor(() => expect(screen.getByTestId('columns-plan')).toBeVisible());
+    await fireEvent.click(screen.getByRole('checkbox', { name: /geprüft/ }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Ausführen' }));
+    await waitFor(() => expect(screen.getByTestId('columns-result')).toBeVisible());
+    await fireEvent.click(screen.getByRole('button', { name: 'Neue Änderung vorbereiten' }));
+    expect(screen.getByText('Noch keine Änderungen vorgemerkt.')).toBeVisible();
+  });
+
+  it('marks non-InnoDB MySQL tables as unsupported early and disables all actions', async () => {
+    vi.spyOn(columnsClient, 'capabilities').mockResolvedValue(capabilities());
+    vi.spyOn(tables, 'describe').mockResolvedValue({ ...description(), storage_engine: 'MyISAM' });
+    mount('mysql');
+    await ready();
+    expect(screen.getByText('Tabellen-Engine nicht unterstützt')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Spalte note ändern' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Spalte note entfernen' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Spalte hinzufügen' })).toBeDisabled();
+  });
+
+  it('does not preselect an unrecognized type and sends no type until the user chooses', async () => {
+    vi.spyOn(columnsClient, 'capabilities').mockResolvedValue(capabilities());
+    const desc = description();
+    desc.columns[1].database_type = 'timestamp with time zone';
+    vi.spyOn(tables, 'describe').mockResolvedValue(desc);
+    mount('postgresql');
+    await ready();
+    await fireEvent.click(screen.getByRole('button', { name: 'Spalte note ändern' }));
+    expect(screen.getByLabelText('Typ')).toHaveValue('');
+    expect(screen.getByTestId('old-type')).toHaveTextContent('nicht eindeutig erkannt');
+    expect(screen.getByRole('button', { name: 'Zur Änderungsliste hinzufügen' })).toBeDisabled();
   });
 });
 

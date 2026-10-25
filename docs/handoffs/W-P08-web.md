@@ -73,3 +73,17 @@ kollidierender Name vor dem Plan gestoppt, keine CSP-Verstöße, keine fremden U
   Pfade (Verschieben, Kollationspflicht, ENUM/SET) nur Unit/Komponente/Mock.
 - Positionsangaben und Mehrfachänderungen mit Positionsbezügen auf im selben Plan umbenannte Spalten verhindert nur der Server.
 - Pin/Neubau/Lock-Eintrag `contracts` für 0.9 durch den Integrations-Agenten.
+
+## Nachtrag: Review-Auflagen (Review `review/w-p08-web`, b9d081a; Web-main 7a83f0e eingemergt)
+
+- F1: `parseDatabaseType` belegt nur exakte Treffer vor (`timestamp`/`timestamp without time zone`, `bigint` ohne `unsigned`,
+  keine `timestamp(n)`/`with time zone`/`... unsigned`). Sonst bleibt der Typ leer, das Formular nennt den bisherigen Typ und
+  verlangt eine bewusste Auswahl; ohne Typ ist "Zur Änderungsliste hinzufügen" gesperrt, also geht keine unbemerkte
+  Typkonvertierung raus (der Vertrag verlangt bei Ändern/Verschieben immer einen Typ, ein Zustand "unverändert" ist nicht möglich).
+- F2: Das Backend liefert bestehenden Kommentar und Kollation nicht (ohne Vertragsänderung nicht lesbar; keine Abfrage über die
+  freie SQL-Route). Bekannte Grenze, UI-Warnung verstärkt: roter Hinweis im Formular mit Prüfpflicht-Checkbox
+  (MySQL/MariaDB Ändern/Verschieben; ohne Haken gesperrt) und roter Hinweis im Plan.
+- F3: Nicht-InnoDB-Tabellen (MySQL/MariaDB, `storage_engine` aus der Beschreibung) werden früh als nicht unterstützt gekennzeichnet,
+  alle Aktionen deaktiviert. `EXTRA`/AUTO_INCREMENT liefert die Beschreibung nicht, das bleibt eine Abweisung nach dem Planversuch.
+- F4: Nach `rejected` (oder einem Fehler ohne unbekannten Ausgang) bleibt die Änderungsliste erhalten, nur der Plan wird verworfen
+  ("Zurück zur Änderungsliste"); nach `completed` oder unbekanntem Ausgang wird sie geleert.
