@@ -87,3 +87,7 @@ kollidierender Name vor dem Plan gestoppt, keine CSP-Verstöße, keine fremden U
   alle Aktionen deaktiviert. `EXTRA`/AUTO_INCREMENT liefert die Beschreibung nicht, das bleibt eine Abweisung nach dem Planversuch.
 - F4: Nach `rejected` (oder einem Fehler ohne unbekannten Ausgang) bleibt die Änderungsliste erhalten, nur der Plan wird verworfen
   ("Zurück zur Änderungsliste"); nach `completed` oder unbekanntem Ausgang wird sie geleert.
+
+Prüfstand nach den Auflagen (nacheinander, auf Stand mit Web-main 7a83f0e): `contract:check` ok, `check` 0 Fehler, `npm test`
+28 Dateien/254 Tests, `format:check` ok, `test:browser` 35, `test:csp` 2, `test:pwa` 6, `test-real-columns.py` 2 (SQLite, PostgreSQL),
+`test-real-tables.py` 10/10, `check-docs` 0 Fehler.
