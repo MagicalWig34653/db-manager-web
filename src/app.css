@@ -1232,6 +1232,7 @@ kbd {
 .workspace-tabs {
   margin-bottom: 18px;
   padding-left: 0;
+  flex-wrap: wrap;
 }
 .workspace-tabs button:disabled {
   opacity: 0.4;
