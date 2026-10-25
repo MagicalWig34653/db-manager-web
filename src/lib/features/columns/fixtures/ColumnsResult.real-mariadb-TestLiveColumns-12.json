@@ -39,9 +39,7 @@
         "read_only": true
       }
     ],
-    "primary_key": [
-      "id"
-    ],
+    "primary_key": ["id"],
     "read_only": true,
     "stable_order": true,
     "storage_engine": "InnoDB",

@@ -1,8 +1,6 @@
 {
   "driver": "mysql",
-  "statements": [
-    "ALTER TABLE `probe`.`col \"``' ;DROP TABLE neighbor` DROP COLUMN `renamed \"```"
-  ],
+  "statements": ["ALTER TABLE `probe`.`col \"``' ;DROP TABLE neighbor` DROP COLUMN `renamed \"```"],
   "warnings": [
     "Strukturänderungen können die Tabelle sperren. Zeitlimit und DB-Rechte gelten.",
     "Plan-Hash ist kein Replay-Schutz; nach Abschluss oder unbekanntem Ausgang neu planen und bestätigen.",
