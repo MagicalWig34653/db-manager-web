@@ -15,7 +15,11 @@ export interface SessionHooks {
 }
 
 export class Session {
-  writeInFlight = $state(false);
+  /** Number of write requests currently sent without a final answer (features report phases). */
+  writeCount = $state(0);
+  get writeInFlight() {
+    return this.writeCount > 0;
+  }
   writeNotice = $state(false);
   connection = $state<ConnectionDraft | null>(null);
   selectedObject = $state<CatalogObject | null>(null);
@@ -53,21 +57,27 @@ export class Session {
 
   separateWriteContext() {
     if (this.writeInFlight) this.writeNotice = true;
-    this.writeInFlight = false;
+    this.writeCount = 0;
+  }
+  /** Counts phases so that a second write feature cannot lift the protection of the first. */
+  private applyPhase(phase: WritePhase) {
+    if (phase === 'sending') this.writeCount++;
+    else if (this.writeCount > 0) this.writeCount--;
+    if (phase === 'unknown') this.writeNotice = true;
   }
   writeReceiver(source: CatalogObject, version: number) {
     return (phase: WritePhase) => {
-      if (source !== this.selectedObject || version !== this.sessionVersion) return;
-      this.writeInFlight = phase === 'sending';
-      if (phase === 'unknown') this.writeNotice = true;
+      if (version !== this.sessionVersion) return;
+      // Every phase counts (also after the selected object changed), so the counter cannot stick.
+      void source;
+      this.applyPhase(phase);
     };
   }
   /** Receiver for write features of database tabs: not bound to an object, bound to the session. */
   databaseWriteReceiver(version: number) {
     return (phase: WritePhase) => {
       if (version !== this.sessionVersion) return;
-      this.writeInFlight = phase === 'sending';
-      if (phase === 'unknown') this.writeNotice = true;
+      this.applyPhase(phase);
     };
   }
   async openConnection() {

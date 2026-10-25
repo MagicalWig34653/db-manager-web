@@ -80,3 +80,23 @@ export const kindText = (value: ObjectDependency['kind']) => t(kindKeys[value]);
 
 /** True when the user has to type the target name (taken from the plan, never from the form). */
 export const needsTypedName = (plan: ObjectOpPlan) => plan.confirmation.destructive;
+
+const affectedKinds: Record<string, string> = {
+  table: 'object-ops.affTable',
+  view: 'object-ops.affView',
+  database: 'object-ops.affDatabase',
+  partition: 'object-ops.affPartition',
+  inherited: 'object-ops.affInherited',
+};
+/** "table:name" from the backend becomes "Tabelle name"; unknown prefixes stay as they are. */
+export function affectedLabel(value: string): string {
+  const index = value.indexOf(':');
+  const key = index > 0 ? affectedKinds[value.slice(0, index)] : undefined;
+  return key ? `${t(key)} ${value.slice(index + 1)}` : value;
+}
+export const observationText = (state: string) =>
+  state === 'transactional'
+    ? t('object-ops.obsTransactional')
+    : state === 'observed'
+      ? t('object-ops.obsObserved')
+      : t('object-ops.obsUnavailable');

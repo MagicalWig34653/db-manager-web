@@ -9,11 +9,14 @@
   import { Button } from '$lib/components/ui/button';
   import { t } from '$lib/i18n';
   import type { WritePhase } from '$lib/rows';
+  import { getShellContext } from '$lib/shell/context';
   import type { ConnectionDraft } from '$lib/workbench';
   import {
     ACTIONS,
+    affectedLabel,
     effectText,
     kindText,
+    observationText,
     reasonText,
     type Action,
     type ApiDriver,
@@ -48,6 +51,7 @@
     form?: Snippet<[boolean]>;
   } = $props();
 
+  const shell = getShellContext();
   const kind = untrack(() => action);
   const op = new Operation({
     action: kind,
@@ -70,6 +74,8 @@
     });
   });
 
+  // Another write (or this one) is in flight: no second plan or execution can be started.
+  const writing = $derived(!!shell?.session.writeInFlight);
   const plan = $derived(op.plan);
   const supported = $derived(capability?.support !== 'unsupported');
   const needsAck = $derived(!!plan?.confirmation.current_database);
@@ -79,6 +85,7 @@
 
   function execute() {
     dialogOpen = false;
+    if (shell?.session.writeInFlight) return;
     void op.execute(plan?.confirmation.target_name);
   }
   const resultKey = $derived(
@@ -115,7 +122,7 @@
       <form
         onsubmit={(event) => {
           event.preventDefault();
-          if (valid) void op.loadPlan(fields());
+          if (valid && !writing) void op.loadPlan(fields());
         }}
       >
         {@render form?.(op.phase === 'planning')}
@@ -126,7 +133,7 @@
           </div>
         {/if}
         <div class="actions">
-          <Button type="submit" disabled={!valid || op.phase === 'planning'}
+          <Button type="submit" disabled={!valid || writing || op.phase === 'planning'}
             >{op.phase === 'planning' ? t('object-ops.planning') : t('object-ops.showPlan')}</Button
           >
         </div>
@@ -206,8 +213,10 @@
               <Button variant="outline" onclick={() => op.discardPlan()}
                 >{t('object-ops.editInputs')}</Button
               >
-              <Button variant="destructive" disabled={!ackOk} onclick={() => (dialogOpen = true)}
-                >{t('object-ops.execute')}</Button
+              <Button
+                variant="destructive"
+                disabled={!ackOk || writing}
+                onclick={() => (dialogOpen = true)}>{t('object-ops.execute')}</Button
               >
             </div>
             <ConfirmDestructiveDialog
@@ -227,7 +236,7 @@
               <Button variant="outline" onclick={() => op.discardPlan()}
                 >{t('object-ops.editInputs')}</Button
               >
-              <Button disabled={!confirmed || !ackOk} onclick={execute}
+              <Button disabled={!confirmed || !ackOk || writing} onclick={execute}
                 >{t('object-ops.execute')}</Button
               >
             </div>
@@ -263,7 +272,7 @@
                 {#if op.result.observation}
                   {@const o = op.result.observation}
                   <ul data-testid="observation">
-                    <li>{t('object-ops.obsState')}: {o.state}</li>
+                    <li>{t('object-ops.obsState')}: {observationText(o.state)}</li>
                     {#if o.target_exists !== null}<li>
                         {t('object-ops.obsTarget')}: {o.target_exists
                           ? t('object-ops.yes')

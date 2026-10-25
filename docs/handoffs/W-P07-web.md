@@ -28,7 +28,7 @@ kein Pin im Root-Lock.
 
 ## Änderungen außerhalb des Pakets (minimal)
 
-- `src/lib/shell/Shell.svelte`: Tabellenreiter (Daten und Zusatzreiter) sind während `session.writeInFlight` gesperrt (4 Zeilen).
+- `src/lib/shell/Shell.svelte`: Tabellenreiter sind während `session.writeInFlight` gesperrt (4 Zeilen); siehe Nachtrag für die Navigationssperre.
 - `src/app.css`: `.workspace-tabs { flex-wrap: wrap; }`, damit die Reiterleiste mit den zusätzlichen Reitern bei 320 px nicht horizontal scrollt.
 
 ## Prüfungen (Worktree `.worktrees/w-p07-web`, nacheinander, Last 40 bis 130)
@@ -57,3 +57,21 @@ als nicht unterstützt erklärt.
 - `OBJ-004` Datenbank kopieren/umbenennen ist im Backend nicht umgesetzt, daher auch nicht in der Oberfläche.
 - Kollation und Engine sind Freitextfelder (keine Auswahl aus der Serverinfo v7), der Server prüft gegen den Katalog.
 - Pin/Neubau/Lock-Eintrag `contracts` für 0.8 durch den Integrations-Agenten.
+
+## Nachtrag: Review-Auflagen (Review `review/w-p07-web`, cac5027)
+
+- F1: `Session.writeInFlight` ist jetzt ein Getter über `writeCount` (Zähler statt Boolean): `sending` zählt hoch, jede Endphase
+  (`settled`/`unknown`) herunter (nicht unter 0), `separateWriteContext` setzt auf 0; Empfänger sind an die Sitzungsversion gebunden, der
+  Tabellenempfänger zählt Endphasen auch nach Objektwechsel. Eine zweite Karte hebt den Seiten-verlassen-Schutz der ersten nicht mehr auf.
+  `Shell.svelte`: `navigate()` und `onhashchange` ignorieren/stellen die Route wieder her, solange ein Schreibvorgang läuft, mit Hinweis
+  (`data-testid=navigation-blocked`, Text `shell.navigationBlocked`). `ActionCard` (object-ops) und `CreateTablePanel` (W-P05, dieselbe
+  Session-API) deaktivieren "Plan anzeigen", "Definition prüfen" und "Ausführen" solange irgendein Schreibvorgang läuft. `Operation` und
+  `CreateTablePanel` melden jede abgesendete Anfrage genau einmal als beendet, auch bei verworfener (veralteter) Antwort und nie ohne
+  vorheriges `sending`. Tests: `session.write.test.ts` (überlappende Schreibvorgänge), `components.test.ts` (zweite Aktion nicht auslösbar),
+  Browserfall (Nachbarkarte gesperrt, Hash-Wechsel blockiert, URL bleibt).
+- F2: `affected_objects`-Präfixe (`table:`, `view:`, `database:`, `partition:`) als Labels, `observation.state` als Text; Backend-Warnungen,
+  `deps.notes` und Capability-Gründe bleiben Backendtext (bewusst).
+- F3: Formulareingaben beider Reiter werden bei Verbindungs-, Token- und Objektwechsel zurückgesetzt.
+- Prüfstand: check 0 Fehler/0 Warnungen, 175 Tests, format:check ok, contract:check ok, test:browser 32, test:csp 2,
+  `test-real-object-ops.py` 4/4, `test-real-create.py` 2/2, `test-real-tables.py` 10/10 (ein erster Lauf unter Last 300 hatte einen Fehlschlag
+  in export.spec postgresql, Wiederholung grün).

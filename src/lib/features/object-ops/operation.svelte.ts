@@ -100,23 +100,29 @@ export class Operation {
     const current = this.generation;
     this.phase = 'executing';
     this.error = '';
+    let dispatched = false;
+    // Every dispatched write reports exactly one final phase, even when its answer is stale.
+    const end = (phase: WritePhase) => {
+      if (dispatched) this.deps.onphase?.(phase);
+    };
     try {
-      const result = await this.client.execute(this.deps.action, body, token, () =>
-        this.deps.onphase?.('sending'),
-      );
+      const result = await this.client.execute(this.deps.action, body, token, () => {
+        dispatched = true;
+        this.deps.onphase?.('sending');
+      });
+      end('settled');
       if (current !== this.generation) return;
       this.result = result;
       this.phase = 'finished';
-      this.deps.onphase?.('settled');
       this.deps.onfinished?.(result, false);
     } catch (cause) {
-      if (current !== this.generation) return;
       const code = errorCode(cause);
+      end(code === 'outcome_unknown' ? 'unknown' : 'settled');
+      if (current !== this.generation) return;
       this.error = opErrorMessage(cause);
       this.errorCode = code;
       this.unknown = code === 'outcome_unknown';
       this.phase = 'finished';
-      this.deps.onphase?.(this.unknown ? 'unknown' : 'settled');
       this.deps.onfinished?.(null, this.unknown);
     }
   }

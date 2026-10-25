@@ -55,6 +55,8 @@
         (draft.schema === '' || object.schema === undefined || object.schema === draft.schema),
     ),
   );
+  // Another write feature has a request in flight: no second write can be started from here.
+  const writing = $derived(!!shell?.session.writeInFlight);
   const frozen = $derived(unknown || result !== null);
 
   function resetAll() {
@@ -142,7 +144,7 @@
 
   async function submit() {
     // The flag is set before the first await so that a double click can never send twice.
-    if (sending || frozen || step !== 'review' || !confirmed || !connection) return;
+    if (sending || writing || frozen || step !== 'review' || !confirmed || !connection) return;
     if (issues.length > 0) {
       step = 'edit';
       return;
@@ -151,22 +153,28 @@
     const request = buildRequest(draft, toConnection(connection), connection.driver !== 'sqlite');
     sending = true;
     errorText = '';
+    let dispatched = false;
+    // Every dispatched write reports exactly one final phase, even when its answer is stale.
+    const end = (phase: 'settled' | 'unknown') => {
+      if (dispatched) onwritephase?.(phase);
+    };
     try {
-      const outcome = await createClient.create(request, token, () => onwritephase?.('sending'));
+      const outcome = await createClient.create(request, token, () => {
+        dispatched = true;
+        onwritephase?.('sending');
+      });
+      end('settled');
       if (current !== generation) return;
       result = outcome;
       createdName = request.table.name;
-      onwritephase?.('settled');
       void shell?.session.loadCatalog();
     } catch (cause) {
-      if (current !== generation) return;
       const code = (cause as { code?: string }).code;
+      end(code === 'outcome_unknown' ? 'unknown' : 'settled');
+      if (current !== generation) return;
       errorText = createErrorMessage(cause);
-      if (code === 'outcome_unknown') {
-        unknown = true;
-        onwritephase?.('unknown');
-      } else {
-        onwritephase?.('settled');
+      if (code === 'outcome_unknown') unknown = true;
+      else {
         step = 'edit';
         confirmed = false;
       }
@@ -516,7 +524,9 @@
           </div>
         {/if}
         <div class="actions">
-          <Button type="submit" disabled={issues.length > 0}>{t('table-create.review')}</Button>
+          <Button type="submit" disabled={issues.length > 0 || writing}
+            >{t('table-create.review')}</Button
+          >
         </div>
       </form>
     {:else if !frozen && step === 'review'}
@@ -569,7 +579,7 @@
           <Button type="button" variant="outline" disabled={sending} onclick={() => (step = 'edit')}
             >{t('table-create.back')}</Button
           >
-          <Button type="button" disabled={!confirmed || sending} onclick={submit}
+          <Button type="button" disabled={!confirmed || sending || writing} onclick={submit}
             >{sending ? t('table-create.sending') : t('table-create.submit')}</Button
           >
         </div>
