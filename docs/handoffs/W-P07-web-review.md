@@ -84,3 +84,34 @@ Partitionen bleiben ohne Browser-Echtlauf.
    `aria-label`, Formularfelder mit Labels, Fehler `role=alert`, Dialog über die geprüfte gemeinsame Komponente.
 6. Echtläufe: siehe Tabelle.
 7. Doku: ehrlich.
+
+## Nachreview (`feat/w-p07-web` e00ec56, Basis main 48c2f67; eingemergt)
+
+**Urteil: Freigabe.** F1, F2 und F3 sind geschlossen; keine neuen Befunde mit Auswirkung.
+
+Läufe nacheinander auf dem Merge-Stand: `contract:check` Exit 0; `check` 0/0; `test` 25 Dateien, 175 Tests; `format:check` grün;
+`test:browser` 32; `test:csp` 2; `test-real-object-ops.py` 4; `test-real-create.py` 2; `test-real-tables.py` 10; `test-real-overview.py` 2
+(Root-`main`). `package.json` unverändert, keine neue Abhängigkeit.
+
+- F1 (a) Zähler: `Session.writeCount` wird nur über `applyPhase` verändert (`sending` +1, Ende -1 nur wenn > 0, nie negativ), die Empfänger
+  sind an die Sitzungsversion gebunden; `clearSession` und `separateWriteContext` setzen auf 0. Jeder abgesendete Execute meldet genau eine
+  Endphase, auch bei veralteter Antwort (`end(...)` vor der Generationsprüfung in `Operation` und `CreateTablePanel`), und auch nach
+  Unmount, da die Fortsetzung weiterläuft. Eigene Browserproben (temporär, nicht committet), alle grün: (1) `route.abort` mitten im Senden
+  → `outcome_unknown`, danach Reiter bedienbar, Navigation und Zurück funktionieren, kein Seiten-verlassen-Schutz mehr; (2) „Sitzung
+  leeren“ mitten im Senden, späte Antwort danach, neue Verbindung → Reiter und Navigation bedienbar, Zähler nicht hängend und nicht
+  negativ; (3) Objektknopf während des Sendens gesperrt, nach der Antwort alles frei. Restfall (niedrig): `separateWriteContext` wird auch
+  bei Objektwechsel/Neuverbinden in derselben Sitzungsversion aufgerufen und setzt den Zähler auf 0; eine spätere Endphase des noch
+  laufenden Requests zählt dann einen später gestarteten Schreibvorgang herunter (zu früh freigegeben, nie hängend). Auslösen erfordert
+  Neuverbinden während eines laufenden Schreibvorgangs; Folge nur eine zu frühe Freigabe.
+- F1 (b) Navigation: `navigate()` und `onhashchange` brechen bei `writeInFlight` ab, setzen den Hash auf die aktuelle Route zurück und zeigen
+  einen Hinweis (`navigation-blocked`, nur solange der Schreibvorgang läuft). Nach Ende (Antwort, Fehler, Timeout) ist alles wieder frei.
+  Kein dauerhaftes Einsperren: Schreibanfragen haben ein Zeitlimit von 75 s (`AbortSignal.timeout`, danach `outcome_unknown` und Freigabe),
+  zusätzlich bleibt „Backend-Zugang → Sitzung leeren“ als Notausgang bedienbar (Probe 2). Nebenwirkung (niedrig): der Rücksetzversuch
+  schreibt einen zusätzlichen Verlaufseintrag; nach Freigabe funktioniert Zurück normal.
+- F1 (c) Karten (`ActionCard`: Plan, Ausführen) und `CreateTablePanel` sind bei `writeInFlight` gesperrt; keine Regression
+  (`test-real-create.py` 2, `test-real-tables.py` 10, Browserfälle W-P05 grün).
+- F2: Präfixe betroffener Objekte (`affectedLabel`) und Beobachtungszustand (`observationText`) laufen über `t()`; Serverwarnungen
+  bleiben als bewusste Ausnahme (Text, kein HTML).
+- F3: Eingaben der Datenbankkarten werden bei Verbindungs-/Tokenwechsel geleert.
+- Beobachtung (info): Beim „Sitzung leeren“ während des Sendens meldet Svelte im Entwicklungsmodus `derived_inert` (Lesen eines Derived in
+  zerstörtem Effekt); folgenlos, im Produktionsbuild ohne Wirkung.
