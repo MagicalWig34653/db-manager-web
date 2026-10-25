@@ -81,7 +81,7 @@ def api(base, path, token=None, body=None, expected=200):
 
 CANON = {
     'sqlite': 'SELECT quote(id), quote(v), quote(n), quote(b) FROM "odd""name" ORDER BY id',
-    'postgres': "SELECT id::text, quote_nullable(v), quote_nullable(n::text), coalesce(encode(b,'hex'),'NULL') FROM \"odd\"\"name\" ORDER BY id",
+    'postgres': "SELECT id::text, replace(quote_nullable(v), chr(10), '~LF~'), quote_nullable(n::text), coalesce(encode(b,'hex'),'NULL') FROM \"odd\"\"name\" ORDER BY id",
 }
 
 
@@ -195,7 +195,7 @@ def main():
                 return stable['count'] >= 4
             wait(ready, 'stable PostgreSQL verify-full connection')
             capabilities = api(base, '/api/v11/capabilities', token)
-            assert capabilities['contract_version'] == '0.7.0'
+            assert capabilities['contract_version'] == '0.11.0'
             sources = {}
             for driver, connection in [('sqlite', {'driver': 'sqlite', 'database': 'p11_src'}), ('postgres', pg)]:
                 sources[driver] = connection
@@ -250,5 +250,5 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as error:
-        print(redact(error), file=sys.stderr)
+        print(type(error).__name__ + ": " + redact(error), file=sys.stderr)
         sys.exit(1)
