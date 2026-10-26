@@ -13,7 +13,10 @@ export type Request = Schemas['SQLBatchRequest'];
 export type Action = 'batch' | 'explain' | 'simulate';
 export type Result = BatchResult | SimulationResult;
 
-export function validate<T extends keyof Schemas>(name: T, value: unknown): Schemas[T] {
+export function validate<T extends keyof Schemas & keyof typeof validators>(
+  name: T,
+  value: unknown,
+): Schemas[T] {
   if (!validators[name](value))
     throw new ApiError('invalid_response', t('sqlBatch.invalidResponse'));
   return value as Schemas[T];

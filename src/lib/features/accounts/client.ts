@@ -30,7 +30,7 @@ export const errorCode = (error: unknown) => (error instanceof ApiError ? error.
 
 export class AccountsClient {
   constructor(private api = new ApiClient()) {}
-  private async read<K extends keyof Schemas>(
+  private async read<K extends keyof Schemas & keyof typeof validators>(
     path: string,
     schema: K,
     token: string,

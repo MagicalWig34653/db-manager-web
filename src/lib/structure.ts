@@ -49,7 +49,7 @@ export const objectLabel = (value: StructureSchemas['StructureObjectRef']) =>
   value.schema === undefined
     ? identifierLabel(value.name)
     : `${identifierLabel(value.schema)} · ${identifierLabel(value.name)}`;
-export function validateStructure<T extends keyof StructureSchemas>(
+export function validateStructure<T extends keyof StructureSchemas & keyof typeof validators>(
   name: T,
   data: unknown,
 ): StructureSchemas[T] {

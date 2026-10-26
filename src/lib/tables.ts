@@ -8,7 +8,7 @@ export type TableDescription = TableSchemas['TableDescription'];
 export type BrowseResult = TableSchemas['BrowseResult'];
 export type TableFilter = TableSchemas['TableFilter'];
 export type TableSort = TableSchemas['TableSort'];
-export function validateTable<T extends keyof TableSchemas>(
+export function validateTable<T extends keyof TableSchemas & keyof typeof validators>(
   schema: T,
   value: unknown,
 ): TableSchemas[T] {

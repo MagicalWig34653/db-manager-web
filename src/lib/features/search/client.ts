@@ -24,7 +24,10 @@ const messages: Record<string, string> = {
 };
 export const searchError = (cause: unknown) =>
   t('search.' + (messages[errorCode(cause)] ?? 'failed'));
-export function validate<T extends keyof Schemas>(name: T, value: unknown): Schemas[T] {
+export function validate<T extends keyof Schemas & keyof typeof validators>(
+  name: T,
+  value: unknown,
+): Schemas[T] {
   if (!validators[name](value)) throw new ApiError('invalid_response', t('search.response'));
   return value as Schemas[T];
 }

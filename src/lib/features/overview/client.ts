@@ -34,7 +34,7 @@ function mapError(cause: unknown): unknown {
   return cause;
 }
 
-export function validate<T extends keyof OverviewSchemas>(
+export function validate<T extends keyof OverviewSchemas & keyof typeof validators>(
   name: T,
   data: unknown,
 ): OverviewSchemas[T] {
@@ -54,7 +54,7 @@ export interface ObjectsQuery {
 export class OverviewClient {
   constructor(private client = new ApiClient()) {}
 
-  private async post<T extends keyof OverviewSchemas>(
+  private async post<T extends keyof OverviewSchemas & keyof typeof validators>(
     path: string,
     name: T,
     body: unknown,
