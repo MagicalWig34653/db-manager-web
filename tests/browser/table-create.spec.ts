@@ -184,7 +184,7 @@ test('while sending, tabs and objects are locked, leaving warns and an unknown o
   await confirmBox(page).check();
   await submitButton(page).click();
   const tabs = page.getByRole('navigation', { name: 'Arbeitsbereich' });
-  await expect(tabs.getByRole('button', { name: 'SQL' })).toBeDisabled();
+  await expect(tabs.getByRole('button', { name: 'SQL', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: /orders/ })).toBeDisabled();
   const prevented = await page.evaluate(() => {
     const event = new Event('beforeunload', { cancelable: true });
@@ -198,5 +198,5 @@ test('while sending, tabs and objects are locked, leaving warns and an unknown o
   await expect(
     page.getByText('Der Ausgang eines gesendeten Schreibvorgangs ist unbekannt'),
   ).toBeVisible();
-  await expect(tabs.getByRole('button', { name: 'SQL' })).toBeEnabled();
+  await expect(tabs.getByRole('button', { name: 'SQL', exact: true })).toBeEnabled();
 });
