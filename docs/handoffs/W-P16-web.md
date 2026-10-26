@@ -70,7 +70,7 @@ Kein neuer Backend-Vertrag nötig (reines Weblokal-Paket nach docs/PWA-PLAN.md; 
   `npm run format:check`: bestanden.
 - `npm run test:browser -- tests/browser/sql-editor.spec.ts`: 3/3 bestanden. Spec angepasst: Verbinden vor
   der Verkleinerung auf 320 px (Button lag bei 320 px außerhalb des Viewports; Shell-Eigenschaft).
-- Siehe unten für Build/CSP/Gesamtsuite.
+- `npm run build` und `npm run test:csp`: bestanden (2/2). Gesamte Browsersuite nicht ausgeführt.
 
 ## Offene Punkte und nächster Schritt
 
