@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
   import SqlLibraryPanel from '$lib/features/sql-editor/SqlLibraryPanel.svelte';
-  import { t } from '$lib/i18n';
+  import { t, formatNumber } from '$lib/i18n';
   import {
     Check,
     CheckCheck,
@@ -115,7 +115,7 @@
         >{/if}
     </div>
     {#if sql.execution}<span class="execution-time"
-        ><CheckCheck size={15} />{sql.execution.elapsedMs.toLocaleString('de-DE')} ms</span
+        ><CheckCheck size={15} />{formatNumber(sql.execution.elapsedMs)} ms</span
       >{/if}
   </div>
   {#if sql.error}<div class="feedback error-feedback" role="alert">
@@ -159,7 +159,7 @@
         exportScope={{ kind: 'sql_result' }}
       />{#if sql.currentResult.truncated}<div class="limit-note" role="status">
           <TriangleAlert size={16} /><span
-            >{t('sql.truncated', { limit: sql.rowLimit.toLocaleString('de-DE') })}</span
+            >{t('sql.truncated', { limit: formatNumber(sql.rowLimit) })}</span
           >
         </div>{/if}{:else}<div class="feedback">
         <Check size={20} />{t('sql.noResultSet')}
@@ -180,7 +180,7 @@
   <div class="results-footer">
     <span
       ><span class="footer-dot"></span>{sql.execution ? t('sql.noRounding') : t('sql.ready')}</span
-    ><span>{t('sql.rowsMax', { limit: sql.rowLimit.toLocaleString('de-DE') })}</span>
+    ><span>{t('sql.rowsMax', { limit: formatNumber(sql.rowLimit) })}</span>
   </div>
 </section>
 

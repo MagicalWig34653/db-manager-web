@@ -42,6 +42,7 @@
   import { formatRoute, parseHash, type Route } from './router';
   import { Session } from './session.svelte';
   import { anyModalOpen, dispatch, type Shortcut } from './shortcuts';
+  import ShortcutHelp from '$lib/features/settings/ShortcutHelp.svelte';
   import { SqlRunner } from './sql.svelte';
 
   let route = $state<Route>(parseHash(window.location.hash));
@@ -177,21 +178,59 @@
     void tick().then(() => sql.focus());
   }
   const dialogsClosed = () => !session.connectionOpen && !session.accessOpen && !anyModalOpen();
+  let shortcutHelpOpen = $state(false);
+  const helpAllowed = (event?: KeyboardEvent) =>
+    dialogsClosed() &&
+    !(
+      event?.target instanceof Element &&
+      event.target.closest(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+      )
+    );
   const shortcuts: Shortcut[] = [
     {
       id: 'run-query',
+      titleKey: 'settings.runQuery',
+      scopeKey: 'settings.scopeSql',
       key: 'Enter',
       mod: true,
       when: () => isSqlView && dialogsClosed(),
       run: () => void sql.execute(session),
     },
-    { id: 'cancel-query', key: 'Escape', when: () => sql.running, run: () => sql.cancel() },
+    {
+      id: 'cancel-query',
+      titleKey: 'settings.cancelQuery',
+      scopeKey: 'settings.scopeRunning',
+      key: 'Escape',
+      when: () => sql.running && dialogsClosed(),
+      run: () => sql.cancel(),
+    },
     {
       id: 'focus-editor',
+      titleKey: 'settings.focusEditor',
+      scopeKey: 'settings.scopeGlobal',
       key: 'k',
       mod: true,
       when: dialogsClosed,
       run: focusEditorLater,
+    },
+    {
+      id: 'shortcut-help',
+      key: '?',
+      mod: false,
+      titleKey: 'settings.help',
+      scopeKey: 'settings.scopeGlobal',
+      when: dialogsClosed,
+      run: () => (shortcutHelpOpen = true),
+    },
+    {
+      id: 'shortcut-help-f1',
+      key: 'F1',
+      mod: false,
+      titleKey: 'settings.help',
+      scopeKey: 'settings.scopeGlobal',
+      when: dialogsClosed,
+      run: () => (shortcutHelpOpen = true),
     },
   ];
   onDestroy(() => {
@@ -211,7 +250,11 @@
     }
     route = parseHash(window.location.hash);
   }}
-  onkeydown={(event) => dispatch(event, shortcuts)}
+  onkeydown={(event) => {
+    if (event.key === '?' && !helpAllowed(event)) return;
+    if (event.repeat && (event.key === '?' || event.key === 'F1')) return;
+    dispatch(event, shortcuts);
+  }}
   onbeforeunload={(event) => {
     if (session.writeInFlight) {
       event.preventDefault();
@@ -219,6 +262,7 @@
     }
   }}
 />
+<ShortcutHelp {shortcuts} bind:open={shortcutHelpOpen} />
 <a class="skip-link" href="#main-content" onclick={skipToWorkspace}>{t('shell.skipLink')}</a>
 <div class="workbench">
   <aside class:mobile-open={sidebarOpen} aria-label={t('shell.navigationLabel')}>

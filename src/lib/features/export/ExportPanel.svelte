@@ -7,7 +7,7 @@
   import ErrorPanel from '$lib/components/shared/ErrorPanel.svelte';
   import { Button } from '$lib/components/ui/button';
   import type { FeatureProps } from '$lib/features';
-  import { t } from '$lib/i18n';
+  import { t, formatNumber } from '$lib/i18n';
   import { getShellContext } from '$lib/shell/context';
   import { loadCapabilities } from './caps';
   import {
@@ -183,8 +183,7 @@
       ? t('exportDump.err.queryRejected')
       : error.message;
   const cancel = () => controller?.abort();
-  const mib = (bytes: number) =>
-    (bytes / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+  const mib = (bytes: number) => formatNumber(bytes / 1024 / 1024, { maximumFractionDigits: 1 });
   const size = (bytes: number) =>
     bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KiB` : `${mib(bytes)} MiB`;
   const scopes: Scope[] = ['tables', 'database', 'query', 'server'];
