@@ -40,7 +40,7 @@ Verbindungsknopf liegt bei 320 px außerhalb des Viewports); neuer Fehlertext-Te
 
 - `npm run check` 0/0; `npm test` 33 Dateien / 357 Tests bestanden; `npm run format:check`; `npm run contract:check`.
 - `npm run test:browser` (gesamte Suite): 44 bestanden.
-- `npm run build` und `npm run test:csp`: siehe Commit-Bericht (bestanden, falls hier nicht anders vermerkt).
+- `npm run build` und `npm run test:csp` (2/2): bestanden. `scripts/check-docs.py`: 0 Fehler.
 
 ## Offene Punkte
 
