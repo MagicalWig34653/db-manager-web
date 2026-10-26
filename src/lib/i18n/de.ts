@@ -906,6 +906,76 @@ export const de = {
     errResponse: 'Das Backend hat eine ungültige Antwort geliefert.',
     errGeneric: 'Die Anfrage ist fehlgeschlagen (Code {code}).',
   },
+  maintenance: {
+    title: 'Tabellenwartung',
+    intro:
+      'Wartung für ausgewählte Tabellen. Fähigkeiten sind keine Rechteerteilung; der Server prüft jede Tabelle erneut.',
+    noConnection: 'Verbinde zuerst eine Datenbank.',
+    unavailable: 'Tabellenwartung (API 0.10) ist nicht verfügbar.',
+    loading: 'Wartungsfähigkeiten werden geladen …',
+    view: 'Sichten können nicht gewartet werden.',
+    noTables: 'Keine Tabellen im geladenen Katalog.',
+    tables: 'Tabellen auswählen ({count}/50)',
+    batchHint:
+      'Höchstens 50 Tabellen, ohne doppelte Ziele. Das gemeinsame Zeitbudget beträgt 10 Sekunden. Abgelehnte Planeinträge werden nicht ausgeführt.',
+    action: 'Wartungsaktion',
+    full: 'FULL: Tabelle neu aufbauen (starke Sperre)',
+    withAnalyze: 'Zusätzlich Statistiken aktualisieren (ANALYZE)',
+    capabilities: 'Fähigkeiten und Grenzen',
+    support: { limited: 'Eingeschränkt verfügbar', unsupported: 'Nicht unterstützt' },
+    actions: {
+      analyze: 'Analysieren (ANALYZE)',
+      optimize: 'Optimieren (OPTIMIZE)',
+      repair: 'Reparieren (REPAIR)',
+      check: 'Prüfen (CHECK)',
+      checksum: 'Prüfsumme (CHECKSUM)',
+      vacuum: 'Bereinigen (VACUUM)',
+      reindex: 'Indexe neu aufbauen (REINDEX)',
+    },
+    plan: 'Plan anzeigen',
+    execute: 'Ausführen',
+    executing: 'Wartung läuft … Navigation bleibt bis zur Antwort gesperrt.',
+    warnings:
+      'Laufzeit und Sperrdauer sind nicht vorhersagbar. Auch CHECKSUM kann große Tabellen vollständig lesen. Keine gemeinsame Transaktion: einzelne Tabellen können bereits gewartet sein. Abbruch garantiert keinen Rollback; MySQL kann serverseitig weiterarbeiten.',
+    affected: 'Betroffene Objekte',
+    typeName: 'Tabellenname exakt eingeben: {name}',
+    confirm:
+      'Ich habe die Pläne und Warnungen geprüft und bestätige die geplanten Wartungsaktionen.',
+    partial:
+      'Teilerfolg: Mindestens eine Tabelle wurde gewartet, andere Ergebnisse sind abgelehnt oder unbekannt.',
+    outcomes: {
+      completed: 'Abgeschlossen',
+      rejected: 'Abgelehnt',
+      outcome_unknown: 'Ausgang unbekannt',
+    },
+    duration: 'Dauer: {ms} ms',
+    checksum: 'Enginespezifische Prüfsumme (kein Vergleich zwischen Treibern)',
+    unknown:
+      'Der Ausgang ist unbekannt. Wartung kann bereits wirksam sein. Nicht erneut senden; zuerst den aktuellen Datenbankstand prüfen.',
+    locked: 'Eine weitere Ausführung erfordert einen neuen Plan und eine neue Bestätigung.',
+    reset: 'Neue Wartung vorbereiten',
+    invalidResponse: 'Die Backendantwort ist ungültig.',
+    failed: 'Die Anfrage ist fehlgeschlagen (Code {code}).',
+    reasons: {
+      invalid_maintenance: 'Die Wartungsoptionen sind ungültig.',
+      unsupported_action: 'Diese Aktion wird nicht unterstützt.',
+      system_table: 'Systemtabellen sind ausgeschlossen.',
+      object_not_found: 'Die Tabelle wurde nicht gefunden.',
+      unsupported_table:
+        'Diese Tabellenart wird nicht unterstützt (zum Beispiel Partitionen oder virtuelle Tabellen).',
+      unsupported_engine: 'Diese Tabellen-Engine wird nicht unterstützt.',
+      permission_denied: 'Die erforderliche Berechtigung fehlt.',
+      database_error: 'Der Katalog oder die Datenbank konnte nicht geprüft werden.',
+      canceled: 'Vor der Ausführung abgebrochen oder gemeinsames Zeitbudget aufgebraucht.',
+      plan_mismatch: 'Der Plan stimmt nicht mehr überein. Erneut planen.',
+      confirmation_mismatch: 'Die Bestätigung stimmt nicht überein.',
+      session_setup_failed: 'Die Wartungsverbindung konnte nicht vorbereitet werden.',
+      execution_unconfirmed: 'Die Engine hat die Ausführung nicht bestätigt.',
+      integrity_check_failed:
+        'Die Integritätsprüfung hat kein positives Ergebnis bestätigt. Details werden vom Backend unterdrückt.',
+      checksum_unavailable: 'Die Engine hat keine Prüfsumme geliefert.',
+    },
+  },
 } as const;
 
 type Join<K extends string, P extends string> = `${K}.${P}`;
