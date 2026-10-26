@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import type { components } from '$lib/contract/v15/api-types';
+import type { components } from '$lib/contract/v23/api-types';
 export type Schemas = components['schemas'];
 export type Action = Schemas['AccountConfirm']['action'];
 export type AccountRef = Schemas['AccountRef'];

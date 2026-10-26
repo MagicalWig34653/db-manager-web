@@ -1,0 +1,8 @@
+{
+  "version": "0.23.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "751dbd15390288c3b7ad7b05f8a17af544e6f492",
+  "source_path": "contracts/api-v0.23.0.json",
+  "sha256": "7450a7fc994126beb25799e99dae07d6763e43f3e9ef002b20068cb38e313bd7",
+  "review": "Independent backend review accepted (wave 4 re-review, docs/handoffs/); integrated on backend main 751dbd1; v23 adds AccountResult.reason grant_without_effect"
+}

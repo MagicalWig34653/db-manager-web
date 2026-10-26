@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { ApiClient, ApiError } from '$lib/api';
-import * as validators from '$lib/contract/v15/validators.js';
+import * as validators from '$lib/contract/v23/validators.js';
 import { t } from '$lib/i18n';
 import { requestSchemas, executeSchemas, type Action, type Schemas } from './model';
 

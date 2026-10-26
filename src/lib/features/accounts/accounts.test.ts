@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClient, ApiError } from '$lib/api';
-import * as validators from '$lib/contract/v15/validators.js';
+import * as validators from '$lib/contract/v23/validators.js';
 import { AccountsClient, errorMessage } from './client';
 import { actions, validSecret, type Schemas } from './model';
 import { Operation } from './operation.svelte';
@@ -22,15 +22,15 @@ function scripted(handler: () => Response | Promise<Response>) {
   const fetcher = vi.fn(handler);
   return { client: new AccountsClient(new ApiClient(fetcher as typeof fetch)), fetcher };
 }
-describe('API 0.15 provenance and synthetic fixtures', () => {
+describe('API 0.23 provenance and synthetic fixtures', () => {
   it('pins exact source bytes and an integrated backend-main origin', () => {
-    const provenance = JSON.parse(readFileSync('src/lib/contract/v15/provenance.json', 'utf8'));
+    const provenance = JSON.parse(readFileSync('src/lib/contract/v23/provenance.json', 'utf8'));
     const sha = createHash('sha256')
-      .update(readFileSync('src/lib/contract/v15/api-v0.15.0.json'))
+      .update(readFileSync('src/lib/contract/v23/api-v0.23.0.json'))
       .digest('hex');
-    expect(sha).toBe('cd4681a200045c2fdd5ddf9f1bdc2a356c998b30e640495121925ca8a609dad1');
+    expect(sha).toBe('7450a7fc994126beb25799e99dae07d6763e43f3e9ef002b20068cb38e313bd7');
     expect(provenance.sha256).toBe(sha);
-    expect(provenance.source_commit).toBe('3a7e1f13ecd18a9333870005d64e6d8ebb9a0c53');
+    expect(provenance.source_commit).toBe('751dbd15390288c3b7ad7b05f8a17af544e6f492');
   });
   for (const file of readdirSync('src/lib/features/accounts/fixtures').filter((file) =>
     file.endsWith('.json'),

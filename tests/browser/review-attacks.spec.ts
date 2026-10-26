@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Independent review of the web wave: hostile backend/database text, plan-hash binding, replay, offline
-// behaviour and backend 3a7e1f1 contract realities. The test.fail() on F-2 documents a backend contract defect (fixed in backend 0.23, not in the web repo);
-// F-1 and F-4 are fixed and run as normal tests.
+// behaviour and backend 3a7e1f1 contract realities. F-1, F-2 (contract v23) and F-4 are fixed and run as normal tests.
 import { test, expect, type Page } from '@playwright/test';
 import { actions, type Schemas, type Action } from '../../src/lib/features/accounts/model';
 import {
@@ -184,33 +183,30 @@ test('accounts: a proxy 502 page during execute is an unknown outcome without a 
   expect(mock.executes).toHaveLength(1);
 });
 
-// Backend 3a7e1f1 answers a PostgreSQL GRANT without effect with reason "grant_without_effect"
-// (internal/database/accounts.go:254), which is not in the v15 AccountResult.reason enum.
-// OPEN BY DESIGN: backend contract defect, fixed in backend version 0.23 (not in this repo). The generated validator
-// rejects the answer, so the UI shows the safe "outcome unknown" state. Remove test.fail() when v23 is pinned.
-test.fail(
-  'REVIEW F-2: a backend "rejected / grant_without_effect" answer is shown as rejected, not as unknown outcome',
-  async ({ page }) => {
-    await accountsBackend(page, {
-      result: {
-        outcome: 'rejected',
-        reason: 'grant_without_effect',
-        message: 'Das Recht wurde nicht wirksam gewährt. Es wurde nichts geändert.',
-        statements_executed: 0,
-        atomic: true,
-      } satisfies Schemas['AccountResult'] | Record<string, unknown>,
-    });
-    await expect(page.getByTestId('account-list')).toBeVisible();
-    await page.getByTestId('account-list').getByRole('button').first().click();
-    await page.getByLabel('Aktion', { exact: true }).selectOption('lock');
-    await page.getByRole('button', { name: 'Plan anzeigen' }).click();
-    await page.getByLabel('Ich habe den Plan und die Warnungen geprüft.').check();
-    await page.getByLabel('Getippte Kontokennung').fill('9:synthetic@%');
-    await page.getByRole('button', { name: 'Bestätigt ausführen' }).click();
-    await expect(page.getByText('Abgewiesen.')).toBeVisible();
-    await expect(page.getByText(/Ausgang ist unbekannt/)).toHaveCount(0);
-  },
-);
+// Backend 3a7e1f1 answered a PostgreSQL GRANT without effect with reason "grant_without_effect", which the v15 enum
+// rejected (outcome shown as unknown). Contract v23 adds the reason; the web pins v23 and this runs as a normal test.
+test('REVIEW F-2: a backend "rejected / grant_without_effect" answer is shown as rejected, not as unknown outcome', async ({
+  page,
+}) => {
+  await accountsBackend(page, {
+    result: {
+      outcome: 'rejected',
+      reason: 'grant_without_effect',
+      message: 'Das Recht wurde nicht wirksam gewährt. Es wurde nichts geändert.',
+      statements_executed: 0,
+      atomic: true,
+    } satisfies Schemas['AccountResult'] | Record<string, unknown>,
+  });
+  await expect(page.getByTestId('account-list')).toBeVisible();
+  await page.getByTestId('account-list').getByRole('button').first().click();
+  await page.getByLabel('Aktion', { exact: true }).selectOption('lock');
+  await page.getByRole('button', { name: 'Plan anzeigen' }).click();
+  await page.getByLabel('Ich habe den Plan und die Warnungen geprüft.').check();
+  await page.getByLabel('Getippte Kontokennung').fill('9:synthetic@%');
+  await page.getByRole('button', { name: 'Bestätigt ausführen' }).click();
+  await expect(page.getByText('Abgewiesen.')).toBeVisible();
+  await expect(page.getByText(/Ausgang ist unbekannt/)).toHaveCount(0);
+});
 
 // ---------------------------------------------------------------- programs
 async function programsBackend(
