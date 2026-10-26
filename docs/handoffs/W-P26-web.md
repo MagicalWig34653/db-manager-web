@@ -31,7 +31,7 @@ Browser (siehe Sicherheit) und werden nicht serverseitig synchronisiert; eine sp
 ## Prüfstand
 
 `npm test` 316 grün (34 Dateien), `npm run check` 0 Fehler, `format:check` ok, Browser-Specs inklusive neuer
-`tests/browser/settings.spec.ts` (Theme, Sprache, Opt-in-Speicherung, Reset, F1-Dialog) grün, Build siehe Commit.
+`tests/browser/settings.spec.ts` (Theme, Sprache, Opt-in-Speicherung, Reset, F1-Dialog) grün, `npm run build` ok; 41 Browser-Specs grün.
 Kein Echtlauf (`scripts/test-real-*.py`) nötig: keine Backend-Anbindung.
 
 ## Offen
