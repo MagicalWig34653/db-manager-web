@@ -27,10 +27,19 @@ Backend: Root-`main` `3a7e1f1` (Welle 3 integriert). Die frühere Codex-Fassung 
 
 ## Prüfstand
 
-Siehe Abschnitt am Ende (wird mit dem Commit aktualisiert).
+Auf Branch-Stand nach den Korrekturen: `npm test` 349 grün (34 Dateien), `npm run check` 0 Fehler, `npm run build`
+(inkl. `validators:check`) und `contract:check` ok, `format:check` ok, `playwright test` (Mock-Browser-Specs) 41 grün.
+Echtlauf `DBM_BACKEND_REPO=<Backend> python3 scripts/test-real-programs.py` gegen Backend-`main` `3a7e1f1`: SQLite-View
+Anlegen/Ersetzen/Löschen mit unabhängigem Katalog-Readback grün.
+
+Beim Echtlauf gefundene Fehler (behoben): (1) `describe` antwortet laut Vertrag mit `ProgramsResult` (genau ein Objekt), die
+Codex-Fassung erwartete ein einzelnes `Program`; `client.describe` entpackt jetzt und prüft Kardinalität/Name. (2) Direkt
+nach der Ausführung kann ein paralleler Lesezugriff auf SQLite `database_busy` liefern; Lesezugriffe wiederholen
+höchstens dreimal mit kurzer Wartezeit (nie Schreibzugriffe). Mock-Fixtures und Browser-Spec wurden auf die Umhüllung angepasst.
 
 ## Offen
 
 - Kein Echtlauf gegen MySQL/MariaDB/PostgreSQL (Routinen, Events, nicht atomares Ersetzen): nur Fixtures und SQLite-Views.
+- Fixtures `*.sqlite-observed.json` stammen aus der vorläufigen 0.17-Fassung; Capabilities-Fixture wurde auf `0.16.0` angepasst.
 - Kein ADR; unabhängiges Review steht aus. Einzeltests für die neuen Anzeigen (Bisherige Definition, Teilausführung) sind
   nur über die Browser-/Komponententests mit Fixtures abgedeckt, soweit vorhanden.
