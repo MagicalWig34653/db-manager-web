@@ -404,6 +404,19 @@
             >{t('nav.addConnection')} <ArrowUpRight /></Button
           >
         </div>{/if}
+      {#if route.kind === 'server'}
+        <nav class="workspace-tabs" aria-label={t('accounts.title')}>
+          {#each featuresFor('server-tab', session.capabilities, registry.features) as { feature, available } (feature.id)}
+            <button
+              aria-pressed={route.tab === feature.tab}
+              disabled={session.writeInFlight}
+              aria-disabled={!available}
+              onclick={() => navigate({ kind: 'server', tab: feature.tab ?? 'uebersicht' })}
+              >{t(feature.titleKey)}</button
+            >
+          {/each}
+        </nav>
+      {/if}
       {#if route.kind !== 'server'}
         <nav class="workspace-tabs" aria-label={t('shell.tabsLabel')}>
           <button
@@ -460,7 +473,7 @@
               token: session.backendToken,
               tab: route.tab,
               onsql: () => navigate(sqlRoute()),
-              onwritephase: () => {},
+              onwritephase: session.databaseWriteReceiver(session.sessionVersion),
             }}
           />
         {/if}
