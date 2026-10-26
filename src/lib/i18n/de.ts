@@ -1173,6 +1173,73 @@ export const de = {
     busy: 'Die Datenbank wird gerade verwendet. Warte auf die laufende Anfrage.',
     failed: 'Die Anfrage ist fehlgeschlagen. Prüfe Verbindung, Eingaben und Datenbankrechte.',
   },
+  sqlBatch: {
+    tab: 'SQL-Stapel',
+    title: 'SQL-Stapel, EXPLAIN und Simulation',
+    context: 'Datenbank: {database} · System: {driver}',
+    tableContext:
+      'Tabellenkontext: {name}. Der SQL-Text bestimmt die tatsächlich betroffenen Objekte.',
+    loading: 'Fähigkeiten werden geladen …',
+    unavailable: 'Diese Instanz bietet SQL-Stapel (API 0.12) nicht an oder ist nicht erreichbar.',
+    editor: 'SQL und Ausführungsoptionen',
+    action: 'Aktion',
+    batch: 'Stapel ausführen',
+    explain: 'EXPLAIN',
+    simulate: 'DML simulieren',
+    sql: 'Vollständiger SQL-Text',
+    delimiter: 'Eigener Trenner (leer: Semikolon)',
+    mode: 'Bei Statementfehler',
+    stop: 'Abbrechen',
+    continue: 'Fortfahren',
+    maxRows: 'Zeilenlimit je Ergebnis (0: 1.000)',
+    timeout: 'Zeitlimit in Millisekunden (0: 10.000)',
+    delimiterHelp:
+      'DELIMITER steht auf einer eigenen Zeile zwischen Anweisungen und wird nicht an die Datenbank gesendet. BEGIN … END mit inneren Semikolons braucht einen eigenen Trenner, auch bei SQLite und PostgreSQL. Bei 422 sql_not_supported: Triggerkörper mit DELIMITER // umschließen und mit // beenden, danach DELIMITER ; setzen. Auch Transaktions- und Sitzungsanweisungen werden abgewiesen.',
+    limits:
+      'Höchstens 100 Statements, 1 MiB für die gesamte Anfrage, 10.000 Zeilen je Ergebnis, 16 Ergebnisse je Statement, 1 MiB je Zelle, 8 MiB Antwort und 60 Sekunden. Nach Zeit-, Größenlimit oder abgeschnittenem Ergebnis wird immer abgebrochen. Keine atomare Stapeltransaktion. Der Client bricht spätestens 5 Sekunden nach dem gewählten Zeitbudget ab.',
+    explainSqlite:
+      'SQLite verwendet EXPLAIN QUERY PLAN. Genau eine Anweisung ohne EXPLAIN-Präfix eingeben: SELECT, WITH, VALUES, INSERT, UPDATE oder DELETE. Kein ANALYZE. Der Plan bleibt im Format des Datenbanksystems.',
+    explainOther:
+      'MySQL, MariaDB und PostgreSQL verwenden EXPLAIN. Genau eine Anweisung ohne EXPLAIN-Präfix eingeben: SELECT, WITH, VALUES, INSERT, UPDATE oder DELETE. Kein ANALYZE. Der Plan bleibt im Format des Datenbanksystems.',
+    simulationHint:
+      'Simulation führt genau ein SQLite-INSERT, UPDATE oder DELETE tatsächlich aus und rollt danach zurück. Kein RETURNING, WITH, REPLACE oder virtuelle Tabellen. Lokale Triggeränderungen werden mit zurückgerollt; deren Zeilen zählen nicht mit. Spätere Ausführung kann anders ausfallen.',
+    unsupported: 'Simulation wird für dieses Datenbanksystem nicht unterstützt.',
+    writeWarning:
+      'Jede Ausführung verwendet die tatsächlichen Verbindungsrechte. Freies SQL, Routinen und Funktionen können Daten verändern oder externe Effekte auslösen. Abbruch garantiert keinen Rollback; vorherige Statements können bereits wirksam sein.',
+    analyzeWarning:
+      'Achtung: EXPLAIN ANALYZE <DML> im Stapel führt INSERT, UPDATE oder DELETE tatsächlich aus. explain_analyze=false gilt nur für die separate EXPLAIN-Aktion.',
+    readWarning:
+      'Auch ein lesend aussehender SQL-Text ist kein geschützter Lesemodus. EXPLAIN kann Planungsfunktionen oder Hooks berühren. Die Zustimmung zum SQL-Text ersetzt nicht die separate Zustimmung zu möglichen Schreibwirkungen.',
+    consent: 'Ausdrückliche Zustimmung für diesen Aufruf',
+    confirm: 'Ich habe den vollständigen SQL-Text und den Datenbankkontext geprüft.',
+    confirmWrite:
+      'Ich stimme möglichen Schreibwirkungen ausdrücklich zu, auch bei Lesestatements und EXPLAIN.',
+    run: 'Bestätigt ausführen',
+    cancel: 'Abbrechen',
+    running: 'Anfrage läuft … Navigation ist während der Ausführung gesperrt.',
+    invalidInput:
+      'Ungültige Eingaben: SQL darf nicht leer sein. Prüfe Trenner, ganzzahlige Zeilen-/Zeitlimits und die 1-MiB-Anfragegrenze.',
+    invalidResponse: 'Das Backend hat eine ungültige Antwort geliefert.',
+    unauthorized: 'Der Zugriffstoken fehlt oder ist ungültig. Prüfe den Backend-Zugang.',
+    secureOrigin: 'Entfernte Instanzen erfordern HTTPS.',
+    failed: 'Die Anfrage wurde abgewiesen. Prüfe Eingaben, Verbindung und Berechtigungen.',
+    unknown:
+      'Ausgang unbekannt: Die Ausführung kann bereits wirksam sein. Abbruch ist keine Rollbackgarantie. Nicht erneut senden; prüfe zuerst den Datenbankstand.',
+    duration: 'Dauer: {ms} ms',
+    statement: 'Statement {index}',
+    completed: 'Abgeschlossen',
+    outcome_unknown: 'Ausgang unbekannt',
+    not_executed: 'Nicht ausgeführt',
+    rolled_back: 'Zurückgerollt',
+    affected: 'Direkt betroffene Zeilen: {count}',
+    countUnknown: 'unbekannt (nicht als 0 zu verstehen; Trigger und Kaskaden zählen nicht mit)',
+    statementError: 'Fehlercode: {code} · Servercode: {server}',
+    warning: 'Warnung {code}: {message}',
+    resultSet: 'Ergebnis {index}: {count} geladene Zeilen',
+    results: 'Ergebniszeilen, scrollbar',
+    truncated:
+      'Ergebnis abgeschnitten. Der Ausgang bleibt unbekannt; weitere Ergebnisse können fehlen.',
+  },
 } as const;
 
 type Join<K extends string, P extends string> = `${K}.${P}`;

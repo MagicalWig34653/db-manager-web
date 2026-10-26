@@ -1,0 +1,8 @@
+{
+  "version": "0.12.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "3a7e1f13ecd18a9333870005d64e6d8ebb9a0c53",
+  "source_path": "contracts/api-v0.12.0.json",
+  "sha256": "7f0446edccdc368a202e4eaae5689d4b44d641e34bdf77ec8314de9f3e3f2dcd",
+  "review": "Final contract on reviewed backend main 3a7e1f1 (wave 2/3, SQL batch 0.12); last changed in c562a61; 2026-10-26"
+}
