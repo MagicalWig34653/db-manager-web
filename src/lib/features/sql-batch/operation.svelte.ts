@@ -16,6 +16,8 @@ export class BatchOperation {
   result = $state<Result | null>(null);
   error = $state('');
   unknown = $state(false);
+  /** Unknown only because a result set hit max_rows (contract v12: truncated implies outcome_unknown). */
+  truncatedOnly = $state(false);
   private generation = 0;
   private cancelCurrent: (() => void) | null = null;
 
@@ -31,6 +33,7 @@ export class BatchOperation {
     this.result = null;
     this.error = '';
     this.unknown = false;
+    this.truncatedOnly = false;
   }
 
   async run(action: Action, request: Request, token: string, report: (phase: WritePhase) => void) {
@@ -49,6 +52,7 @@ export class BatchOperation {
     this.result = null;
     this.error = '';
     this.unknown = false;
+    this.truncatedOnly = false;
     let rejectAbort: () => void = () => {};
     const aborted = new Promise<never>((_, reject) => {
       rejectAbort = () => reject(new DOMException('Aborted', 'AbortError'));
@@ -70,10 +74,16 @@ export class BatchOperation {
       if (mine !== this.generation || controller.signal.aborted) return;
       const unknown =
         'statements' in result
-          ? result.statements.some(
-              (s) => s.outcome === 'outcome_unknown' || s.results.some((r) => r.truncated),
-            )
+          ? result.statements.some((s) => s.outcome === 'outcome_unknown')
           : result.outcome === 'outcome_unknown';
+      // The backend reports a truncated result set as outcome_unknown for that statement (SQL-BATCH-API.md); the
+      // statement itself ran. Distinguish it so the hint does not claim a failure or a transport problem.
+      this.truncatedOnly =
+        'statements' in result &&
+        unknown &&
+        result.statements
+          .filter((s) => s.outcome === 'outcome_unknown')
+          .every((s) => !s.error_code && s.results.some((r) => r.truncated));
       this.result = result;
       this.unknown = unknown;
       finish(unknown ? 'unknown' : 'settled');

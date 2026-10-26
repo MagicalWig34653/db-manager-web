@@ -294,7 +294,8 @@
           reason={t('columns.engineBlocked', { engine: description.storage_engine })}
         />
       {/if}
-      <div class="table-scroll">
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable table needs a keyboard focus target.) -->
+      <div class="table-scroll" role="region" tabindex="0" aria-label={t('columns.listCaption')}>
         <table data-testid="column-list">
           <caption class="sr-only">{t('columns.listCaption')}</caption>
           <thead>

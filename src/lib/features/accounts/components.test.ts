@@ -73,7 +73,7 @@ describe('AccountsTab', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Plan anzeigen' }));
     const password = await screen.findByLabelText('Neues Passwort');
     expect(password).toHaveAttribute('type', 'password');
-    expect(password).toHaveAttribute('autocomplete', 'off');
+    expect(password).toHaveAttribute('autocomplete', 'new-password');
     await fireEvent.input(password, { target: { value: 'synthetic-secret' } });
     expect(screen.getByRole('button', { name: 'Bestätigt ausführen' })).toBeDisabled();
     await confirm();

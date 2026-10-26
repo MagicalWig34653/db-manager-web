@@ -283,7 +283,13 @@
               tab: 'daten',
             })}>{t('search.openTable')}</a
           >
-          <div class="table-scroll">
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable table needs a keyboard focus target.) -->
+          <div
+            class="table-scroll"
+            role="region"
+            tabindex="0"
+            aria-label={`${t('search.resultRows')}: ${table.table.name}`}
+          >
             <table class="result-table">
               <thead
                 ><tr

@@ -193,7 +193,7 @@
       {#if operation.busy}<p role="status">{t('sqlBatch.running')}</p>{/if}
       {#if operation.error}<p role="alert">{operation.error}</p>{/if}
       {#if operation.unknown && !operation.error}<p class="warning" role="alert">
-          {t('sqlBatch.unknown')}
+          {t(operation.truncatedOnly ? 'sqlBatch.unknownTruncated' : 'sqlBatch.unknown')}
         </p>{/if}
       {#if operation.result}
         <p>{t('sqlBatch.duration', { ms: operation.result.duration_ms })}</p>

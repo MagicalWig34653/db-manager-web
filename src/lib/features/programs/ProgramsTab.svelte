@@ -37,8 +37,13 @@
   let confirmed = $state(false);
   let typed = $state('');
   let replacementReviewed = $state(false);
-  // Definition shown before replace/drop; the backend never returns it in plan or result.
+  // Definition shown before replace/drop (from describe). The backend also repeats it in the plan warnings (MySQL
+  // replace) and in result.message when the automatic restore fails (restore_failed).
   let previousDefinition = $state<string | null>(null);
+  // Replace that stopped between DROP and CREATE: rejected = backend restored the old definition, outcome_unknown =
+  // restore failed or object state undetermined.
+  const partialRun = (r: { statements_executed: number; statements_total: number }) =>
+    r.statements_executed > 0 && r.statements_executed < r.statements_total;
   const hasPrevious = $derived(previousDefinition !== null);
   const driver = $derived(connection ? driverOf(connection.driver) : 'sqlite');
   const support = $derived(caps.data?.drivers[driver][kind]);
@@ -371,7 +376,9 @@
               >
             {/if}
           {/if}
-          {#if operation.error}<p role="alert">{operation.error}</p>{/if}
+          {#if operation.error}<p role={operation.unknown ? undefined : 'alert'}>
+              {operation.error}
+            </p>{/if}
           {#if operation.result}<p role="status">
               {t(`programs.${operation.result.outcome}`)}
               {operation.result.statements_executed}/{operation.result.statements_total}; {t(
@@ -383,15 +390,19 @@
                   `object-ops.${{ permission_denied: 'reasonPermission', object_exists: 'reasonExists', object_not_found: 'reasonNotFound', dependency_blocks: 'reasonDependency', lock_timeout: 'reasonLock', in_use: 'reasonInUse', invalid_value: 'reasonInvalid', database_error: 'reasonDatabase' }[operation.result.reason]}`,
                 )}
               </p>{/if}{/if}
-          {#if operation.result && operation.result.statements_executed > 0 && operation.result.statements_executed < operation.result.statements_total}<p
-              role="alert"
-              data-testid="partial-replace"
-            >
-              {t('programs.partial')}
-            </p>
-            {#if hasPrevious}<h4>{t('programs.previousDefinition')}</h4>
-              <pre data-testid="previous-definition-result">{previousDefinition ||
-                  t('programs.none')}</pre>{/if}{/if}
+          {#if operation.result?.message}<p data-testid="program-result-message">
+              {operation.result.message}
+            </p>{/if}
+          {#if operation.result && partialRun(operation.result)}
+            {#if operation.result.outcome === 'rejected'}<p
+                role="status"
+                data-testid="restored-replace"
+              >
+                {t('programs.restored')}
+              </p>{:else}<p role="status" data-testid="partial-replace">{t('programs.partial')}</p>
+              {#if hasPrevious}<h4>{t('programs.previousDefinition')}</h4>
+                <pre data-testid="previous-definition-result">{previousDefinition ||
+                    t('programs.none')}</pre>{/if}{/if}{/if}
           {#if operation.unknown}<p role="alert">{t('programs.unknown')}</p>{/if}
           {#if operation.phase === 'finished'}<p>{t('programs.locked')}</p>{/if}
           <button

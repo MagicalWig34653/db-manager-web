@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
+  import { t } from '$lib/i18n';
   import { Button } from '$lib/components/ui/button';
   import { encodeExport, type ExportScope, type ExportFormat } from '$lib/export';
   import type { DisplayResult } from '$lib/workbench';
@@ -33,41 +34,39 @@
       cleanupTimer = setTimeout(cleanup, 30000);
     } catch (cause) {
       cleanup();
-      error = cause instanceof Error ? cause.message : 'Die Datei konnte nicht erzeugt werden.';
+      error = cause instanceof Error ? cause.message : t('exportControls.failed');
     }
   }
   onDestroy(cleanup);
 </script>
 
-<div class="result-export" aria-label="Sichtbares Ergebnis exportieren">
+<div class="result-export" aria-label={t('exportControls.region')}>
   <div class="export-actions">
     <label
-      >Exportformat<select aria-label="Exportformat" bind:value={format}>
-        <option value="json">JSON · verlustlos typisiert</option>
-        <option value="csv-spreadsheet">CSV · mit Apostrophpräfix</option>
-        <option value="csv-raw">CSV · unveränderte Rohwerte</option>
+      >{t('exportControls.format')}<select
+        aria-label={t('exportControls.format')}
+        bind:value={format}
+      >
+        <option value="json">{t('exportControls.json')}</option>
+        <option value="csv-spreadsheet">{t('exportControls.csvSpreadsheet')}</option>
+        <option value="csv-raw">{t('exportControls.csvRaw')}</option>
       </select></label
     >
-    <Button variant="outline" size="sm" onclick={download}>Ergebnis herunterladen</Button>
+    <Button variant="outline" size="sm" onclick={download}>{t('exportControls.download')}</Button>
   </div>
   <p>
     {scope.kind === 'table_page'
-      ? `Nur geladene Seite: ${result.rows.length} Zeilen ab Position ${scope.offset + 1}. Kein vollständiger Tabellenexport.${scope.has_more ? ' Weitere Zeilen sind vorhanden.' : ''}`
-      : `Nur dieses angezeigte Ergebnis: ${result.rows.length} Zeilen.`}{result.truncated
-      ? ' Ergebnis gekürzt; nicht alle Datensätze enthalten.'
-      : ''} Keine zusätzliche Abfrage.
+      ? t('exportControls.scopePage', { count: result.rows.length, start: scope.offset + 1 }) +
+        (scope.has_more ? t('exportControls.scopeMore') : '')
+      : t('exportControls.scopeResult', { count: result.rows.length })}{result.truncated
+      ? t('exportControls.truncated')
+      : ''}{t('exportControls.noQuery')}
   </p>
-  {#if format !== 'json'}<p>
-      CSV verliert Zelltypen. NULL: ungequotetes \N; Text „\N“: gequotet. UTF-8, Komma, CRLF,
-      Binärwerte als Base64. Andere Steuerzeichen als CR/LF (etwa TAB oder NUL) verlangen JSON. Für
-      verlustlosen Austausch JSON verwenden.
-    </p>{/if}
+  {#if format !== 'json'}<p>{t('exportControls.csvLoss')}</p>{/if}
   {#if format === 'csv-spreadsheet'}<p>
-      Jeder Spaltenname und Nicht-NULL-Wert erhält ein Apostrophpräfix. Das verändert die Daten;
-      keine allgemeine Sicherheits- oder Excel-Roundtripgarantie.
+      {t('exportControls.csvSpreadsheetNote')}
     </p>{:else if format === 'csv-raw'}<p class="export-warning">
-      Rohwerte bleiben unverändert. Tabellenkalkulationen können Werte als Formeln ausführen. Nur
-      bewusst in geeigneten Programmen öffnen.
+      {t('exportControls.csvRawNote')}
     </p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
 </div>

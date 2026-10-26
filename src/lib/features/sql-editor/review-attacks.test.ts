@@ -32,19 +32,21 @@ const credentialStatements = [
   "PRAGMA key='hunter2'",
 ];
 
-// REVIEW F-3: the keyword heuristic of safeSql misses these credential statements. They are asserted with
-// it.fails() so the suite stays green while the defect exists; remove it.fails() once safeSql is hardened.
-const knownBypasses = new Set(credentialStatements.filter((sql) => safeSql(sql)));
+const benignStatements = [
+  'SELECT * FROM orders WHERE id = 1',
+  'CREATE TABLE t (id integer PRIMARY KEY, owner_id integer, FOREIGN KEY (owner_id) REFERENCES o(id))',
+  "INSERT INTO notes (body) VALUES ('hello')",
+  'UPDATE orders SET total = total + $1 WHERE id = $2',
+  'SELECT count(*) FROM pg_catalog.pg_tables',
+];
 
 describe('review: credential statements are not accepted for the history', () => {
   for (const sql of credentialStatements) {
-    const open = knownBypasses.has(sql);
-    const run = open ? it.fails : it;
-    run(JSON.stringify(sql).slice(0, 80), () => expect(safeSql(sql)).toBe(false));
+    it(JSON.stringify(sql).slice(0, 80), () => expect(safeSql(sql)).toBe(false));
   }
-  it('documents the number of open bypasses (F-3)', () => {
-    expect(knownBypasses.size).toBeGreaterThan(0);
-  });
+  for (const sql of benignStatements) {
+    it(`still stores ${JSON.stringify(sql).slice(0, 60)}`, () => expect(safeSql(sql)).toBe(true));
+  }
 });
 
 describe('review: the active password and token are rejected anywhere', () => {

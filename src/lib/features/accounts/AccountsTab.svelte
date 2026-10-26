@@ -301,7 +301,8 @@
       >{t('accounts.refresh')}</button
     >
     {#if accounts}
-      <div class="table-scroll">
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable table needs a keyboard focus target.) -->
+      <div class="table-scroll" role="region" tabindex="0" aria-label={t('accounts.list')}>
         <table class="result-table" data-testid="account-list">
           <caption>{t('accounts.list')}</caption>
           <thead
@@ -357,7 +358,13 @@
       {#each details.notes as note}<p>{note}</p>{/each}
       {#each scopes as group}
         <h4>{t(`accounts.scopes.${group}`)}</h4>
-        <div class="table-scroll">
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable table needs a keyboard focus target.) -->
+        <div
+          class="table-scroll"
+          role="region"
+          tabindex="0"
+          aria-label={`${t('accounts.privilege')}: ${t(`accounts.scopes.${group}`)}`}
+        >
           <table class="result-table" data-testid={`grants-${group}`}>
             <caption class="sr-only">{t(`accounts.scopes.${group}`)}</caption>
             <thead
@@ -487,7 +494,9 @@
       </fieldset>
     {/if}
     {#if operation.phase === 'planning'}<p role="status">{t('accounts.planning')}</p>{/if}
-    {#if operation.error}<p role="alert">{operation.error}</p>{/if}
+    {#if operation.error}<p role={operation.unknown ? undefined : 'alert'}>
+        {operation.error}
+      </p>{/if}
     {#if operation.plan}
       <PlanPreview
         statements={operation.plan.statements}
@@ -523,7 +532,7 @@
             <label for={`${uid}-secret`}>{t('accounts.secret')}</label><input
               id={`${uid}-secret`}
               type="password"
-              autocomplete="off"
+              autocomplete="new-password"
               bind:value={secret}
               bind:this={secretInput}
             />
@@ -541,6 +550,9 @@
         {t(`accounts.outcomes.${operation.result.outcome}`)}
         {operation.result.reason ? t(`accounts.${operation.result.reason}`) : ''}
       </p>
+      {#if operation.result.message}<p data-testid="account-result-message">
+          {operation.result.message}
+        </p>{/if}
       <p>
         {t('accounts.executed', { count: operation.result.statements_executed })}
         {t(operation.result.atomic ? 'accounts.atomic' : 'accounts.nonAtomic')}

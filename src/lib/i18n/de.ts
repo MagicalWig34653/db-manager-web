@@ -1130,6 +1130,8 @@ export const de = {
     tab: 'Suche',
     replaceTab: 'Ersetzen',
     loading: 'Wird geladen …',
+    replacePreviewRows: 'Vorschau der Ersetzung',
+    resultRows: 'Trefferzeilen',
     targets: 'Tabellen und Textspalten (höchstens 20 Tabellen, je 32 Spalten)',
     term: 'Suchtext',
     replacement: 'Ersatztext (darf leer sein)',
@@ -1250,6 +1252,8 @@ export const de = {
     failed: 'Die Anfrage wurde abgewiesen. Prüfe Eingaben, Verbindung und Berechtigungen.',
     unknown:
       'Ausgang unbekannt: Die Ausführung kann bereits wirksam sein. Abbruch ist keine Rollbackgarantie. Nicht erneut senden; prüfe zuerst den Datenbankstand.',
+    unknownTruncated:
+      'Ein Ergebnis wurde auf das Zeilenlimit gekürzt; das Statement lief, aber der Stapel wurde danach angehalten und weitere Statements wurden nicht ausgeführt. Das Backend meldet den Ausgang deshalb als unbekannt. Bei Schreibanteilen den Datenbankstand prüfen; nicht automatisch wiederholen.',
     duration: 'Dauer: {ms} ms',
     statement: 'Statement {index}',
     completed: 'Abgeschlossen',
@@ -1514,7 +1518,7 @@ export const de = {
     plan: 'Plan anzeigen',
     transactional: 'DDL-Gruppe wird transaktional ausgeführt.',
     nonAtomic:
-      'Nicht atomar: DDL bestätigt implizit. Nach DROP kann CREATE scheitern; keine automatische Wiederherstellung.',
+      'Nicht atomar: DDL bestätigt implizit. Nach DROP kann CREATE scheitern; bei MySQL/MariaDB versucht der Server dann, die bisherige Definition selbsttätig zurückzuspielen. Das ist nicht garantiert; die Ausführungsmeldung nennt das Ergebnis.',
     planHint:
       'Plan ist kein Syntaxnachweis. Andere Sitzungen können namensgleiche Objekte austauschen. Definitionsexport ist keine vollständige Sicherung von Rechten und Eigentümern.',
     affected: 'Betroffene Objekte',
@@ -1531,7 +1535,9 @@ export const de = {
     previousDefinition:
       'Bisherige Definition (wird ersetzt bzw. gelöscht; vor der Ausführung sichern)',
     partial:
-      'Nur ein Teil der Anweisungen wurde ausgeführt. Das bisherige Objekt wurde möglicherweise entfernt und nicht wiederhergestellt. Katalog prüfen und das Objekt bei Bedarf mit der angezeigten bisherigen Definition neu anlegen.',
+      'Nur ein Teil der Anweisungen wurde ausgeführt und der Ausgang ist unbestimmt: die Wiederherstellung ist fehlgeschlagen oder das Objekt ist möglicherweise bereits neu vorhanden. Katalog prüfen und das Objekt bei Bedarf mit der angezeigten bisherigen Definition (auch in der Meldung des Servers) manuell neu anlegen.',
+    restored:
+      'Die neue Definition wurde abgelehnt; laut Serverantwort wurde die bisherige Definition zurückgespielt. Zur Sicherheit den Katalog prüfen.',
     kinds: {
       view: 'Views',
       function: 'Funktionen (Routinen)',
@@ -1580,6 +1586,112 @@ export const de = {
       on_completion: 'Nach Abschluss',
       time_zone: 'Zeitzone',
     },
+  },
+  api: {
+    unauthorized:
+      'Der Zugriffstoken fehlt oder ist ungültig. Öffne „Backend-Zugang“ und prüfe deinen Token.',
+    invalid_request: 'Die Anfrage ist ungültig. Prüfe Datenbankname, Verbindungsangaben und SQL.',
+    invalid_connection: 'Die Verbindungsangaben sind ungültig. Prüfe Host, Port und Datenbankname.',
+    query_canceled:
+      'Die Abfrage wurde abgebrochen oder ihr Zeitlimit wurde erreicht. Bereits ausgeführte Änderungen können bestehen bleiben.',
+    database_error:
+      'Die Datenbankoperation ist fehlgeschlagen. Prüfe Verbindung, SQL und Datenbankrechte.',
+    row_conflict:
+      'Die Zeile wurde zwischenzeitlich geändert oder entfernt. Lade die Daten neu; diese Änderung wird nicht automatisch erneut gesendet.',
+    insert_conflict:
+      'Die neue Zeile kollidiert mit vorhandenen Daten. Lade die Daten neu und prüfe eindeutige Werte.',
+    outcome_unknown:
+      'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
+    unsupported_table: 'Diese Tabelle unterstützt den Zeileneditor nicht.',
+    unsupported_inheritance: 'Vererbte Tabellen werden für Zeilenänderungen nicht unterstützt.',
+    unsupported_identity: 'Diese Schlüsselvergabe wird für neue Zeilen nicht unterstützt.',
+    invalid_changes: 'Die ausgewählten Spalten oder Werte können nicht übernommen werden.',
+    database_busy:
+      'Diese SQLite-Datenbank wird gerade verwendet. Warte auf die laufende Anfrage oder brich sie ab.',
+    table_not_found: 'Das Objekt ist nicht mehr verfügbar. Aktualisiere den Katalog.',
+    unsupported_driver: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
+    driver_unavailable: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
+    result_too_large:
+      'Das Ergebnis ist zu groß. Grenze Zeilen und Spalten in deiner Abfrage weiter ein.',
+    request_too_large: 'Die Anfrage ist zu groß. Kürze die SQL-Anweisung.',
+    invalid_response: 'Das Backend hat eine ungültige Antwort geliefert.',
+    notJson:
+      'Die Antwort des Backends ist kein gültiges Datenformat. Prüfe die Adresse deiner Instanz.',
+    emptyBody: 'Die Antwort des Backends ist leer.',
+    unreadable: 'Das Backend hat eine unlesbare Antwort geliefert.',
+    insecure_origin:
+      'Für den Zugriff auf entfernte Instanzen ist HTTPS erforderlich. Öffne die gesicherte Adresse deiner Instanz.',
+    timeout: 'Das Backend antwortet nicht rechtzeitig. Prüfe den Verbindungsstatus.',
+    network_error: 'Das Backend ist nicht erreichbar. Prüfe, ob deine Instanz läuft.',
+    interrupted:
+      'Die Verbindung wurde während der Übertragung unterbrochen. Der Ausführungsstatus muss geprüft werden.',
+    not_found: 'Der angeforderte Bereich wird von dieser Instanz nicht angeboten.',
+    rejectedHttp:
+      'Die Anfrage wurde abgewiesen (HTTP {status}). Prüfe Verbindung und Berechtigungen.',
+    aborted: 'Abgebrochen',
+  },
+  connectionEditor: {
+    title: 'Verbindung hinzufügen',
+    description: 'Wähle deine Datenbank und öffne einen Arbeitsbereich.',
+    driverLegend: 'Datenbanksystem',
+    sqliteDetail: 'Dateidatenbank',
+    serverDetail: 'Serververbindung',
+    unavailable: 'Nicht verfügbar',
+    name: 'Name',
+    optional: 'optional',
+    namePlaceholder: 'Zum Beispiel: Entwicklung',
+    host: 'Host',
+    port: 'Port',
+    database: 'Datenbank',
+    sqliteDatabasePlaceholder: 'Freigegebener Datenbankname',
+    databasePlaceholder: 'Datenbankname',
+    user: 'Benutzername',
+    password: 'Passwort',
+    tlsNote:
+      'Serververbindungen verwenden geprüftes TLS. Ein unsicherer Fallback ist ausgeschlossen.',
+    memoryNote: 'Zugangsdaten bleiben nur für diese Sitzung im Arbeitsspeicher.',
+    noDrivers: 'Dieses Backend bietet derzeit keine Datenbanktreiber an.',
+    test: 'Verbindung testen',
+    connect: 'Verbinden',
+  },
+  resultTable: {
+    regionLabel: 'Abfrageergebnis, horizontal scrollbar',
+    singleRow: 'Einzelzeile',
+    editRowLabel: 'Zeile {row} bearbeiten',
+    deleteRowLabel: 'Zeile {row} löschen',
+    edit: 'Bearbeiten',
+    delete: 'Löschen',
+    empty: 'Die Abfrage hat keine Zeilen zurückgegeben.',
+    done: 'Anweisung abgeschlossen',
+    affectedUnknown: 'Anzahl betroffener Zeilen nicht gemeldet',
+    affected: '{count} betroffene Zeilen',
+    cellTitle: 'Zellwert',
+    cellFull: 'Vollständiger Wert · {kind}',
+    base64: ' · Base64',
+    copied: 'Kopiert',
+    copy: 'Wert kopieren',
+    copyUnavailable: 'Kopieren ist hier nicht verfügbar. Wert bitte markieren.',
+  },
+  exportControls: {
+    region: 'Sichtbares Ergebnis exportieren',
+    format: 'Exportformat',
+    json: 'JSON · verlustlos typisiert',
+    csvSpreadsheet: 'CSV · mit Apostrophpräfix',
+    csvRaw: 'CSV · unveränderte Rohwerte',
+    download: 'Ergebnis herunterladen',
+    failed: 'Die Datei konnte nicht erzeugt werden.',
+    scopePage:
+      'Nur geladene Seite: {count} Zeilen ab Position {start}. Kein vollständiger Tabellenexport.',
+    scopeMore: ' Weitere Zeilen sind vorhanden.',
+    scopeResult: 'Nur dieses angezeigte Ergebnis: {count} Zeilen.',
+    truncated: ' Ergebnis gekürzt; nicht alle Datensätze enthalten.',
+    noQuery: ' Keine zusätzliche Abfrage.',
+    csvLoss:
+      'CSV verliert Zelltypen. NULL: ungequotetes \\N; Text „\\N“: gequotet. UTF-8, Komma, CRLF, Binärwerte als Base64. Andere Steuerzeichen als CR/LF (etwa TAB oder NUL) verlangen JSON. Für verlustlosen Austausch JSON verwenden.',
+    csvSpreadsheetNote:
+      'Jeder Spaltenname und Nicht-NULL-Wert erhält ein Apostrophpräfix. Das verändert die Daten; keine allgemeine Sicherheits- oder Excel-Roundtripgarantie.',
+    csvRawNote:
+      'Rohwerte bleiben unverändert. Tabellenkalkulationen können Werte als Formeln ausführen. Nur bewusst in geeigneten Programmen öffnen.',
   },
 } as const;
 

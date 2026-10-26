@@ -151,7 +151,9 @@
         onclick={() => operation.loadPlan(items())}>{t('maintenance.plan')}</Button
       >
     {/if}
-    {#if operation.error}<p role="alert">{operation.error}</p>{/if}
+    {#if operation.error}<p role={operation.unknown ? undefined : 'alert'}>
+        {operation.error}
+      </p>{/if}
     {#if operation.plan}
       <div data-testid="maintenance-plan">
         <p role="alert">{t('maintenance.warnings')}</p>

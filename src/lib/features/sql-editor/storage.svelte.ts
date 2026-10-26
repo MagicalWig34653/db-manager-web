@@ -22,16 +22,27 @@ let idSequence = 0;
 const newId = () =>
   typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${++idSequence}`;
 
-/** Reject common credential statements and active credentials; never serialize a connection. */
+// Conservative secret patterns for the opt-in history: any hit means "do not store". False positives (for example
+// a column named password_hash or a function body in dollar quotes) only cost a history entry; a miss would write
+// a plaintext credential to localStorage. Comments are not stripped: a keyword inside a comment is a hit as well.
+const SECRET_PATTERNS: RegExp[] = [
+  /pass(?:word|wd|phrase)/i, // PASSWORD, PASSWD, MASTER_PASSWORD, SOURCE_PASSWORD, PASSWORD('x'), PASSWORD $$x$$
+  /\bidentified\b/i, // IDENTIFIED BY / WITH / VIA ... USING
+  /secret|token|credential|api[_-]?key|bearer|private\s+key/i,
+  /\bencryption\s+key|\b(?:hex|re)?key\s*(?:=|['"]|\bx')|\bkey\s+['"]|pragma\s+(?:\w+\s*\.\s*)?(?:hex|re)?key\b|cipher_/i, // PRAGMA key, ATTACH ... KEY 'x'
+  /\$[A-Za-z_\u0080-\uffff]*\$/, // dollar-quoted literals can hide any value
+  /\b(?:user\s+mapping|create\s+server|create\s+subscription|dblink_connect\w*)\b/i, // connection strings with embedded credentials
+  /\b(?:uid|user\s*id|pwd)\s*=/i,
+];
+
+/** Reject credential statements and active credentials; never serialize a connection. */
 export function safeSql(sql: string, secrets: string[] = []): boolean {
   return (
     !!sql.trim() &&
     sql.length <= MAX_SQL &&
     size(JSON.stringify(sql)) <= MAX_BYTES / 2 - 2048 &&
     !secrets.some((secret) => secret.length > 0 && sql.includes(secret)) &&
-    !/\b(password|passwd|token|secret)\b\s*(?:=|:)|\bidentified\s+(?:by|with)|\bpassword\s+['"]/i.test(
-      sql,
-    )
+    !SECRET_PATTERNS.some((pattern) => pattern.test(sql))
   );
 }
 function parseEntry(value: unknown): Entry {

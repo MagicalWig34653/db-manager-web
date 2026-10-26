@@ -431,6 +431,18 @@
     gap: 0.375rem;
     font-size: 0.875rem;
   }
+  /* WCAG 2.5.8: radio targets of at least 24x24 px. */
+  fieldset input[type='radio'] {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    margin: 0;
+    flex: none;
+  }
+  fieldset label:has(input[type='radio']) {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
   fieldset {
     display: grid;
     gap: 0.25rem;

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { t } from './i18n';
 import * as validators from './contract/validators.js';
 import type { components } from './contract/api-types';
 import type { ConnectionDraft, Driver } from './workbench';
@@ -16,7 +17,7 @@ export class ApiError extends Error {
 }
 export function validatePayload<T extends SchemaName>(name: T, value: unknown): Schemas[T] {
   if (!validators[name](value))
-    throw new ApiError('invalid_response', 'Das Backend hat eine ungültige Antwort geliefert.');
+    throw new ApiError('invalid_response', errorText('invalid_response'));
   return value as Schemas[T];
 }
 export function apiDriver(driver: Driver): Schemas['Connection']['driver'] {
@@ -34,44 +35,36 @@ export function toConnection(draft: ConnectionDraft): Schemas['Connection'] {
     tls_mode: 'verify-full',
   };
 }
-const errorMessages: Record<string, string> = {
-  unauthorized:
-    'Der Zugriffstoken fehlt oder ist ungültig. Öffne „Backend-Zugang“ und prüfe deinen Token.',
-  invalid_request: 'Die Anfrage ist ungültig. Prüfe Datenbankname, Verbindungsangaben und SQL.',
-  invalid_connection: 'Die Verbindungsangaben sind ungültig. Prüfe Host, Port und Datenbankname.',
-  query_canceled:
-    'Die Abfrage wurde abgebrochen oder ihr Zeitlimit wurde erreicht. Bereits ausgeführte Änderungen können bestehen bleiben.',
-  database_error:
-    'Die Datenbankoperation ist fehlgeschlagen. Prüfe Verbindung, SQL und Datenbankrechte.',
-  row_conflict:
-    'Die Zeile wurde zwischenzeitlich geändert oder entfernt. Lade die Daten neu; diese Änderung wird nicht automatisch erneut gesendet.',
-  insert_conflict:
-    'Die neue Zeile kollidiert mit vorhandenen Daten. Lade die Daten neu und prüfe eindeutige Werte.',
-  outcome_unknown:
-    'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
-  unsupported_table: 'Diese Tabelle unterstützt den Zeileneditor nicht.',
-  unsupported_inheritance: 'Vererbte Tabellen werden für Zeilenänderungen nicht unterstützt.',
-  unsupported_identity: 'Diese Schlüsselvergabe wird für neue Zeilen nicht unterstützt.',
-  invalid_changes: 'Die ausgewählten Spalten oder Werte können nicht übernommen werden.',
-  database_busy:
-    'Diese SQLite-Datenbank wird gerade verwendet. Warte auf die laufende Anfrage oder brich sie ab.',
-  table_not_found: 'Das Objekt ist nicht mehr verfügbar. Aktualisiere den Katalog.',
-  unsupported_driver: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
-  driver_unavailable: 'Dieses Datenbanksystem ist auf dem Backend nicht verfügbar.',
-  result_too_large:
-    'Das Ergebnis ist zu groß. Grenze Zeilen und Spalten in deiner Abfrage weiter ein.',
-  request_too_large: 'Die Anfrage ist zu groß. Kürze die SQL-Anweisung.',
-};
+// Error texts come from the i18n catalog (api.*) at throw time, so they follow the selected language.
+const knownErrors = new Set([
+  'unauthorized',
+  'invalid_request',
+  'invalid_connection',
+  'query_canceled',
+  'database_error',
+  'row_conflict',
+  'insert_conflict',
+  'outcome_unknown',
+  'unsupported_table',
+  'unsupported_inheritance',
+  'unsupported_identity',
+  'invalid_changes',
+  'database_busy',
+  'table_not_found',
+  'unsupported_driver',
+  'driver_unavailable',
+  'result_too_large',
+  'request_too_large',
+]);
+const errorText = (code: string, params: Record<string, string | number> = {}) =>
+  t(`api.${code}`, params);
 const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 async function readJson(response: Response): Promise<unknown> {
   if (!response.headers.get('content-type')?.toLowerCase().includes('application/json')) {
-    throw new ApiError(
-      'invalid_response',
-      'Die Antwort des Backends ist kein gültiges Datenformat. Prüfe die Adresse deiner Instanz.',
-    );
+    throw new ApiError('invalid_response', errorText('notJson'));
   }
   const reader = response.body?.getReader();
-  if (!reader) throw new ApiError('invalid_response', 'Die Antwort des Backends ist leer.');
+  if (!reader) throw new ApiError('invalid_response', errorText('emptyBody'));
   const decoder = new TextDecoder();
   let text = '';
   let size = 0;
@@ -82,7 +75,7 @@ async function readJson(response: Response): Promise<unknown> {
       size += value.byteLength;
       if (size > MAX_RESPONSE_BYTES) {
         await reader.cancel();
-        throw new ApiError('result_too_large', errorMessages.result_too_large);
+        throw new ApiError('result_too_large', errorText('result_too_large'));
       }
       text += decoder.decode(value, { stream: true });
     }
@@ -93,7 +86,7 @@ async function readJson(response: Response): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
-    throw new ApiError('invalid_response', 'Das Backend hat eine unlesbare Antwort geliefert.');
+    throw new ApiError('invalid_response', errorText('unreadable'));
   }
 }
 export class ApiClient {
@@ -119,16 +112,13 @@ export class ApiClient {
       location.protocol !== 'https:' &&
       !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
     ) {
-      throw new ApiError(
-        'insecure_origin',
-        'Für den Zugriff auf entfernte Instanzen ist HTTPS erforderlich. Öffne die gesicherte Adresse deiner Instanz.',
-      );
+      throw new ApiError('insecure_origin', errorText('insecure_origin'));
     }
     const serialized = body === undefined ? undefined : JSON.stringify(body);
     if (serialized !== undefined && new TextEncoder().encode(serialized).byteLength > 1024 * 1024) {
-      throw new ApiError('request_too_large', errorMessages.request_too_large);
+      throw new ApiError('request_too_large', errorText('request_too_large'));
     }
-    if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
+    if (signal?.aborted) throw new DOMException(errorText('aborted'), 'AbortError');
     const timeout = AbortSignal.timeout(
       write || ['/api/v1/query', '/api/v2/tables/browse'].includes(path) ? 75000 : 15000,
     );
@@ -150,55 +140,31 @@ export class ApiClient {
         referrerPolicy: 'no-referrer',
       });
     } catch {
-      if (write)
-        throw new ApiError(
-          'outcome_unknown',
-          'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
-        );
-      if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
-      if (combined.aborted)
-        throw new ApiError(
-          'timeout',
-          'Das Backend antwortet nicht rechtzeitig. Prüfe den Verbindungsstatus.',
-        );
-      throw new ApiError(
-        'network_error',
-        'Das Backend ist nicht erreichbar. Prüfe, ob deine Instanz läuft.',
-      );
+      if (write) throw new ApiError('outcome_unknown', errorText('outcome_unknown'));
+      if (signal?.aborted) throw new DOMException(errorText('aborted'), 'AbortError');
+      if (combined.aborted) throw new ApiError('timeout', errorText('timeout'));
+      throw new ApiError('network_error', errorText('network_error'));
     }
     if (response.status === 404) {
-      throw new ApiError(
-        'not_found',
-        'Der angeforderte Bereich wird von dieser Instanz nicht angeboten.',
-      );
+      throw new ApiError('not_found', errorText('not_found'));
     }
     let payload: unknown;
     try {
       payload = await readJson(response);
     } catch (cause) {
-      if (write)
-        throw new ApiError(
-          'outcome_unknown',
-          'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.',
-        );
-      if (signal?.aborted) throw new DOMException('Abgebrochen', 'AbortError');
-      if (combined.aborted)
-        throw new ApiError(
-          'timeout',
-          'Das Backend antwortet nicht rechtzeitig. Prüfe den Verbindungsstatus.',
-        );
+      if (write) throw new ApiError('outcome_unknown', errorText('outcome_unknown'));
+      if (signal?.aborted) throw new DOMException(errorText('aborted'), 'AbortError');
+      if (combined.aborted) throw new ApiError('timeout', errorText('timeout'));
       if (cause instanceof ApiError) throw cause;
-      throw new ApiError(
-        'network_error',
-        'Die Verbindung wurde während der Übertragung unterbrochen. Der Ausführungsstatus muss geprüft werden.',
-      );
+      throw new ApiError('network_error', errorText('interrupted'));
     }
     if (!response.ok) {
       const failure = validatePayload('Error', payload);
       throw new ApiError(
         failure.error.code,
-        errorMessages[failure.error.code] ??
-          `Die Anfrage wurde abgewiesen (HTTP ${response.status}). Prüfe Verbindung und Berechtigungen.`,
+        knownErrors.has(failure.error.code)
+          ? errorText(failure.error.code)
+          : errorText('rejectedHttp', { status: response.status }),
       );
     }
     return payload;
@@ -210,7 +176,7 @@ export class ApiClient {
     try {
       validatePayload('Connection', connection);
     } catch {
-      throw new ApiError('invalid_connection', errorMessages.invalid_connection);
+      throw new ApiError('invalid_connection', errorText('invalid_connection'));
     }
     return this.request('/api/v1/connections/test', 'Status', token, { connection }, signal);
   }
@@ -218,7 +184,7 @@ export class ApiClient {
     try {
       validatePayload('Connection', connection);
     } catch {
-      throw new ApiError('invalid_connection', errorMessages.invalid_connection);
+      throw new ApiError('invalid_connection', errorText('invalid_connection'));
     }
     return this.request('/api/v1/catalog', 'CatalogResult', token, { connection }, signal);
   }
@@ -226,7 +192,7 @@ export class ApiClient {
     try {
       validatePayload('QueryRequest', input);
     } catch {
-      throw new ApiError('invalid_request', errorMessages.invalid_request);
+      throw new ApiError('invalid_request', errorText('invalid_request'));
     }
     return this.request('/api/v1/query', 'QueryResult', token, input, signal);
   }

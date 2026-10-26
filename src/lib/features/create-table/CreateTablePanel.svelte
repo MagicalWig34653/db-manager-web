@@ -591,6 +591,7 @@
 <style>
   .create-panel {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
     min-width: 0;
     padding: 1rem;
@@ -611,6 +612,7 @@
   }
   form {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
   .field {
@@ -685,6 +687,8 @@
   }
   .review {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-wrap: anywhere;
     gap: 0.75rem;
   }
   .summary li {

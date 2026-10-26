@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Independent review of the web wave: hostile backend/database text, plan-hash binding, replay, offline
-// behaviour and backend 3a7e1f1 contract realities. Tests marked test.fail() document OPEN review findings
-// (they pass while the defect exists and start failing as soon as it is fixed: remove test.fail() then).
+// behaviour and backend 3a7e1f1 contract realities. The test.fail() on F-2 documents a backend contract defect (fixed in backend 0.23, not in the web repo);
+// F-1 and F-4 are fixed and run as normal tests.
 import { test, expect, type Page } from '@playwright/test';
 import { actions, type Schemas, type Action } from '../../src/lib/features/accounts/model';
 import {
@@ -186,6 +186,8 @@ test('accounts: a proxy 502 page during execute is an unknown outcome without a 
 
 // Backend 3a7e1f1 answers a PostgreSQL GRANT without effect with reason "grant_without_effect"
 // (internal/database/accounts.go:254), which is not in the v15 AccountResult.reason enum.
+// OPEN BY DESIGN: backend contract defect, fixed in backend version 0.23 (not in this repo). The generated validator
+// rejects the answer, so the UI shows the safe "outcome unknown" state. Remove test.fail() when v23 is pinned.
 test.fail(
   'REVIEW F-2: a backend "rejected / grant_without_effect" answer is shown as rejected, not as unknown outcome',
   async ({ page }) => {
@@ -301,28 +303,27 @@ test('programs: hostile object name, definition, warnings and plan text stay tex
 
 // Backend 3a7e1f1 (programs.go:415-491): MySQL replace = DROP+CREATE with automatic restore. A failed CREATE
 // answers outcome=rejected, statements_executed=1 of 2, message "... automatisch wiederhergestellt (restored)".
-test.fail(
-  'REVIEW F-1: restored replace shows the backend message and no claim that nothing was restored',
-  async ({ page }) => {
-    await programsBackend(page, {
-      result: programResult({
-        outcome: 'rejected',
-        reason: 'database_error',
-        message:
-          'Die neue Definition wurde vom Server abgelehnt; die bisherige Definition wurde automatisch wiederhergestellt (restored).',
-        statements_executed: 1,
-        statements_total: 2,
-        atomic: false,
-      }),
-    });
-    await replaceFlow(page);
-    await page.getByRole('checkbox', { name: /Exakte Anweisungen/ }).check();
-    await page.getByRole('textbox', { name: /exakt eingeben/ }).fill(programPlan().object.name);
-    await page.getByRole('button', { name: 'Ausführen', exact: true }).click();
-    await expect(page.getByText(/automatisch wiederhergestellt/)).toBeVisible();
-    await expect(page.getByText(/nicht wiederhergestellt/)).toHaveCount(0);
-  },
-);
+test('REVIEW F-1: restored replace shows the backend message and no claim that nothing was restored', async ({
+  page,
+}) => {
+  await programsBackend(page, {
+    result: programResult({
+      outcome: 'rejected',
+      reason: 'database_error',
+      message:
+        'Die neue Definition wurde vom Server abgelehnt; die bisherige Definition wurde automatisch wiederhergestellt (restored).',
+      statements_executed: 1,
+      statements_total: 2,
+      atomic: false,
+    }),
+  });
+  await replaceFlow(page);
+  await page.getByRole('checkbox', { name: /Exakte Anweisungen/ }).check();
+  await page.getByRole('textbox', { name: /exakt eingeben/ }).fill(programPlan().object.name);
+  await page.getByRole('button', { name: 'Ausführen', exact: true }).click();
+  await expect(page.getByText(/automatisch wiederhergestellt/)).toBeVisible();
+  await expect(page.getByText(/nicht wiederhergestellt/)).toHaveCount(0);
+});
 
 test('programs: restore_failed keeps old definition visible as text and signals unknown without retry', async ({
   page,
@@ -370,25 +371,24 @@ test('programs: list fetch lost (offline) shows an error and offers reload', asy
   await expect(page.getByRole('button', { name: /neu laden/i })).toBeEnabled();
 });
 
-// The explicit SQL editor (/api/v1/query) can run DDL/DML but is not counted in Session.writeCount.
-test.fail(
-  'REVIEW F-4: a running SQL editor statement warns on beforeunload like every other writer',
-  async ({ page }) => {
-    await baseRoutes(page);
-    await page.route('**/api/v1/query', () => new Promise(() => {}));
-    await page.goto('/#/datenbank/sql');
-    await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
-    await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
-    await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
-    await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
-    await page.locator('#sql-editor').fill('DROP TABLE orders');
-    await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
-    await expect(page.getByRole('button', { name: 'Abbrechen' })).toBeVisible();
-    const prevented = await page.evaluate(() => {
-      const event = new Event('beforeunload', { cancelable: true });
-      window.dispatchEvent(event);
-      return event.defaultPrevented;
-    });
-    expect(prevented).toBe(true);
-  },
-);
+// The explicit SQL editor (/api/v1/query) can run DDL/DML and is counted in Session.writeCount (F-4).
+test('REVIEW F-4: a running SQL editor statement warns on beforeunload like every other writer', async ({
+  page,
+}) => {
+  await baseRoutes(page);
+  await page.route('**/api/v1/query', () => new Promise(() => {}));
+  await page.goto('/#/datenbank/sql');
+  await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
+  await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
+  await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
+  await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
+  await page.locator('#sql-editor').fill('DROP TABLE orders');
+  await page.getByRole('button', { name: 'Abfrage ausführen' }).click();
+  await expect(page.getByRole('button', { name: 'Abbrechen' })).toBeVisible();
+  const prevented = await page.evaluate(() => {
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(prevented).toBe(true);
+});

@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import * as Dialog from '$lib/components/ui/dialog';
+  import { t } from '$lib/i18n';
   import { emptyConnection, type ConnectionDraft, type Driver } from '$lib/workbench';
 
   let {
@@ -21,10 +22,10 @@
     ontest: (draft: ConnectionDraft) => void;
   } = $props();
   let draft = $state(emptyConnection());
-  const drivers: { value: Driver; title: string; detail: string }[] = [
-    { value: 'sqlite', title: 'SQLite', detail: 'Dateidatenbank' },
-    { value: 'postgresql', title: 'PostgreSQL', detail: 'Serververbindung' },
-    { value: 'mysql', title: 'MySQL / MariaDB', detail: 'Serververbindung' },
+  const drivers: { value: Driver; title: string; detail: 'sqliteDetail' | 'serverDetail' }[] = [
+    { value: 'sqlite', title: 'SQLite', detail: 'sqliteDetail' },
+    { value: 'postgresql', title: 'PostgreSQL', detail: 'serverDetail' },
+    { value: 'mysql', title: 'MySQL / MariaDB', detail: 'serverDetail' },
   ];
   function chooseDriver(driver: Driver) {
     draft.driver = driver;
@@ -36,8 +37,8 @@
   <Dialog.Content class="connection-modal sm:max-w-[600px] max-h-[90dvh] overflow-y-auto p-7">
     <Dialog.Header>
       <div class="dialog-mark"><Database size={22} /></div>
-      <Dialog.Title class="text-xl">Verbindung hinzufügen</Dialog.Title>
-      <Dialog.Description>Wähle deine Datenbank und öffne einen Arbeitsbereich.</Dialog.Description>
+      <Dialog.Title class="text-xl">{t('connectionEditor.title')}</Dialog.Title>
+      <Dialog.Description>{t('connectionEditor.description')}</Dialog.Description>
     </Dialog.Header>
     <form
       autocomplete="off"
@@ -47,7 +48,7 @@
       }}
     >
       <fieldset disabled={busy} class="border-0 p-0 m-0">
-        <legend class="field-label">Datenbanksystem</legend>
+        <legend class="field-label">{t('connectionEditor.driverLegend')}</legend>
         <div class="driver-options">
           {#each drivers as driver}
             <button
@@ -59,24 +60,27 @@
             >
               <strong>{driver.title}</strong><span
                 >{availableDrivers !== undefined && !availableDrivers.includes(driver.value)
-                  ? 'Nicht verfügbar'
-                  : driver.detail}</span
+                  ? t('connectionEditor.unavailable')
+                  : t(`connectionEditor.${driver.detail}`)}</span
               >
             </button>
           {/each}
         </div>
         <div class="form-field">
-          <label for="connection-name">Name <span class="optional">optional</span></label><Input
+          <label for="connection-name"
+            >{t('connectionEditor.name')}
+            <span class="optional">{t('connectionEditor.optional')}</span></label
+          ><Input
             id="connection-name"
             bind:value={draft.name}
-            placeholder="Zum Beispiel: Entwicklung"
+            placeholder={t('connectionEditor.namePlaceholder')}
             maxlength={120}
           />
         </div>
         {#if draft.driver !== 'sqlite'}
           <div class="form-grid host-grid">
             <div class="form-field">
-              <label for="connection-host">Host</label><Input
+              <label for="connection-host">{t('connectionEditor.host')}</label><Input
                 id="connection-host"
                 bind:value={draft.host}
                 required
@@ -85,7 +89,7 @@
               />
             </div>
             <div class="form-field">
-              <label for="connection-port">Port</label><Input
+              <label for="connection-port">{t('connectionEditor.port')}</label><Input
                 id="connection-port"
                 type="number"
                 min="1"
@@ -97,12 +101,12 @@
           </div>
         {/if}
         <div class="form-field">
-          <label for="connection-database">Datenbank</label><Input
+          <label for="connection-database">{t('connectionEditor.database')}</label><Input
             id="connection-database"
             bind:value={draft.database}
             placeholder={draft.driver === 'sqlite'
-              ? 'Freigegebener Datenbankname'
-              : 'Datenbankname'}
+              ? t('connectionEditor.sqliteDatabasePlaceholder')
+              : t('connectionEditor.databasePlaceholder')}
             pattern={draft.driver === 'sqlite' ? '[A-Za-z0-9][A-Za-z0-9_-]{0,63}' : undefined}
             required
             spellcheck={false}
@@ -112,7 +116,7 @@
         {#if draft.driver !== 'sqlite'}
           <div class="form-grid">
             <div class="form-field">
-              <label for="connection-user">Benutzername</label><Input
+              <label for="connection-user">{t('connectionEditor.user')}</label><Input
                 id="connection-user"
                 bind:value={draft.username}
                 required
@@ -121,7 +125,7 @@
               />
             </div>
             <div class="form-field">
-              <label for="connection-password">Passwort</label><Input
+              <label for="connection-password">{t('connectionEditor.password')}</label><Input
                 id="connection-password"
                 type="password"
                 bind:value={draft.password}
@@ -130,19 +134,14 @@
             </div>
           </div>
           <div class="privacy-note">
-            <LockKeyhole size={15} /><span
-              >Serververbindungen verwenden geprüftes TLS. Ein unsicherer Fallback ist
-              ausgeschlossen.</span
-            >
+            <LockKeyhole size={15} /><span>{t('connectionEditor.tlsNote')}</span>
           </div>
         {/if}
         <div class="privacy-note">
-          <LockKeyhole size={15} /><span
-            >Zugangsdaten bleiben nur für diese Sitzung im Arbeitsspeicher.</span
-          >
+          <LockKeyhole size={15} /><span>{t('connectionEditor.memoryNote')}</span>
         </div>
         {#if availableDrivers?.length === 0}<p class="form-message" role="status">
-            Dieses Backend bietet derzeit keine Datenbanktreiber an.
+            {t('connectionEditor.noDrivers')}
           </p>{/if}{#if message}<p class="form-message" role="status">{message}</p>{/if}
         <div class="dialog-actions">
           <Button
@@ -152,13 +151,15 @@
               !draft.database.trim() ||
               (availableDrivers !== undefined && !availableDrivers.includes(draft.driver))}
             onclick={() => ontest({ ...draft })}
-            >{#if busy}<LoaderCircle class="animate-spin" />{/if}Verbindung testen</Button
+            >{#if busy}<LoaderCircle class="animate-spin" />{/if}{t(
+              'connectionEditor.test',
+            )}</Button
           ><Button
             type="submit"
             disabled={busy ||
               !draft.database.trim() ||
               (availableDrivers !== undefined && !availableDrivers.includes(draft.driver))}
-            >Verbinden <ArrowRight /></Button
+            >{t('connectionEditor.connect')} <ArrowRight /></Button
           >
         </div>
       </fieldset>

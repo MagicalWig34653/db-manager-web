@@ -170,6 +170,23 @@ test('invalid limits block the review and 320 px has no horizontal scroll', asyn
   });
 });
 
+test('the review step has no horizontal overflow at 320 px (axe review F-5)', async ({ page }) => {
+  await mockBackend(page, () => ({ status: 500, json: errorBody('x') }));
+  await open(page);
+  await page.setViewportSize({ width: 320, height: 640 });
+  await review(page, 'orders_with_a_rather_long_table_name_for_the_review');
+  await expect(page.getByTestId('create-review')).toBeVisible();
+  const overflow = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('body *'))
+      .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
+      .map((el) => el.tagName + '.' + String(el.className).slice(0, 30)),
+  );
+  expect(overflow).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
 test('while sending, tabs and objects are locked, leaving warns and an unknown outcome is not lost', async ({
   page,
 }) => {

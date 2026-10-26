@@ -1109,6 +1109,8 @@ export const en = {
     tab: 'Search',
     replaceTab: 'Replace',
     loading: 'Loading …',
+    replacePreviewRows: 'Replacement preview',
+    resultRows: 'Matching rows',
     targets: 'Tables and text columns (at most 20 tables, 32 columns each)',
     term: 'Search text',
     replacement: 'Replacement text (may be empty)',
@@ -1228,6 +1230,8 @@ export const en = {
     failed: 'The request was rejected. Check inputs, connection and permissions.',
     unknown:
       'Outcome unknown: the execution may already have taken effect. Canceling is not a rollback guarantee. Do not resend; check the database state first.',
+    unknownTruncated:
+      'A result set was truncated at the row limit; the statement ran, but the batch was stopped afterwards and further statements were not executed. The backend therefore reports the outcome as unknown. If the statement may have written data, check the database state; do not repeat it automatically.',
     duration: 'Duration: {ms} ms',
     statement: 'Statement {index}',
     completed: 'Completed',
@@ -1488,7 +1492,7 @@ export const en = {
     plan: 'Show plan',
     transactional: 'The DDL group is executed transactionally.',
     nonAtomic:
-      'Not atomic: DDL commits implicitly. After DROP, CREATE may fail; no automatic recovery.',
+      'Not atomic: DDL commits implicitly. After DROP, CREATE may fail; on MySQL/MariaDB the server then tries to put the previous definition back by itself. This is not guaranteed; the execution message states the result.',
     planHint:
       'A plan is not proof of valid syntax. Other sessions may swap objects with the same name. A definition export is not a complete backup of privileges and owners.',
     affected: 'Affected objects',
@@ -1505,7 +1509,9 @@ export const en = {
     previousDefinition:
       'Previous definition (will be replaced or dropped; back it up before executing)',
     partial:
-      'Only some of the statements were executed. The previous object may have been removed and not restored. Check the catalog and, if needed, recreate the object using the displayed previous definition.',
+      'Only some of the statements were executed and the outcome is undetermined: the restore failed or the object may already exist in its new form. Check the catalog and, if needed, recreate the object manually using the displayed previous definition (also in the server message).',
+    restored:
+      'The new definition was rejected; according to the server reply the previous definition was put back. Check the catalog to be safe.',
     kinds: {
       view: 'Views',
       function: 'Functions (routines)',
@@ -1554,5 +1560,106 @@ export const en = {
       on_completion: 'On completion',
       time_zone: 'Time zone',
     },
+  },
+  api: {
+    unauthorized:
+      'The access token is missing or invalid. Open "Backend access" and check your token.',
+    invalid_request: 'The request is invalid. Check the database name, connection details and SQL.',
+    invalid_connection: 'The connection details are invalid. Check host, port and database name.',
+    query_canceled:
+      'The query was canceled or reached its time limit. Changes that were already executed may remain.',
+    database_error:
+      'The database operation failed. Check the connection, SQL and database privileges.',
+    row_conflict:
+      'The row was changed or removed in the meantime. Reload the data; this change is not sent again automatically.',
+    insert_conflict:
+      'The new row conflicts with existing data. Reload the data and check unique values.',
+    outcome_unknown:
+      'The outcome is unknown. The database may already have applied the change. Do not send again; check the current database state first.',
+    unsupported_table: 'This table does not support the row editor.',
+    unsupported_inheritance: 'Inherited tables are not supported for row changes.',
+    unsupported_identity: 'This key generation is not supported for new rows.',
+    invalid_changes: 'The selected columns or values cannot be applied.',
+    database_busy:
+      'This SQLite database is currently in use. Wait for the running request or cancel it.',
+    table_not_found: 'The object is no longer available. Refresh the catalog.',
+    unsupported_driver: 'This database system is not available on the backend.',
+    driver_unavailable: 'This database system is not available on the backend.',
+    result_too_large: 'The result is too large. Narrow down rows and columns in your query.',
+    request_too_large: 'The request is too large. Shorten the SQL statement.',
+    invalid_response: 'The backend returned an invalid response.',
+    notJson: 'The backend response is not a valid data format. Check the address of your instance.',
+    emptyBody: 'The backend response is empty.',
+    unreadable: 'The backend returned an unreadable response.',
+    insecure_origin:
+      'HTTPS is required to access remote instances. Open the secured address of your instance.',
+    timeout: 'The backend did not respond in time. Check the connection status.',
+    network_error: 'The backend is unreachable. Check whether your instance is running.',
+    interrupted:
+      'The connection was interrupted during transfer. The execution status must be checked.',
+    not_found: 'This instance does not offer the requested area.',
+    rejectedHttp: 'The request was rejected (HTTP {status}). Check the connection and permissions.',
+    aborted: 'Aborted',
+  },
+  connectionEditor: {
+    title: 'Add connection',
+    description: 'Choose your database and open a workspace.',
+    driverLegend: 'Database system',
+    sqliteDetail: 'File database',
+    serverDetail: 'Server connection',
+    unavailable: 'Not available',
+    name: 'Name',
+    optional: 'optional',
+    namePlaceholder: 'For example: Development',
+    host: 'Host',
+    port: 'Port',
+    database: 'Database',
+    sqliteDatabasePlaceholder: 'Shared database name',
+    databasePlaceholder: 'Database name',
+    user: 'Username',
+    password: 'Password',
+    tlsNote: 'Server connections use verified TLS. An insecure fallback is excluded.',
+    memoryNote: 'Credentials stay in memory for this session only.',
+    noDrivers: 'This backend currently offers no database drivers.',
+    test: 'Test connection',
+    connect: 'Connect',
+  },
+  resultTable: {
+    regionLabel: 'Query result, horizontally scrollable',
+    singleRow: 'Single row',
+    editRowLabel: 'Edit row {row}',
+    deleteRowLabel: 'Delete row {row}',
+    edit: 'Edit',
+    delete: 'Delete',
+    empty: 'The query returned no rows.',
+    done: 'Statement completed',
+    affectedUnknown: 'Number of affected rows not reported',
+    affected: '{count} affected rows',
+    cellTitle: 'Cell value',
+    cellFull: 'Full value · {kind}',
+    base64: ' · Base64',
+    copied: 'Copied',
+    copy: 'Copy value',
+    copyUnavailable: 'Copying is not available here. Please select the value.',
+  },
+  exportControls: {
+    region: 'Export visible result',
+    format: 'Export format',
+    json: 'JSON · lossless typed',
+    csvSpreadsheet: 'CSV · with apostrophe prefix',
+    csvRaw: 'CSV · unchanged raw values',
+    download: 'Download result',
+    failed: 'The file could not be created.',
+    scopePage: 'Loaded page only: {count} rows from position {start}. Not a full table export.',
+    scopeMore: ' More rows exist.',
+    scopeResult: 'This displayed result only: {count} rows.',
+    truncated: ' Result truncated; not all records are included.',
+    noQuery: ' No additional query.',
+    csvLoss:
+      'CSV loses cell types. NULL: unquoted \\N; the text "\\N": quoted. UTF-8, comma, CRLF, binary values as Base64. Control characters other than CR/LF (such as TAB or NUL) require JSON. Use JSON for lossless exchange.',
+    csvSpreadsheetNote:
+      'Every column name and non-NULL value gets an apostrophe prefix. This changes the data; no general security or Excel round-trip guarantee.',
+    csvRawNote:
+      'Raw values stay unchanged. Spreadsheets may execute values as formulas. Open only deliberately in suitable programs.',
   },
 } as const;
