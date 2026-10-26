@@ -679,6 +679,16 @@
     align-items: center;
     gap: 0.375rem;
   }
+  .create-panel :global(.feedback > div) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .actions :global(button) {
+    max-width: 100%;
+    height: auto;
+    min-height: 2rem;
+    white-space: normal;
+  }
   .actions {
     display: flex;
     flex-wrap: wrap;
