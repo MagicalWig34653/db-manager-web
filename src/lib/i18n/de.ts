@@ -1240,6 +1240,35 @@ export const de = {
     truncated:
       'Ergebnis abgeschnitten. Der Ausgang bleibt unbekannt; weitere Ergebnisse können fehlen.',
   },
+  sqlEditor: {
+    title: 'SQL-Verlauf und Lesezeichen',
+    privacy:
+      'Nur lokal in diesem Browser und für diese Verbindung. SQL kann sensible Werte enthalten. Speichere keine Passwörter oder Tokens. Lesezeichen werden erst durch Speichern oder Import abgelegt; Exportdateien enthalten SQL im Klartext.',
+    enable: 'Verlauf speichern',
+    limits:
+      'Standardmäßig aus. Ausschalten löscht den Verlauf. Höchstens 200 Einträge je Liste, zusammen höchstens 512 KiB je Verbindung. Lange Abfragen werden nicht gespeichert; älteste Einträge entfallen zuerst.',
+    unavailable:
+      'Browserspeicher nicht verfügbar oder ungültig. Änderungen bleiben nur für diese Sitzung im Arbeitsspeicher; vorhandene Daten konnten möglicherweise nicht gelöscht werden.',
+    name: 'Name des Lesezeichens',
+    save: 'Als Lesezeichen speichern',
+    export: 'Lesezeichen als JSON exportieren',
+    import: 'Lesezeichen aus JSON importieren',
+    imported: 'Lesezeichen importiert. Es wurde keine Abfrage ausgeführt.',
+    saved: 'Lesezeichen gespeichert.',
+    invalid:
+      'Speichern oder Import nicht möglich: ungültige Daten, sensible Zugangswerte oder Größenlimit. Es wurde nichts importiert.',
+    bookmarks: 'Lesezeichen',
+    history: 'Abfrageverlauf',
+    clearBookmarks: 'Alle Lesezeichen löschen',
+    clearHistory: 'Verlauf löschen',
+    restore: 'In Editor übernehmen',
+    delete: 'Löschen',
+    deleteBookmark: 'Lesezeichen „{name}“ löschen',
+    deleteHistory: 'Verlaufseintrag löschen',
+    empty: 'Keine Einträge.',
+    search: 'Verlauf durchsuchen',
+    connect: 'Verbinde dich, um Verlauf und Lesezeichen dieser Verbindung zu öffnen.',
+  },
 } as const;
 
 type Join<K extends string, P extends string> = `${K}.${P}`;
