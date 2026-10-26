@@ -20,12 +20,22 @@ export class ProgramsClient {
     validate: (data: unknown) => data is T,
     signal?: AbortSignal,
   ): Promise<T> {
-    const data = await this.api.requestRaw(
-      path,
-      token,
-      body as Record<string, unknown> | undefined,
-      signal,
-    );
+    // Reads are side-effect free: a transient SQLite "database_busy" (concurrent request) is retried briefly.
+    let data: unknown;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        data = await this.api.requestRaw(
+          path,
+          token,
+          body as Record<string, unknown> | undefined,
+          signal,
+        );
+        break;
+      } catch (cause) {
+        if (attempt >= 3 || signal?.aborted || errorCode(cause) !== 'database_busy') throw cause;
+        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+      }
+    }
     if (!validate(data)) throw new ApiError('invalid_response', t('programs.invalidResponse'));
     return data;
   }
