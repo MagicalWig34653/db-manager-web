@@ -1,0 +1,8 @@
+{
+  "version": "0.16.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "3a7e1f13ecd18a9333870005d64e6d8ebb9a0c53",
+  "source_path": "contracts/api-v0.16.0.json",
+  "sha256": "d90ac3fda8295a4b8a7095c72eb459c6433fce90f729d7a6b247760d86de7bf3",
+  "review": "Independent backend review accepted (wave 3, PIN-BUNDLE-3); integrated on backend main 3a7e1f1, see docs/handoffs/WAVE3-INTEGRATION.md"
+}
