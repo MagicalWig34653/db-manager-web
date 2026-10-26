@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { components } from '$lib/contract/v10/api-types';
-import { t } from '$lib/i18n';
 type Schemas = components['schemas'];
 export type Item = Schemas['MaintenanceItem'];
 export type PlanResult = Schemas['MaintenancePlanResult'];
@@ -25,11 +24,4 @@ export function validItems(items: Item[]) {
     items.length <= 50 &&
     new Set(items.map((item) => tableKey(item.table))).size === items.length
   );
-}
-export function reasonText(code: string) {
-  return code
-    ? t(`maintenance.reasons.${code}`) === `maintenance.reasons.${code}`
-      ? t('maintenance.failed', { code })
-      : t(`maintenance.reasons.${code}`)
-    : '';
 }

@@ -8,7 +8,8 @@
   import { Button } from '$lib/components/ui/button';
   import PlanPreview from '$lib/components/shared/PlanPreview.svelte';
   import { maintenanceClient, errorText } from './client';
-  import { actions, tableKey, tableLabel, reasonText, type Capabilities, type Item } from './model';
+  import { actions, tableKey, tableLabel, type Capabilities, type Item } from './model';
+  import { reasonText } from './reason';
   import { Operation } from './operation.svelte';
 
   let { connection, token, object, onwritephase }: FeatureProps = $props();
