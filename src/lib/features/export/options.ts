@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Export form model: builds a contract-valid ExportRequest from the wizard state and explains the
 // effective settings before anything is sent.
-import { t } from '$lib/i18n';
+import { t, formatNumber } from '$lib/i18n';
 import type { components } from '$lib/contract/v11/api-types';
 import type { ExportFormat } from './verify';
 import type { ExportRequest } from './run';
@@ -267,9 +267,7 @@ export function previewRows(request: ExportRequest, streamsToDisk: boolean): Pre
   rows.push({
     label: t('exportDump.preview.limits'),
     value: t('exportDump.preview.limitsValue', {
-      rows: request.max_rows
-        ? request.max_rows.toLocaleString('de-DE')
-        : t('exportDump.serverDefault'),
+      rows: request.max_rows ? formatNumber(request.max_rows) : t('exportDump.serverDefault'),
       mib: request.max_bytes ? String(request.max_bytes / 1024 / 1024) : '64',
       seconds: request.timeout_ms ? String(request.timeout_ms / 1000) : '60',
     }),

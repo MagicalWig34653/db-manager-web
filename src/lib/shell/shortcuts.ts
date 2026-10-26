@@ -3,6 +3,8 @@
 export interface Shortcut {
   id: string;
   key: string;
+  titleKey?: string;
+  scopeKey?: string;
   /** true: requires Cmd (macOS) or Ctrl; false: forbids them; undefined: ignored (e.g. Escape). */
   mod?: boolean;
   /** Evaluated at dispatch time; false skips the binding. */

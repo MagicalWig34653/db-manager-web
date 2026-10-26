@@ -1,6 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Central German text catalog. Feature packages append their own keys under "<name>.*".
 export const de = {
+  settings: {
+    title: 'Einstellungen',
+    theme: 'Thema',
+    system: 'System',
+    light: 'Hell',
+    dark: 'Dunkel',
+    language: 'Sprache',
+    localHint:
+      'Diese Einstellungen gelten nur in diesem Browser. Ohne Speichern gelten sie bis zum Neuladen. Zugangsdaten und Abfragen werden nie mitgespeichert.',
+    persist: 'Thema und Sprache auf diesem Gerät speichern (freiwillig)',
+    reset: 'Einstellungen zurücksetzen und lokale Speicherung löschen',
+    storageFailed:
+      'Der Browserspeicher ist nicht verfügbar. Die Auswahl gilt für diese Sitzung; eine zuvor gespeicherte Auswahl konnte möglicherweise nicht gelöscht werden.',
+    formatExample: 'Formatbeispiel: {number} · {date}',
+    shortcuts: 'Tastaturkürzel',
+    shortcutsHint:
+      'Die Kürzel gelten im angegebenen Bereich. In Dialogen sind sie gesperrt. Die Belegung wird hier nur angezeigt.',
+    runQuery: 'Abfrage ausführen',
+    cancelQuery: 'Laufende Abfrage abbrechen',
+    focusEditor: 'SQL-Editor öffnen und fokussieren',
+    help: 'Kürzelübersicht öffnen',
+    scopeSql: 'SQL-Arbeitsbereich',
+    scopeGlobal: 'Global',
+    scopeRunning: 'Während einer Abfrage',
+  },
   overview: {
     errInvalidResponse:
       'Das Backend hat eine ungültige Antwort geliefert ({name}). Die Übersicht bleibt leer.',

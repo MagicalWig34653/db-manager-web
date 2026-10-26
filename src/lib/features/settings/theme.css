@@ -1,0 +1,189 @@
+/* Shared presentation palette. Every text role is tested against every surface. */
+:root {
+  --background: #f7f9fc;
+  --surface: #ffffff;
+  --muted: #eef1f6;
+  --foreground: #172238;
+  --muted-foreground: #475569;
+  --primary: #315dd4;
+  --on-primary: #ffffff;
+  --destructive: #991b1b;
+  --warning: #713f12;
+  --success: #166534;
+  --border: #8996a8;
+  --ring: #315dd4;
+  --secondary: var(--muted);
+  --text-secondary: var(--muted-foreground);
+}
+:root[data-theme='dark'] {
+  --background: #111827;
+  --surface: #1f2937;
+  --muted: #263244;
+  --foreground: #f3f4f6;
+  --muted-foreground: #cbd5e1;
+  --destructive: #fecaca;
+  --warning: #fde68a;
+  --success: #bbf7d0;
+  --border: #748298;
+  --ring: #a5b4fc;
+}
+/* The shell is revealed only after the synchronous pre-mount preference application. */
+:root:not([data-theme]) #app {
+  visibility: hidden;
+}
+:root[data-theme] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+:root[data-theme] :focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+/* Avoid translucent primary hover colors reducing the text contrast. */
+:root[data-theme] .bg-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+:root[data-theme] .text-primary:not(.bg-primary) {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+:root[data-theme] .text-destructive {
+  color: var(--destructive);
+  background: var(--surface);
+}
+:root[data-theme] .brand-icon,
+:root[data-theme] .run-button kbd {
+  color: var(--on-primary);
+  background: var(--primary);
+}
+:root[data-theme] .source-trigger,
+:root[data-theme] .source-links a,
+:root[data-theme] .source-note,
+:root[data-theme] .overview-controls label,
+:root[data-theme] .overview-facts dt,
+:root[data-theme] .overview-facts dd,
+:root[data-theme] .hint,
+:root[data-theme] .preview dt {
+  color: var(--muted-foreground);
+}
+:root[data-theme] .source-links a:hover,
+:root[data-theme] .overview-input,
+:root[data-theme] .definition-code,
+:root[data-theme] .preview,
+:root[data-theme] .export-panel :is(input, select, textarea) {
+  background: var(--surface);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+:root[data-theme] .definition-warnings {
+  color: var(--warning);
+}
+:root[data-theme] .problems {
+  color: var(--destructive);
+}
+:root[data-theme] .ok {
+  color: var(--success);
+}
+.settings-panel {
+  margin-block: 1rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.settings-panel h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.settings-panel :is(select, button) {
+  max-inline-size: 100%;
+  min-block-size: 44px;
+  padding: 0.5rem;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  white-space: normal;
+}
+.settings-persist {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.settings-persist input {
+  flex-shrink: 0;
+}
+.shortcut-help-button {
+  display: block;
+  margin-inline: auto 1rem;
+  padding: 0.5rem;
+  min-block-size: 44px;
+  text-decoration: underline;
+}
+.shortcut-list > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block: 0.75rem;
+}
+.shortcut-list dd {
+  margin-inline-start: 0;
+}
+.shortcut-list kbd {
+  font-size: inherit;
+}
+[dir='rtl'] .workbench aside {
+  border-inline-end: 1px solid var(--border);
+}
+@media (any-pointer: coarse) {
+  :root[data-theme]
+    :is(
+      button,
+      [role='button'],
+      a,
+      select,
+      input:not([type='checkbox']):not([type='radio']),
+      textarea,
+      summary
+    ) {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    height: auto;
+  }
+  :root[data-theme] input:is([type='checkbox'], [type='radio']) {
+    inline-size: 44px;
+    block-size: 44px;
+    flex-shrink: 0;
+  }
+  :root[data-theme]
+    :is(
+      .panel-heading,
+      .topbar,
+      .execution-actions,
+      .execution-options,
+      .editor-toolbar,
+      .workspace-footer
+    ) {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 0.5rem;
+  }
+}
+@media (max-width: 480px) {
+  .settings-panel {
+    padding: 0.75rem;
+  }
+  [data-slot='dialog-content'] {
+    max-block-size: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+}

@@ -2,7 +2,7 @@
 // Client for the read-only overview API 0.7 (databases, objects, definition, server info).
 import { ApiClient, ApiError, toConnection } from '$lib/api';
 import type { ConnectionDraft } from '$lib/workbench';
-import { t } from '$lib/i18n';
+import { t, formatNumber } from '$lib/i18n';
 import * as validators from '$lib/contract/v7/validators.js';
 import type { components } from '$lib/contract/v7/api-types';
 
@@ -169,12 +169,11 @@ export function driverCapability(
   return capabilities.drivers[key][feature];
 }
 
-const numberFormat = new Intl.NumberFormat('de-DE');
-export const formatCount = (value: number) => numberFormat.format(value);
+export const formatCount = (value: number) => formatNumber(value);
 
 export function formatBytes(value: number | null): string {
   if (value === null) return '';
-  if (value < 1024) return `${numberFormat.format(value)} B`;
+  if (value < 1024) return `${formatNumber(value)} B`;
   const units = ['KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
   let size = value / 1024;
   let unit = 0;
@@ -182,7 +181,7 @@ export function formatBytes(value: number | null): string {
     size /= 1024;
     unit += 1;
   }
-  return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(size)} ${units[unit]}`;
+  return `${formatNumber(size, { maximumFractionDigits: 1 })} ${units[unit]}`;
 }
 
 export function formatDuration(seconds: number | null): string {
