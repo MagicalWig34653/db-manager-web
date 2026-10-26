@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // State and execution of the SQL workspace; lives in the shell so it survives tab changes.
+import { recordQuery } from '$lib/features/sql-editor/storage.svelte';
 import { t } from '$lib/i18n';
 import { gateway } from '$lib/gateway';
 import type { Execution } from '$lib/workbench';
@@ -24,6 +25,7 @@ export class SqlRunner {
   async execute(session: Session) {
     const connection = session.connection;
     if (!connection || !this.sql.trim() || this.running || session.connectionBusy) return;
+    recordQuery(connection, this.sql, session.backendToken);
     const version = session.sessionVersion;
     const requestController = new AbortController();
     this.controller = requestController;

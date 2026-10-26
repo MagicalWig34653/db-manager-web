@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
+  import SqlLibraryPanel from '$lib/features/sql-editor/SqlLibraryPanel.svelte';
   import { t } from '$lib/i18n';
   import {
     Check,
@@ -182,3 +183,14 @@
     ><span>{t('sql.rowsMax', { limit: sql.rowLimit.toLocaleString('de-DE') })}</span>
   </div>
 </section>
+
+<SqlLibraryPanel
+  connection={session.connection}
+  token={session.backendToken}
+  value={sql.sql}
+  disabled={sql.running}
+  onrestore={(value) => {
+    sql.sql = value;
+    sql.focus();
+  }}
+/>
