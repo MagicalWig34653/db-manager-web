@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { ApiClient, ApiError } from '$lib/api';
 import { ProgramsClient, errorMessage } from './client';
-import { capabilities, plan, result } from './testing';
+import { capabilities, listing, plan, program, result } from './testing';
 import type { Change } from './model';
 const change: Change = {
   connection: { driver: 'sqlite', database: 'fixture' },
@@ -62,4 +62,29 @@ it('keeps definite rejection and pre-dispatch errors separate from unknown commi
   request.mockResolvedValueOnce(result({ outcome: 'rejected', reason: 'permission_denied' }));
   expect((await client.execute(executeBody, 'token')).outcome).toBe('rejected');
   expect(errorMessage(new ApiError('database_error', 'sensitive SQL'))).not.toContain('sensitive');
+});
+it('unwraps describe from the ProgramsResult envelope and rejects other cardinalities', async () => {
+  const api = new ApiClient();
+  const request = vi.spyOn(api, 'requestRaw');
+  const client = new ProgramsClient(api);
+  const item = program();
+  const ask = { connection: change.connection, object: item.object as never };
+  request.mockResolvedValueOnce({ ...listing(), objects: [item] });
+  expect((await client.describe(ask, 'token')).object.name).toBe(item.object.name);
+  request.mockResolvedValueOnce({ ...listing(), objects: [item, item] });
+  await expect(client.describe(ask, 'token')).rejects.toMatchObject({ code: 'invalid_response' });
+  request.mockResolvedValueOnce({ ...listing(), objects: [] });
+  await expect(client.describe(ask, 'token')).rejects.toMatchObject({ code: 'invalid_response' });
+});
+it('retries transient database_busy on reads only', async () => {
+  vi.useFakeTimers();
+  const api = new ApiClient();
+  const request = vi.spyOn(api, 'requestRaw');
+  const client = new ProgramsClient(api);
+  request.mockRejectedValueOnce(new ApiError('database_busy', 'raw'));
+  request.mockResolvedValueOnce(listing());
+  const pending = client.list({ connection: change.connection }, 'token');
+  await vi.advanceTimersByTimeAsync(300);
+  expect((await pending).driver).toBe('sqlite');
+  vi.useRealTimers();
 });

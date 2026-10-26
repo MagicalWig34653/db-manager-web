@@ -65,6 +65,10 @@ def main():
                     else: process.terminate()
                     process.wait(timeout=15)
             for log in logs: log.close()
+            if os.environ.get('DBM_KEEP_LOGS'):
+                import shutil
+                for name in ('go.log', 'web.log'):
+                    if (directory / name).exists(): shutil.copy(directory / name, Path(os.environ['DBM_KEEP_LOGS']) / name)
     print('W-P19 task-owned processes and temporary checkout removed.', flush=True)
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ async function open(page: Page, hang = false) {
               : path === '/api/v16/programs/list'
                 ? listing()
                 : path === '/api/v16/programs/describe'
-                  ? program()
+                  ? { ...listing(), objects: [program()] }
                   : path === '/api/v16/programs/plan'
                     ? plan()
                     : null;

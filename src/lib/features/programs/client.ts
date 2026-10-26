@@ -58,8 +58,19 @@ export class ProgramsClient {
   list(body: Schemas['ProgramsRequest'], token: string, signal?: AbortSignal) {
     return this.read('/api/v16/programs/list', token, body, v.ProgramsResult, signal);
   }
-  describe(body: Schemas['ProgramDescribeRequest'], token: string, signal?: AbortSignal) {
-    return this.read('/api/v16/programs/describe', token, body, v.Program, signal);
+  // The contract answers describe with a ProgramsResult holding exactly the requested object.
+  async describe(body: Schemas['ProgramDescribeRequest'], token: string, signal?: AbortSignal) {
+    const data = await this.read(
+      '/api/v16/programs/describe',
+      token,
+      body,
+      v.ProgramsResult,
+      signal,
+    );
+    const [item] = data.objects;
+    if (data.objects.length !== 1 || !item || item.object.name !== body.object.name)
+      throw new ApiError('invalid_response', t('programs.invalidResponse'));
+    return item;
   }
   plan(body: Schemas['ProgramChangeRequest'], token: string, signal?: AbortSignal) {
     return this.read('/api/v16/programs/plan', token, body, v.ProgramPlan, signal);
