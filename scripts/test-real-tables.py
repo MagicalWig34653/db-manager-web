@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Run the real production web UI against an exact public Go backend and TLS fixtures."""
+"""Run the real production web UI against an exact public Go backend and TLS fixtures.
+
+Backend source: the public commit pinned in contract v5 provenance, or a local checkout given by DBM_BACKEND_REPO
+(DBM_BACKEND_REV, default HEAD), exported with git archive."""
 import hashlib
 import json
 import os
@@ -9,6 +12,7 @@ from pathlib import Path
 import secrets
 import socket
 import subprocess
+import tarfile
 import sys
 import tempfile
 import time
@@ -68,11 +72,21 @@ def main():
         directory=Path(temp)
         source=directory/'backend';source.mkdir()
         try:
-            run(['git','init','--initial-branch=fixture',str(source)])
-            run(['git','-C',str(source),'remote','add','origin',PIN['source']+'.git'])
-            run(['git','-C',str(source),'fetch','--depth=1','origin',PIN['source_commit']])
-            run(['git','-C',str(source),'checkout','--detach','FETCH_HEAD'])
-            assert run(['git','-C',str(source),'rev-parse','HEAD'])==PIN['source_commit']
+            repo=os.environ.get('DBM_BACKEND_REPO')
+            if repo:
+                # Pin check of an embedded build: use the given checkout (e.g. the release branch with embedded assets)
+                # instead of the old backend commit from provenance, so the served UI is the one under test.
+                sha=run(['git','-C',repo,'rev-parse',os.environ.get('DBM_BACKEND_REV','HEAD')])
+                archive=directory/'backend.tar'
+                run(['git','-C',repo,'archive','--format=tar','-o',str(archive),sha])
+                with tarfile.open(archive) as tar: tar.extractall(source,filter='data')
+                print('F5 fixture: backend from DBM_BACKEND_REPO '+sha[:12],flush=True)
+            else:
+                run(['git','init','--initial-branch=fixture',str(source)])
+                run(['git','-C',str(source),'remote','add','origin',PIN['source']+'.git'])
+                run(['git','-C',str(source),'fetch','--depth=1','origin',PIN['source_commit']])
+                run(['git','-C',str(source),'checkout','--detach','FETCH_HEAD'])
+                assert run(['git','-C',str(source),'rev-parse','HEAD'])==PIN['source_commit']
             assert hashlib.sha256((source/PIN['source_path']).read_bytes()).hexdigest()==PIN['sha256']
             for version in [1,2,3,4,5]:
                 folder=ROOT/'src/lib/contract' if version==1 else ROOT/f'src/lib/contract/v{version}'
