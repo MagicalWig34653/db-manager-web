@@ -46,7 +46,11 @@ async function connect(page: Page) {
   await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
   await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
 }
-const toServer = (page: Page) => page.getByRole('link', { name: 'Server', exact: true }).click();
+async function toServer(page: Page) {
+  const link = page.getByRole('link', { name: 'Server', exact: true });
+  if (await link.count()) await link.click();
+  else await page.evaluate(() => (location.hash = '#/server/uebersicht'));
+}
 const toSql = (page: Page) =>
   page.getByRole('link', { name: config.connection.database, exact: true }).click();
 
