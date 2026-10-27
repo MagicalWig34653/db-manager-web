@@ -303,12 +303,14 @@ test('outage of the state database: local mode reason, buffered write, recovery 
   page,
   request,
 }) => {
+  test.setTimeout(240000);
   await page.goto('/');
   await signIn(page);
   await connect(page);
   await expect(page.getByText('Gespeichert auf dem Server')).toBeVisible();
   const docker = (...args: string[]) => execFileSync('docker', [...args], { stdio: 'pipe' });
-  docker('stop', config.container);
+  // pause keeps the published host port (a stop/start could remap it); the server sees an unreachable database.
+  docker('pause', config.container);
   try {
     await expect
       .poll(async () => (await api(request, '/api/v24/capabilities')).json.reason, {
@@ -327,7 +329,7 @@ test('outage of the state database: local mode reason, buffered write, recovery 
       ),
     ).toBe(1);
   } finally {
-    docker('start', config.container);
+    docker('unpause', config.container);
   }
   await expect
     .poll(async () => (await api(request, '/api/v24/capabilities')).json.mode, {
