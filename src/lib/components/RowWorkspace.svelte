@@ -262,6 +262,7 @@
         };
       });
       phase = action === 'delete' ? 'confirm' : 'editing';
+      if (action !== 'delete') void loadForeignKeys();
     } catch (cause) {
       if (!destroyed && current === generation) {
         phase = 'blocked';
@@ -363,24 +364,29 @@
     sent = false;
     if (reload) onreload();
   }
+  // Foreign keys are only needed for the lookup buttons of the open editor. They are read when an editor opens, not
+  // when the page loads: browsing, paging and exporting cause no catalog read of their own.
+  let foreignKeysLoaded = false;
+  async function loadForeignKeys() {
+    if (foreignKeysLoaded || !support.lookup || destroyed) return;
+    foreignKeysLoaded = true;
+    try {
+      const found = await structureClient.read(
+        toConnection(connection),
+        table,
+        token,
+        contextController.signal,
+      );
+      if (!destroyed) foreignKeys = singleForeignKeys(found);
+    } catch {
+      if (!destroyed) foreignKeys = [];
+    }
+  }
   async function loadBulk() {
     try {
       const caps = await bulkClient.capabilities(token, contextController.signal);
       if (destroyed) return;
       support = supportFor(caps, apiDriver(connection.driver));
-      if (support.lookup) {
-        try {
-          const found = await structureClient.read(
-            toConnection(connection),
-            table,
-            token,
-            contextController.signal,
-          );
-          if (!destroyed) foreignKeys = singleForeignKeys(found);
-        } catch {
-          if (!destroyed) foreignKeys = [];
-        }
-      }
     } catch {
       if (!destroyed) support = noSupport();
     } finally {

@@ -576,3 +576,33 @@ test('REVIEW F-1 (all writers): the bulk dialog also ignores the close icon and 
   await page.getByTestId('bulk-close').click();
   await expect(page.getByTestId('bulk-dialog')).toBeHidden();
 });
+
+test('opening a table reads no structure; the foreign key read happens once when an editor opens', async ({
+  page,
+}) => {
+  await bulkBackend(page);
+  let structureReads = 0;
+  page.on('request', (request) => {
+    if (request.url().endsWith('/api/v5/tables/structure')) structureReads++;
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+  await page.getByLabel('Zugriffstoken').fill('synthetic-token');
+  await page.getByRole('button', { name: 'Übernehmen' }).click();
+  await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
+  await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
+  await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
+  await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /items/ }).first().click();
+  await expect(page.getByRole('checkbox', { name: 'Zeile 1 auswählen' })).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  expect(structureReads).toBe(0);
+  await page.getByRole('button', { name: 'Bearbeiten' }).first().click();
+  await expect(page.getByTestId('file-value-panel')).toBeVisible();
+  await expect.poll(() => structureReads).toBe(1);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Bearbeiten' }).first().click();
+  await expect(page.getByTestId('file-value-panel')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  expect(structureReads).toBe(1);
+});
