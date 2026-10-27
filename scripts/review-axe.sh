@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${AXE_PORT:-4480}"
 rm -rf tests/review-tmp && mkdir tests/review-tmp
-for f in tests/browser/*.spec.ts; do
+for f in tests/browser/*.ts; do
   sed "s#from '@playwright/test'#from '../review/axe-fixture'#" "$f" > "tests/review-tmp/$(basename "$f")"
 done
 cat > pw-axe.config.ts <<EOC

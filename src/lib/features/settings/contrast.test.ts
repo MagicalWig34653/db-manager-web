@@ -38,6 +38,26 @@ it('all shared text roles meet WCAG AA 4.5:1 on every light and dark surface; fo
     ).toBeGreaterThanOrEqual(4.5);
   }
 });
+it('SQL syntax colors meet 4.5:1 on every surface and on the active line, light and dark', () => {
+  const light = palette(':root {');
+  const dark = { ...light, ...palette(":root[data-theme='dark'] {") };
+  for (const [theme, colors] of Object.entries({ light, dark }))
+    for (const surface of ['background', 'surface', 'muted', 'editor-active-line'])
+      for (const text of [
+        'foreground',
+        'sql-keyword',
+        'sql-string',
+        'sql-number',
+        'sql-comment',
+        'sql-type',
+        'sql-function',
+        'sql-operator',
+      ])
+        expect(
+          contrast(colors[text], colors[surface]),
+          `${theme}: ${text} on ${surface}`,
+        ).toBeGreaterThanOrEqual(4.5);
+});
 it('the shell stylesheet has no remaining literal colors and uses logical layout edges', () => {
   const shell = readFileSync('src/app.css', 'utf8');
   expect(shell).not.toMatch(/#[\da-f]{3,8}\b/i);

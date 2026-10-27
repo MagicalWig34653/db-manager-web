@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { editorText } from './editor';
 import { test, expect, type Page } from '@playwright/test';
 
 async function setup(page: Page) {
@@ -55,7 +56,7 @@ test('opt-in history, shortcut, search, restore without execution, reload and so
   await page.getByLabel('Verlauf durchsuchen').fill('202');
   await editor.fill('SELECT 303');
   await page.getByRole('button', { name: 'In Editor übernehmen' }).click();
-  await expect(editor).toHaveValue('SELECT 202');
+  await expect.poll(() => editorText(editor)).toBe('SELECT 202');
   expect(queries()).toBe(2);
   await page.reload();
   await connect(page);
@@ -77,7 +78,7 @@ test('bookmark import, export and deletion do not execute SQL; 320 px and Tab re
   await editor.fill('SELECT 1\n');
   await editor.press('End');
   await editor.press('Tab');
-  await expect(editor).toHaveValue('SELECT 1\n  ');
+  await expect.poll(() => editorText(editor)).toBe('SELECT 1\n  ');
   await page.getByLabel('Lesezeichen aus JSON importieren').setInputFiles({
     name: 'bookmarks.json',
     mimeType: 'application/json',
@@ -93,7 +94,7 @@ test('bookmark import, export and deletion do not execute SQL; 320 px and Tab re
   await page.getByRole('button', { name: 'Lesezeichen als JSON exportieren' }).click();
   expect((await downloaded).suggestedFilename()).toBe('sql-lesezeichen.json');
   await page.getByRole('button', { name: 'In Editor übernehmen' }).click();
-  await expect(editor).toHaveValue('SELECT 42');
+  await expect.poll(() => editorText(editor)).toBe('SELECT 42');
   expect(queries()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Alle Lesezeichen löschen' }).click();
