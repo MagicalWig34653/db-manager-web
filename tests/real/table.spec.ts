@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { editorText } from '../browser/editor';
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const config = JSON.parse(readFileSync(process.env.DBM_REAL_CONFIG!, 'utf8'));
@@ -175,7 +176,9 @@ for (const driver of ['sqlite', 'postgresql']) {
     await page.getByRole('button', { name: 'Übernehmen' }).click();
     await expect(workspace).not.toBeVisible();
     await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
+    await expect
+      .poll(() => editorText(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })))
+      .toBe('');
     await expect(page.getByRole('button', { name: /odd"name$/ })).not.toBeVisible();
     expect(sqlRequests).toBe(0);
     expect(requests.every((request) => !('sql' in request))).toBe(true);

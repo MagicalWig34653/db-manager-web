@@ -170,7 +170,11 @@
   }
   function skipToWorkspace(event: MouseEvent) {
     event.preventDefault();
-    const target = document.getElementById(isSqlView ? 'sql-editor' : 'table-workspace');
+    if (isSqlView) {
+      sql.focus();
+      return;
+    }
+    const target = document.getElementById('table-workspace');
     (target ?? document.getElementById('main-content'))?.focus();
   }
   function focusEditorLater() {

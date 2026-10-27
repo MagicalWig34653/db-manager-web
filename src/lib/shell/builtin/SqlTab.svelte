@@ -1,6 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
+  import SqlEditor from '$lib/features/sql-editor/SqlEditor.svelte';
   import SqlLibraryPanel from '$lib/features/sql-editor/SqlLibraryPanel.svelte';
+  import VariablesDialog from '$lib/features/sql-editor/VariablesDialog.svelte';
   import { t, formatNumber } from '$lib/i18n';
   import {
     Check,
@@ -13,6 +15,8 @@
     Square,
     Table2,
     TriangleAlert,
+    Search,
+    WandSparkles,
   } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
@@ -21,7 +25,8 @@
   import { getShellContext } from '../context';
 
   const { session, sql } = getShellContext();
-  let editor = $state<HTMLTextAreaElement>();
+  let editor = $state<SqlEditor>();
+  let note = $state('');
 
   onMount(() => {
     sql.focus = () => editor?.focus();
@@ -29,16 +34,11 @@
       sql.focus = () => {};
     };
   });
-  function editorKey(event: KeyboardEvent) {
-    if (event.key === 'Tab' && !event.shiftKey && editor) {
-      event.preventDefault();
-      const start = editor.selectionStart;
-      const end = editor.selectionEnd;
-      sql.sql = sql.sql.slice(0, start) + '  ' + sql.sql.slice(end);
-      requestAnimationFrame(() => {
-        if (editor) editor.selectionStart = editor.selectionEnd = start + 2;
-      });
-    }
+  function format() {
+    note = editor?.format() ? t('sqlEditor.formatted') : t('sqlEditor.formatRefused');
+  }
+  function find() {
+    if (!editor?.find()) note = t('sqlEditor.findLoading');
   }
 </script>
 
@@ -51,25 +51,13 @@
     </div>
     <span class="editor-hint"><span>{t('shortcuts.focusEditor')}</span><kbd>⌘ / Strg K</kbd></span>
   </div>
-  <div class="editor-surface">
-    <div class="line-numbers" aria-hidden="true">
-      {#each Array.from({ length: sql.lineCount }, (_, index) => index + 1) as line}<span
-          >{line}</span
-        >{/each}
-    </div>
-    <textarea
-      id="sql-editor"
-      aria-label={t('sql.queryLabel')}
-      bind:this={editor}
-      bind:value={sql.sql}
-      onkeydown={editorKey}
-      spellcheck={false}
-      autocomplete="off"
-      autocapitalize="off"
-      maxlength={1000000}
-      placeholder={t('sql.placeholder')}
-      disabled={sql.running}></textarea>
-  </div>
+  <SqlEditor
+    bind:this={editor}
+    bind:value={sql.sql}
+    connection={session.connection}
+    objects={session.objects}
+    readOnly={sql.running}
+  />
   <div class="editor-toolbar">
     <div class="execution-actions">
       <Button
@@ -85,6 +73,14 @@
       >{#if sql.running}<Button variant="outline" onclick={() => sql.cancel()}
           ><Square size={13} />{t('shared.cancel')}</Button
         >{/if}
+      <span class="editor-extra-actions">
+        <Button variant="outline" onclick={format} disabled={sql.running || !sql.sql.trim()}
+          ><WandSparkles size={14} />{t('sqlEditor.format')}</Button
+        >
+        <Button variant="outline" onclick={find} disabled={sql.running}
+          ><Search size={14} />{t('sqlEditor.find')}</Button
+        >
+      </span>
     </div>
     <div class="execution-options">
       <label for="row-limit">{t('sql.rowLimit')}</label><select
@@ -104,6 +100,7 @@
       >
     </div>
   </div>
+  {#if note}<p class="editor-note" role="status">{note}</p>{/if}
 </section>
 <section class="results-panel" aria-label={t('sql.resultsLabel')} aria-busy={sql.running}>
   <div class="panel-heading">
@@ -193,4 +190,14 @@
     sql.sql = value;
     sql.focus();
   }}
+/>
+
+<VariablesDialog
+  names={sql.variablePrompt}
+  sql={sql.sql}
+  driver={session.connection?.driver ?? 'sqlite'}
+  initial={sql.variableValues}
+  onrun={(values) => void sql.runWithValues(session, values)}
+  onunchanged={() => void sql.runUnchanged(session)}
+  oncancel={() => sql.cancelPrompt()}
 />
