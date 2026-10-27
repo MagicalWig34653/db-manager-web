@@ -189,6 +189,7 @@
   token={session.backendToken}
   value={sql.sql}
   disabled={sql.running}
+  onwritephase={session.databaseWriteReceiver(session.sessionVersion)}
   onrestore={(value) => {
     sql.sql = value;
     sql.focus();

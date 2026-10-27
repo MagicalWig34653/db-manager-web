@@ -2846,6 +2846,187 @@ export const de = {
     updateAction: 'Neue Version laden',
     close: 'Schließen',
   },
+  configStore: {
+    title: 'Speicher für Verlauf, Lesezeichen und Einstellungen',
+    checking: 'Speicher wird geprüft …',
+    modeServer:
+      'Serverspeicher aktiv: Verlauf, Lesezeichen, Favoriten, Suchen, Layouts und Thema/Sprache liegen auf dem Server, verschlüsselt in dessen Datenbank.',
+    modeLocal:
+      'Lokaler Modus: Verlauf und Lesezeichen bleiben nur in diesem Browser. Es wird nichts auf dem Server gespeichert.',
+    single:
+      'Hinweis: Alle Personen, die dasselbe Zugangstoken verwenden, teilen diese Daten. Es gibt noch keine Nutzertrennung.',
+    degraded:
+      'Der Serverspeicher antwortet derzeit nicht. Neue Einträge werden in diesem Browser zwischengespeichert und später übertragen ({count} offen). Es geht nichts verloren, solange der Browserspeicher erhalten bleibt.',
+    bufferFailed:
+      'Der Browserspeicher ist nicht verfügbar: zwischengespeicherte Einträge gehen beim Neuladen verloren.',
+    dropped: '{count} zwischengespeicherte Einträge hat der Server abgelehnt und nicht übernommen.',
+    retry: 'Erneut prüfen',
+    reason: {
+      ok: 'Der Serverspeicher ist verfügbar.',
+      not_configured: 'Grund: Der Server hat keinen Zustandsspeicher eingerichtet.',
+      unreachable: 'Grund: Der Zustandsspeicher des Servers ist derzeit nicht erreichbar.',
+      unsupported: 'Grund: Dieser Server kennt den Konfigurationsspeicher (API 0.24) noch nicht.',
+      error: 'Grund: Der Speicherstatus konnte nicht gelesen werden.',
+    },
+    kind: {
+      history: 'Verlauf',
+      bookmarks: 'Lesezeichen',
+      searches: 'Gespeicherte Suchen',
+      favorites: 'Favoriten',
+      recents: 'Zuletzt benutzt',
+      settings: 'Einstellungen',
+      layouts: 'Layouts',
+    },
+    historyTitle: 'Abfrageverlauf',
+    historyOptIn: 'Abfrageverlauf auf dem Server speichern',
+    historyHint:
+      'Standardmäßig aus; der Server schreibt ohne diese Zustimmung keinen Verlauf. SQL kann sensible Werte enthalten: Zugangsdaten und bekannte Geheimnisformate werden abgelehnt, beliebige Werte in Zeichenketten werden nicht erkannt.',
+    historyOffHint:
+      'Der Verlauf wird nicht mehr geschrieben. Bereits gespeicherte Einträge bleiben, bis du sie löschst.',
+    historyChanged:
+      'Diese Einstellung wurde anderswo geändert. Der aktuelle Stand vom Server wird angezeigt.',
+    historySaveFailed: 'Die Einstellung wurde nicht gespeichert.',
+    usageTitle: 'Belegung',
+    usageRefresh: 'Belegung aktualisieren',
+    usageLine: '{kind}: {count} von höchstens {max} Einträgen, {bytes} Bytes',
+    usageTotal: 'Gesamt: {bytes} von höchstens {max} Bytes',
+    favoritesTitle: 'Favoriten und zuletzt benutzt',
+    favoritesHint:
+      'Nur Tabellennamen, keine Verbindungsdaten. Die Zuordnung zur Verbindung ist eine nicht umkehrbare Kennung.',
+    favoriteDatabase: 'Datenbank (optional)',
+    favoriteTable: 'Tabelle',
+    favoriteAdd: 'Als Favorit speichern',
+    favoriteRemove: 'Favorit {name} entfernen',
+    favoritesEmpty: 'Keine Favoriten.',
+    recentsTitle: 'Zuletzt benutzt',
+    recentsEmpty: 'Nichts zuletzt benutzt.',
+    favoriteSaved: 'Favorit gespeichert.',
+    connectFirst: 'Verbinde dich, um Favoriten dieser Verbindung zu sehen.',
+    migration: {
+      title: 'Lokale Daten auf den Server übernehmen',
+      intro:
+        'Verlauf und Lesezeichen aus diesem Browser können auf den Server übertragen werden. Wiederholen ist unschädlich: bereits übertragene Einträge werden erkannt und nicht doppelt angelegt. Lokale Daten werden nie automatisch gelöscht.',
+      preview: '{bookmarks} Lesezeichen und {history} Verlaufseinträge würden übertragen.',
+      nothing: 'Keine lokalen Daten zum Übertragen gefunden.',
+      includeHistory: 'Auch den lokalen Verlauf übertragen ({count} Einträge)',
+      historyWarn:
+        'Das schaltet den Abfrageverlauf auf dem Server ein. SQL kann sensible Werte enthalten.',
+      skipped:
+        '{count} Einträge bleiben lokal, weil sie Zugangsdaten enthalten könnten oder zu groß sind.',
+      confirm: 'Ich bestätige, dass diese Daten auf den Server übertragen werden.',
+      run: 'Jetzt übertragen',
+      running: 'Übertragung läuft …',
+      result:
+        'Übertragen: {created} neu, {exists} schon vorhanden, {updated} aktualisiert, {rejected} abgelehnt.',
+      failed:
+        'Die Übertragung wurde unterbrochen. Lokale Daten sind unverändert; du kannst sie erneut starten.',
+      rejectedHint: 'Abgelehnte Einträge bleiben lokal.',
+      deleteLocal: 'Übertragene Einträge aus diesem Browser löschen',
+      deleteLocalHint:
+        'Optional. Gelöscht werden nur Einträge, die der Server bestätigt hat. Ein JSON-Export der Lesezeichen bleibt weiterhin möglich.',
+      deleted: '{count} lokale Einträge gelöscht.',
+    },
+    export: {
+      button: 'Alle Serverdaten exportieren (JSON)',
+      done: 'Export mit {count} Einträgen bereitgestellt. Die Datei enthält SQL im Klartext.',
+      failed: 'Der Export ist fehlgeschlagen.',
+    },
+    clear: {
+      title: 'Daten auf dem Server löschen',
+      intro:
+        'Zuerst erscheint eine Vorschau mit Anzahl und Größe. Gelöscht wird erst nach getippter Bestätigung; es gibt kein Zurück.',
+      all: 'Alle gespeicherten Daten löschen',
+      preview: 'Vorschau anzeigen',
+      planLine: '{kind}: {count} Einträge, {bytes} Bytes',
+      total: 'Insgesamt {count} Einträge, {bytes} Bytes.',
+      typeLabel: 'Tippe zur Bestätigung „{text}“',
+      execute: 'Endgültig löschen',
+      cancel: 'Abbrechen',
+      done: '{count} Einträge gelöscht. In Datenbanksicherungen des Betreibers können sie bis zur nächsten Sicherung noch vorhanden sein.',
+      nothing: 'Es gibt nichts zu löschen.',
+      unknown:
+        'Der Ausgang ist unbekannt (Antwort verloren). Lade die Daten neu und prüfe die Belegung.',
+      history: 'Verlauf löschen',
+      bookmarks: 'Alle Lesezeichen löschen',
+    },
+    library: {
+      server:
+        'Gespeichert auf dem Server (verschlüsselt, ohne Zugangsdaten). Mehrere Geräte mit demselben Token sehen dieselben Einträge.',
+      historyOff:
+        'Der Abfrageverlauf ist auf dem Server aus. Schalte ihn in den Einstellungen unter „Speicher“ ein.',
+      more: 'Mehr laden',
+      pending: 'noch nicht auf dem Server',
+      edit: 'Bearbeiten',
+      editName: 'Neuer Name',
+      editSave: 'Änderung speichern',
+      editCancel: 'Abbrechen',
+      buffered:
+        'Der Server antwortet nicht. Der Eintrag wurde in diesem Browser zwischengespeichert und wird später übertragen.',
+      conflictTitle: 'Das Lesezeichen wurde inzwischen geändert',
+      conflictBody:
+        'Jemand hat dieses Lesezeichen geändert, während du es bearbeitet hast. Wähle, welche Fassung gelten soll.',
+      conflictServer: 'Fassung auf dem Server',
+      conflictMine: 'Meine Fassung',
+      conflictGone: 'Das Lesezeichen existiert auf dem Server nicht mehr.',
+      keepServer: 'Serverfassung übernehmen',
+      saveMine: 'Meine Fassung speichern',
+      loading: 'Wird geladen …',
+    },
+    appearance: {
+      conflict:
+        'Thema und Sprache wurden anderswo geändert. Der Stand vom Server wurde übernommen.',
+      failed: 'Thema und Sprache konnten nicht auf dem Server gespeichert werden.',
+    },
+    data: {
+      title: 'Datenschutz',
+      what: 'Was gespeichert wird: Abfrageverlauf (nur mit deiner Zustimmung), Lesezeichen, gespeicherte Suchen, Favoriten, zuletzt benutzte Tabellen, Thema und Sprache sowie Spaltenlayouts. Nie gespeichert werden Passwörter, Tokens, Verbindungsdaten und Abfrageergebnisse.',
+      where:
+        'Wo: im Serverspeicher des Betreibers (eine verschlüsselte Datenbank). Die Verbindung wird nur als nicht umkehrbare Kennung zugeordnet. Ohne Serverspeicher bleibt alles in diesem Browser.',
+      who: 'Wer sieht es: Alle, die dasselbe Zugangstoken nutzen, teilen die Daten; der Betreiber sieht Zeiten, Größen und Anzahlen, nicht den Inhalt.',
+      secrets:
+        'Der Server lehnt SQL und Namen mit erkannten Zugangsdaten ab. Die Erkennung ist nicht vollständig: schreibe keine geheimen Werte in Abfragen oder Namen.',
+      delete:
+        'Löschen: einzeln in den Listen, oder alles über „Daten auf dem Server löschen“ mit Vorschau und Bestätigung. Export als JSON ist jederzeit möglich.',
+      backups:
+        'Gelöschte Daten können bis zur nächsten Sicherung noch in Sicherungen des Betreibers liegen.',
+      localOnly:
+        'Im Lokalmodus liegen die Daten nur in diesem Browser; löschen kannst du sie in den Listen oder über die Browserdaten.',
+    },
+    err: {
+      error: 'Der Vorgang ist fehlgeschlagen.',
+      invalid_request: 'Die Anfrage war ungültig.',
+      unsupported_media_type: 'Die Anfrage hatte ein falsches Format.',
+      request_too_large: 'Die Anfrage ist zu groß.',
+      item_too_large: 'Der Eintrag ist zu groß.',
+      unknown_kind: 'Diese Art von Daten kennt der Server nicht.',
+      not_found: 'Der Eintrag existiert nicht (mehr).',
+      already_exists: 'Dieser Eintrag existiert bereits.',
+      quota_exceeded:
+        'Das Limit für diese Art von Einträgen oder der Gesamtspeicher ist erreicht. Lösche ältere Einträge.',
+      history_disabled: 'Der Abfrageverlauf ist auf dem Server nicht eingeschaltet.',
+      plan_stale:
+        'Die Daten haben sich seit der Vorschau geändert. Erstelle die Vorschau neu; es wurde nichts gelöscht.',
+      version_conflict: 'Der Eintrag wurde zwischenzeitlich geändert.',
+      precondition_required: 'Die Änderung konnte nicht auf eine Version bezogen werden. Lade neu.',
+      invalid_data: 'Der Server hat die Daten als ungültig abgelehnt.',
+      secret_rejected:
+        'Abgelehnt: Der Text sieht aus, als enthielte er Zugangsdaten oder ein Geheimnis. Es wurde nichts gespeichert.',
+      confirmation_invalid: 'Die getippte Bestätigung stimmt nicht.',
+      state_unreadable:
+        'Der Server kann gespeicherte Daten nicht lesen (Schlüsselproblem). Wende dich an den Betreiber.',
+      state_unavailable: 'Der Serverspeicher ist derzeit nicht erreichbar.',
+      unauthorized: 'Das Zugangstoken wurde abgelehnt.',
+      network_error: 'Der Server ist nicht erreichbar.',
+      timeout: 'Zeitüberschreitung beim Server.',
+      outcome_unknown: 'Der Ausgang ist unbekannt, weil die Antwort fehlte. Lade neu und prüfe.',
+      invalid_response: 'Die Serverantwort war ungültig.',
+      insecure_origin: 'Unsichere Verbindung: nur HTTPS oder localhost ist erlaubt.',
+      result_too_large: 'Die Antwort ist zu groß.',
+      local_secret:
+        'Nicht gespeichert: Name oder SQL enthalten Zugangsdaten, sind leer oder zu groß.',
+      buffer_full: 'Der Zwischenspeicher im Browser ist voll. Der Eintrag wurde nicht gespeichert.',
+    },
+  },
 } as const;
 
 type Join<K extends string, P extends string> = `${K}.${P}`;

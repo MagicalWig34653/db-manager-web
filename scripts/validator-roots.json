@@ -274,5 +274,26 @@
     "AccountsResult",
     "Connection",
     "Error"
+  ],
+  "24": [
+    "ConfigBookmarkData",
+    "ConfigCapabilities",
+    "ConfigClearExecuteRequest",
+    "ConfigClearPlan",
+    "ConfigClearPlanRequest",
+    "ConfigClearResult",
+    "ConfigCreateRequest",
+    "ConfigExport",
+    "ConfigHistoryData",
+    "ConfigImportRequest",
+    "ConfigImportResult",
+    "ConfigItem",
+    "ConfigList",
+    "ConfigPrivacySettings",
+    "ConfigSearchData",
+    "ConfigStatus",
+    "ConfigTableRefData",
+    "ConfigUpdateRequest",
+    "Error"
   ]
 }

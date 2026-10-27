@@ -2785,4 +2785,176 @@ export const en = {
     updateAction: 'Load new version',
     close: 'Close',
   },
+  configStore: {
+    title: 'Storage for history, bookmarks and settings',
+    checking: 'Checking storage …',
+    modeServer:
+      'Server storage active: history, bookmarks, favorites, searches, layouts and theme/language are kept on the server, encrypted in its database.',
+    modeLocal:
+      'Local mode: history and bookmarks stay in this browser only. Nothing is stored on the server.',
+    single:
+      'Note: everyone using the same access token shares this data. There is no user separation yet.',
+    degraded:
+      'The server storage is not answering. New entries are kept in this browser and transferred later ({count} pending). Nothing is lost as long as browser storage is kept.',
+    bufferFailed: 'Browser storage is unavailable: buffered entries are lost on reload.',
+    dropped: 'The server rejected {count} buffered entries; they were not stored.',
+    retry: 'Check again',
+    reason: {
+      ok: 'Server storage is available.',
+      not_configured: 'Reason: the server has no state storage configured.',
+      unreachable: 'Reason: the server state storage is currently unreachable.',
+      unsupported: 'Reason: this server does not know the configuration store (API 0.24) yet.',
+      error: 'Reason: the storage status could not be read.',
+    },
+    kind: {
+      history: 'History',
+      bookmarks: 'Bookmarks',
+      searches: 'Saved searches',
+      favorites: 'Favorites',
+      recents: 'Recently used',
+      settings: 'Settings',
+      layouts: 'Layouts',
+    },
+    historyTitle: 'Query history',
+    historyOptIn: 'Store query history on the server',
+    historyHint:
+      'Off by default; without this consent the server writes no history. SQL can contain sensitive values: credentials and known secret formats are rejected, arbitrary values inside strings are not detected.',
+    historyOffHint:
+      'History is no longer written. Entries already stored remain until you delete them.',
+    historyChanged:
+      'This setting was changed elsewhere. The current state from the server is shown.',
+    historySaveFailed: 'The setting was not saved.',
+    usageTitle: 'Usage',
+    usageRefresh: 'Refresh usage',
+    usageLine: '{kind}: {count} of at most {max} entries, {bytes} bytes',
+    usageTotal: 'Total: {bytes} of at most {max} bytes',
+    favoritesTitle: 'Favorites and recently used',
+    favoritesHint:
+      'Table names only, no connection data. The connection is mapped by an irreversible identifier.',
+    favoriteDatabase: 'Database (optional)',
+    favoriteTable: 'Table',
+    favoriteAdd: 'Save as favorite',
+    favoriteRemove: 'Remove favorite {name}',
+    favoritesEmpty: 'No favorites.',
+    recentsTitle: 'Recently used',
+    recentsEmpty: 'Nothing used recently.',
+    favoriteSaved: 'Favorite saved.',
+    connectFirst: 'Connect to see the favorites of this connection.',
+    migration: {
+      title: 'Move local data to the server',
+      intro:
+        'History and bookmarks from this browser can be transferred to the server. Repeating is harmless: entries already transferred are recognized and not created twice. Local data is never deleted automatically.',
+      preview: '{bookmarks} bookmarks and {history} history entries would be transferred.',
+      nothing: 'No local data to transfer found.',
+      includeHistory: 'Also transfer the local history ({count} entries)',
+      historyWarn: 'This turns on query history on the server. SQL can contain sensitive values.',
+      skipped:
+        '{count} entries stay local because they might contain credentials or are too large.',
+      confirm: 'I confirm that this data is transferred to the server.',
+      run: 'Transfer now',
+      running: 'Transfer in progress …',
+      result:
+        'Transferred: {created} new, {exists} already present, {updated} updated, {rejected} rejected.',
+      failed: 'The transfer was interrupted. Local data is unchanged; you can start it again.',
+      rejectedHint: 'Rejected entries stay local.',
+      deleteLocal: 'Delete transferred entries from this browser',
+      deleteLocalHint:
+        'Optional. Only entries the server confirmed are deleted. A JSON export of the bookmarks stays possible.',
+      deleted: '{count} local entries deleted.',
+    },
+    export: {
+      button: 'Export all server data (JSON)',
+      done: 'Export with {count} entries provided. The file contains SQL in plain text.',
+      failed: 'The export failed.',
+    },
+    clear: {
+      title: 'Delete data on the server',
+      intro:
+        'A preview with count and size comes first. Deletion happens only after a typed confirmation; there is no undo.',
+      all: 'Delete all stored data',
+      preview: 'Show preview',
+      planLine: '{kind}: {count} entries, {bytes} bytes',
+      total: 'In total {count} entries, {bytes} bytes.',
+      typeLabel: 'Type “{text}” to confirm',
+      execute: 'Delete permanently',
+      cancel: 'Cancel',
+      done: '{count} entries deleted. They can remain in the operator’s database backups until the next backup.',
+      nothing: 'There is nothing to delete.',
+      unknown: 'The outcome is unknown (answer lost). Reload the data and check the usage.',
+      history: 'Delete history',
+      bookmarks: 'Delete all bookmarks',
+    },
+    library: {
+      server:
+        'Stored on the server (encrypted, without credentials). Several devices with the same token see the same entries.',
+      historyOff: 'Query history is off on the server. Turn it on in the settings under “Storage”.',
+      more: 'Load more',
+      pending: 'not on the server yet',
+      edit: 'Edit',
+      editName: 'New name',
+      editSave: 'Save change',
+      editCancel: 'Cancel',
+      buffered:
+        'The server is not answering. The entry was kept in this browser and will be transferred later.',
+      conflictTitle: 'The bookmark was changed in the meantime',
+      conflictBody:
+        'Someone changed this bookmark while you were editing it. Choose which version should apply.',
+      conflictServer: 'Version on the server',
+      conflictMine: 'My version',
+      conflictGone: 'The bookmark no longer exists on the server.',
+      keepServer: 'Keep the server version',
+      saveMine: 'Save my version',
+      loading: 'Loading …',
+    },
+    appearance: {
+      conflict: 'Theme and language were changed elsewhere. The state from the server was applied.',
+      failed: 'Theme and language could not be saved on the server.',
+    },
+    data: {
+      title: 'Privacy',
+      what: 'What is stored: query history (only with your consent), bookmarks, saved searches, favorites, recently used tables, theme and language, and column layouts. Passwords, tokens, connection data and query results are never stored.',
+      where:
+        'Where: in the operator’s server storage (an encrypted database). The connection is mapped only by an irreversible identifier. Without server storage everything stays in this browser.',
+      who: 'Who sees it: everyone using the same access token shares the data; the operator sees times, sizes and counts, not the content.',
+      secrets:
+        'The server rejects SQL and names with detected credentials. Detection is not complete: do not write secret values into queries or names.',
+      delete:
+        'Deleting: individually in the lists, or everything via “Delete data on the server” with preview and confirmation. Exporting as JSON is possible at any time.',
+      backups: 'Deleted data can remain in the operator’s backups until the next backup.',
+      localOnly:
+        'In local mode the data lives only in this browser; delete it in the lists or via the browser data.',
+    },
+    err: {
+      error: 'The operation failed.',
+      invalid_request: 'The request was invalid.',
+      unsupported_media_type: 'The request had the wrong format.',
+      request_too_large: 'The request is too large.',
+      item_too_large: 'The entry is too large.',
+      unknown_kind: 'The server does not know this kind of data.',
+      not_found: 'The entry does not exist (any more).',
+      already_exists: 'This entry already exists.',
+      quota_exceeded:
+        'The limit for this kind of entries or the total storage is reached. Delete older entries.',
+      history_disabled: 'Query history is not turned on on the server.',
+      plan_stale:
+        'The data changed since the preview. Create the preview again; nothing was deleted.',
+      version_conflict: 'The entry was changed in the meantime.',
+      precondition_required: 'The change could not be tied to a version. Reload.',
+      invalid_data: 'The server rejected the data as invalid.',
+      secret_rejected:
+        'Rejected: the text looks like it contains credentials or a secret. Nothing was stored.',
+      confirmation_invalid: 'The typed confirmation does not match.',
+      state_unreadable: 'The server cannot read stored data (key problem). Contact the operator.',
+      state_unavailable: 'The server storage is currently unreachable.',
+      unauthorized: 'The access token was rejected.',
+      network_error: 'The server is unreachable.',
+      timeout: 'The server timed out.',
+      outcome_unknown: 'The outcome is unknown because the answer was missing. Reload and check.',
+      invalid_response: 'The server answer was invalid.',
+      insecure_origin: 'Insecure connection: only HTTPS or localhost is allowed.',
+      result_too_large: 'The answer is too large.',
+      local_secret: 'Not stored: name or SQL contain credentials, are empty or too large.',
+      buffer_full: 'The buffer in the browser is full. The entry was not stored.',
+    },
+  },
 } as const;

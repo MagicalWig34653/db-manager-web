@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { ConnectionDraft } from '$lib/workbench';
+import { recordServerHistory } from '$lib/features/config-store/record';
+import { connectionIdentity, scopeFor } from '$lib/features/config-store/identity';
 
 export const MAX_ENTRIES = 200;
 export const MAX_BYTES = 512 * 1024;
@@ -82,6 +84,9 @@ function parse(text: string): Data {
 }
 
 export class SqlLibrary {
+  get storageKey() {
+    return this.key;
+  }
   enabled = $state(false);
   history = $state<Entry[]>([]);
   bookmarks = $state<Entry[]>([]);
@@ -159,6 +164,11 @@ export class SqlLibrary {
     this[kind] = id ? this[kind].filter((e) => e.id !== id) : [];
     this.save();
   }
+  /** Removes the entries the predicate selects (used after a confirmed server migration). */
+  removeWhere(kind: 'history' | 'bookmarks', predicate: (entry: Entry) => boolean) {
+    this[kind] = this[kind].filter((entry) => !predicate(entry));
+    this.save();
+  }
   exportBookmarks() {
     return JSON.stringify(
       { version: 1, bookmarks: this.bookmarks.map(({ name, sql, time }) => ({ name, sql, time })) },
@@ -193,26 +203,44 @@ export class SqlLibrary {
   }
 }
 
+export interface LocalSnapshot {
+  key: string;
+  scope: string;
+  enabled: boolean;
+  history: Entry[];
+  bookmarks: Entry[];
+}
+/** All W-P16 libraries in this browser (one per connection identity); unreadable keys are skipped. */
+export function readLocalLibraries(storage: Storage = localStorage): LocalSnapshot[] {
+  const result: LocalSnapshot[] = [];
+  try {
+    for (let index = 0; index < storage.length; index++) {
+      const key = storage.key(index);
+      if (!key?.startsWith(PREFIX) || key.length === PREFIX.length) continue;
+      try {
+        const data = parse(storage.getItem(key) ?? '');
+        result.push({ key, scope: key.slice(PREFIX.length), ...data });
+      } catch {
+        /* an invalid library is neither migrated nor deleted */
+      }
+    }
+  } catch {
+    return [];
+  }
+  return result;
+}
+
 const libraries = new Map<string, Promise<SqlLibrary>>();
-/** Password, token, display name and TLS secrets are deliberately absent from the identity. */
+const byKey = new Map<string, SqlLibrary>();
 export function libraryFor(connection: ConnectionDraft): Promise<SqlLibrary> {
-  const identity = JSON.stringify([
-    location.origin,
-    connection.driver,
-    connection.database,
-    connection.driver === 'sqlite' ? '' : connection.host,
-    connection.driver === 'sqlite' ? 0 : connection.port,
-    connection.driver === 'sqlite' ? '' : connection.username,
-  ]);
+  const identity = connectionIdentity(connection);
   let pending = libraries.get(identity);
   if (!pending) {
     pending = (async () => {
       try {
-        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity));
-        const hash = Array.from(new Uint8Array(digest), (b) =>
-          b.toString(16).padStart(2, '0'),
-        ).join('');
-        return new SqlLibrary(PREFIX + hash);
+        const library = new SqlLibrary(PREFIX + (await scopeFor(connection)));
+        byKey.set(library.storageKey, library);
+        return library;
       } catch {
         // In insecure contexts use memory only; never fall back to plaintext identifiers.
         return new SqlLibrary('', () => {
@@ -225,9 +253,21 @@ export function libraryFor(connection: ConnectionDraft): Promise<SqlLibrary> {
   return pending;
 }
 
+/** Deletes migrated entries from the (cached) library of a storage key so that a stale instance cannot write them back. */
+export function removeLocalWhere(
+  key: string,
+  kind: 'history' | 'bookmarks',
+  predicate: (entry: Entry) => boolean,
+) {
+  (byKey.get(key) ?? new SqlLibrary(key)).removeWhere(kind, predicate);
+}
+
 export function recordQuery(connection: ConnectionDraft, sql: string, token: string) {
   const secrets = [connection.password, token];
-  void libraryFor(connection)
-    .then((library) => library.record(sql, secrets))
+  // With a reachable server store the server decides (opt-in enforced there); otherwise the local W-P16 mode runs.
+  void recordServerHistory(connection, sql, token)
+    .then((handled) =>
+      handled ? undefined : libraryFor(connection).then((library) => library.record(sql, secrets)),
+    )
     .catch(() => {});
 }

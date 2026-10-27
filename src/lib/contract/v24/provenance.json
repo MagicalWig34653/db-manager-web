@@ -1,0 +1,8 @@
+{
+  "version": "0.24.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "a40b20d7ffc0abf0fdbb01312d5832622c6271c8",
+  "source_path": "contracts/api-v0.24.0.json",
+  "sha256": "e2f2e057f341e52d23b9ec098c2a1b04e5f90dd18f5e560cbfaad844f463da7a",
+  "review": "Independent backend review and re-review accepted (W-P20, docs/handoffs/W-P20-backend*.md); integrated on backend main a40b20d; v24 adds the server-side configuration store (additive on v23)"
+}
