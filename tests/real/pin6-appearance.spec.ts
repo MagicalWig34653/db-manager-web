@@ -45,14 +45,10 @@ async function clear(request: APIRequestContext) {
     });
 }
 
-test('FAILS TODAY: a theme change made while the server store is still being checked is lost', async ({
+test('a theme change made while the server store is still being checked is lost', async ({
   page,
   request,
 }) => {
-  test.fail(
-    true,
-    'confirmed product defect: AppearanceSync.push drops changes before load() finished',
-  );
   await clear(request);
   await page.route('**/api/v24/capabilities', async (route) => {
     await new Promise((r) => setTimeout(r, 1500));

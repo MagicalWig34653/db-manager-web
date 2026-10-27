@@ -7,21 +7,24 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { looksSecret } from './secrets';
 
-const corpus = process.env.DBM_DIFF_CORPUS;
-describe.skipIf(!corpus)('client secret rules cover the backend rules', () => {
+// The corpus is committed (backend TestPin6DifferentialCorpus output); DBM_DIFF_CORPUS overrides it.
+const corpus =
+  process.env.DBM_DIFF_CORPUS ?? 'src/lib/features/config-store/differential/backend-rejected.json';
+describe('client secret rules cover the backend rules', () => {
   // DEFECT (Low, hardening): about 2 % of the mutation corpus is missed (digit/dot/plus/minus before a URL scheme, JS-only
   // whitespace such as NBSP/VT/U+2028 inside credentials, U+1D0A/U+029C missing from the confusables table).
-  it.fails(
-    'every string the backend rejects is rejected by the client (differences are listed)',
-    () => {
-      const strings = JSON.parse(readFileSync(corpus!, 'utf8')) as string[];
-      const missed = strings.filter((s) => !looksSecret(s));
-      const sample = missed.slice(0, 40).map((s) => JSON.stringify(s));
-      console.log(`backend rejects ${strings.length}, client misses ${missed.length}`);
-      console.log(sample.join('\n'));
-      expect(missed).toEqual([]);
-    },
-  );
+  it('every string the backend rejects is rejected by the client (differences are listed)', () => {
+    const strings = JSON.parse(readFileSync(corpus!, 'utf8')) as string[];
+    const missed = strings.filter((s) => !looksSecret(s));
+    const sample = missed
+      .slice(0, 40)
+      .map((s) =>
+        JSON.stringify(s).replace(/[^\x20-\x7e]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16)}`),
+      );
+    console.log(`backend rejects ${strings.length}, client misses ${missed.length}`);
+    console.log(sample.join('\n'));
+    expect(missed).toEqual([]);
+  });
 });
 
 describe('ReDoS on 1 MiB inputs', () => {
@@ -63,7 +66,7 @@ describe('ReDoS on 1 MiB inputs', () => {
   ];
   // DEFECT (Low): the DSN rule is quadratic ('a'*30 + ':' repeated, then '@'): 0.47 s at 100 000 chars (MAX_SQL), 1.4 s at 256 KiB,
   // 19 s at 1 MiB. Callers cap SQL at 100 000 characters first, so this is a freeze of at most about half a second, not a hang.
-  it.fails('the DSN rule scales linearly (256 KiB of a:b:c: pairs followed by @)', () => {
+  it('the DSN rule scales linearly (256 KiB of a:b:c: pairs followed by @)', () => {
     const text = ('a'.repeat(30) + ':').repeat(Math.floor((256 * 1024) / 31)) + '@';
     const started = performance.now();
     looksSecret(text);

@@ -323,19 +323,16 @@ describe('W-09 and the appearance race', () => {
   });
   // Root cause candidate of the config-store.spec.ts:244 flake: push() before load() has finished is dropped, and nothing
   // re-sends it (the panel effect depends on preferences only).
-  it.fails(
-    'DEFECT: a change made before the initial load() finished is lost on the server',
-    async () => {
-      const store = make();
-      await store.ensureReady();
-      const sync = new AppearanceSync(store, () => {}, 0);
-      const loading = sync.load(); // GET still in flight
-      sync.push('dark', 'de'); // user picks the theme right after switching to server mode
-      await loading;
-      await new Promise((r) => setTimeout(r, 200));
-      expect(fake.writes().length).toBeGreaterThan(0); // wanted; fails today
-    },
-  );
+  it('DEFECT: a change made before the initial load() finished is lost on the server', async () => {
+    const store = make();
+    await store.ensureReady();
+    const sync = new AppearanceSync(store, () => {}, 0);
+    const loading = sync.load(); // GET still in flight
+    sync.push('dark', 'de'); // user picks the theme right after switching to server mode
+    await loading;
+    await new Promise((r) => setTimeout(r, 200));
+    expect(fake.writes().length).toBeGreaterThan(0); // wanted; fails today
+  });
 });
 
 describe('Legacy data', () => {

@@ -30,6 +30,8 @@
   let exportMessage = $state('');
   let exporting = $state(false);
   let appearance = $state<AppearanceSync>();
+  const baseline = { theme: preferences.theme, locale: preferences.locale };
+  let touched = false;
 
   $effect(() => store.observe((phase) => onwritephase(phase)));
   $effect(() => {
@@ -53,13 +55,18 @@
       }),
     );
     appearance = sync;
+    // A change made before the store was ready is handed over first, so load() cannot overwrite it.
+    if (touched) untrack(() => sync.push(preferences.theme, preferences.locale));
     void sync.load();
     return () => sync.destroy();
   });
   $effect(() => {
     const theme = preferences.theme;
     const locale = preferences.locale;
-    untrack(() => appearance?.push(theme, locale));
+    untrack(() => {
+      if (appearance) appearance.push(theme, locale);
+      else if (theme !== baseline.theme || locale !== baseline.locale) touched = true;
+    });
   });
   $effect(() => {
     if (store.mode === 'server') void untrack(() => store.refreshUsage());

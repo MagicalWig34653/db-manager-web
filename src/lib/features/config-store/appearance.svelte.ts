@@ -37,20 +37,32 @@ export class AppearanceSync {
 
   async load() {
     const result = await this.store.getDocument('settings', APPEARANCE_KEY);
-    if (!result.ok) return;
+    if (!result.ok) {
+      // The server value is unknown: a user change made meanwhile is kept and retried, never dropped.
+      if (this.wanted) this.timer = setTimeout(() => void this.load(), 5000);
+      return;
+    }
     this.item = result.value;
     const value = read(result.value);
-    if (value) {
-      this.last = JSON.stringify(value);
+    if (value) this.last = JSON.stringify(value);
+    this.loaded = true;
+    if (this.wanted && JSON.stringify(this.wanted) !== this.last) {
+      // A local user change made before the load finished wins over the server value.
+      this.timer = setTimeout(() => void this.save(), this.delay);
+    } else if (value) {
+      this.wanted = null;
       this.apply(value);
     }
-    this.loaded = true;
   }
 
   /** Called with the current preferences; sends a change after a short pause, never the same value twice. */
   push(theme: string, locale: string) {
-    if (!this.loaded) return;
     const value = { theme, locale };
+    if (!this.loaded) {
+      // Not loaded yet: remember the user's change and send it after load().
+      this.wanted = value;
+      return;
+    }
     if (JSON.stringify(value) === this.last) {
       this.wanted = null;
       return;

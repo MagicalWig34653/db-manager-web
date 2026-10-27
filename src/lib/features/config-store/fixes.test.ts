@@ -286,3 +286,23 @@ describe('legacy local entries stay readable', () => {
     expect(migration.preview).toMatchObject({ bookmarks: 1, skipped: 1 });
   });
 });
+
+describe('appearance changes before the initial load', () => {
+  it('a fast double change before load() wins over the server value and only the last one is sent', async () => {
+    const { AppearanceSync } = await import('./appearance.svelte');
+    fake.seed('settings', { theme: 'dark', locale: 'en' }, '', 'appearance');
+    const store = make();
+    await store.ensureReady();
+    const applied: unknown[] = [];
+    const sync = new AppearanceSync(store, (v) => applied.push(v), 0);
+    const loading = sync.load();
+    sync.push('light', 'en');
+    sync.push('system', 'de');
+    await loading;
+    await new Promise((r) => setTimeout(r, 100));
+    const puts = fake.writes().filter((c) => c.method === 'PUT');
+    expect(puts).toHaveLength(1);
+    expect(puts[0].body).toEqual({ data: { theme: 'system', locale: 'de' } });
+    expect(applied).toEqual([]);
+  });
+});

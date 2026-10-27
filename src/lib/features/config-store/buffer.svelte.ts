@@ -37,11 +37,32 @@ const valid = (value: unknown): value is BufferedWrite => {
   );
 };
 
-/** One-way owner id of a backend token (the token itself is never stored). */
+const SALT_KEY = 'db-manager.config-owner-salt.v1';
+let memorySalt = '';
+/** Random per-installation salt: the owner hash of a chosen token cannot be precomputed (no rainbow table). */
+function installationSalt(): string {
+  try {
+    let salt = localStorage.getItem(SALT_KEY);
+    if (!salt || !/^[0-9a-f]{32}$/.test(salt)) {
+      salt = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+        b.toString(16).padStart(2, '0'),
+      ).join('');
+      localStorage.setItem(SALT_KEY, salt);
+    }
+    return salt;
+  } catch {
+    memorySalt ||= Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+      b.toString(16).padStart(2, '0'),
+    ).join('');
+    return memorySalt;
+  }
+}
+
+/** One-way owner id of a backend token (salted; the token itself is never stored). */
 export async function ownerOf(token: string): Promise<string> {
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(`dbm-config-buffer\0${token}`),
+    new TextEncoder().encode(`dbm-config-buffer\0${installationSalt()}\0${token}`),
   );
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0'))
     .join('')
