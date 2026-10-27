@@ -53,6 +53,16 @@ async function connect(page: Page, driver: string) {
   await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
   await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
 }
+/** Fails with the visible dialog text so a rejected outcome names its reason instead of just a mismatch. */
+async function outcome(page: Page, expected: string) {
+  const result = page.getByTestId('bulk-result');
+  await expect(result).toBeVisible();
+  await expect
+    .poll(async () => (await result.getAttribute('data-outcome')) ?? '', {
+      message: await page.getByTestId('bulk-dialog').innerText(),
+    })
+    .toBe(expected);
+}
 const file = (name: string, content: string | Buffer) => ({
   name,
   mimeType: 'application/octet-stream',
@@ -190,7 +200,7 @@ for (const driver of ['sqlite', 'postgresql']) {
       ).toBe('0');
       await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
       await page.getByTestId('bulk-execute').dblclick();
-      await expect(page.getByTestId('bulk-result')).toHaveAttribute('data-outcome', 'completed');
+      await outcome(page, 'completed');
       expect(
         cell(await sql(page, apiDriver, "SELECT count(*) FROM w13_items WHERE name = 'neu'")),
       ).toBe('2');
@@ -204,16 +214,20 @@ for (const driver of ['sqlite', 'postgresql']) {
       await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
       await page.getByTestId('bulk-typed').fill('2');
       await page.getByTestId('bulk-execute').click();
-      await expect(page.getByTestId('bulk-result')).toHaveAttribute('data-outcome', 'rejected');
+      await outcome(page, 'rejected');
       expect(cell(await sql(page, apiDriver, 'SELECT count(*) FROM w13_items'))).toBe('4');
       await page.getByTestId('bulk-close').click();
       // Copy with an automatic key (SQLite rowid alias / PostgreSQL identity).
       await page.getByRole('checkbox', { name: 'Zeile 1 auswählen' }).check();
+      await expect(
+        page.getByTestId('bulk-bar'),
+        await page.getByRole('main').innerText(),
+      ).toBeVisible();
       await page.getByTestId('bulk-copy').click();
       await expect(page.getByTestId('bulk-plan-view')).toBeVisible();
       await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
       await page.getByTestId('bulk-execute').click();
-      await expect(page.getByTestId('bulk-result')).toHaveAttribute('data-outcome', 'completed');
+      await outcome(page, 'completed');
       expect(cell(await sql(page, apiDriver, 'SELECT count(*) FROM w13_items'))).toBe('5');
       await page.getByTestId('bulk-close').click();
       // Delete.
@@ -223,7 +237,7 @@ for (const driver of ['sqlite', 'postgresql']) {
       await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
       await page.getByTestId('bulk-typed').fill('1');
       await page.getByTestId('bulk-execute').click();
-      await expect(page.getByTestId('bulk-result')).toHaveAttribute('data-outcome', 'completed');
+      await outcome(page, 'completed');
       expect(cell(await sql(page, apiDriver, 'SELECT count(*) FROM w13_items WHERE id = 4'))).toBe(
         '0',
       );

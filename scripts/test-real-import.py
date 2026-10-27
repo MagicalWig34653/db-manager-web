@@ -6,7 +6,7 @@ Go backend with a throwaway SQLite database and a throwaway PostgreSQL container
 Backend source: DBM_BACKEND_REPO/DBM_BACKEND_REV (local checkout exported with git archive, e.g. REV=d9463ba) or the
 public commit pinned in src/lib/contract/v19/provenance.json. All ports are chosen free at run time (never a fixed
 port); the container, processes, credentials and checkout are task-owned and removed afterwards. MySQL/MariaDB are not
-covered here."""
+covered here. DBM_REAL_GREP restricts the Playwright tests (title filter) while debugging."""
 import hashlib, importlib.util, json, os, secrets, signal, subprocess, sys, tarfile, tempfile, urllib.request
 from pathlib import Path
 
@@ -78,7 +78,7 @@ def main():
             config.write_text(json.dumps({'baseURL': webbase, 'outputDir': str(directory / 'results'), 'token': token, 'password': password, 'postgresPort': pgport, 'backendURL': backend})); config.chmod(0o600)
             environment = dict(os.environ, DBM_REAL_CONFIG=str(config), CI='1')
             run(['npx', 'playwright', 'install', 'chromium'], cwd=ROOT, env=environment)
-            print(redact(run(['npx', 'playwright', 'test', '--config', 'playwright.real.config.ts', '--reporter=line', 'tests/real/import-bulk.spec.ts'], cwd=ROOT, env=environment)), flush=True)
+            print(redact(run(['npx', 'playwright', 'test', '--config', 'playwright.real.config.ts', '--reporter=line', 'tests/real/import-bulk.spec.ts', *(['-g', os.environ['DBM_REAL_GREP']] if os.environ.get('DBM_REAL_GREP') else [])], cwd=ROOT, env=environment)), flush=True)
             print('W-P12/13 real: SQLite and PostgreSQL CSV import (preview, one-time plan, failing replay), SQL import, multi row update/conflict/copy/delete, file value and read-back passed.', flush=True)
         finally:
             for process in reversed(processes):
