@@ -187,6 +187,28 @@
     "ProgramsResult"
   ],
   "17": ["ServerAdminCapabilities", "ServerAdminReadRequest", "ServerAdminReadResult"],
+  "18": [
+    "Error",
+    "ImportCapabilities",
+    "ImportExecuteRequest",
+    "ImportJob",
+    "ImportPlan",
+    "ImportPlanRequest",
+    "ImportResult"
+  ],
+  "19": [
+    "Error",
+    "FileValueRequest",
+    "FileValueUploadRequest",
+    "ForeignKeyLookupRequest",
+    "ForeignKeyLookupResult",
+    "MutationResult",
+    "RowsBulkCapabilities",
+    "RowsBulkExecuteRequest",
+    "RowsBulkPlan",
+    "RowsBulkPlanRequest",
+    "RowsBulkResult"
+  ],
   "20": ["MonitorCapabilities", "MonitorRequest", "MonitorResult"],
   "21": [
     "Connection",

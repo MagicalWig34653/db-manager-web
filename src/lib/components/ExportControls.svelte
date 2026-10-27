@@ -55,10 +55,12 @@
     <Button variant="outline" size="sm" onclick={download}>{t('exportControls.download')}</Button>
   </div>
   <p>
-    {scope.kind === 'table_page'
-      ? t('exportControls.scopePage', { count: result.rows.length, start: scope.offset + 1 }) +
-        (scope.has_more ? t('exportControls.scopeMore') : '')
-      : t('exportControls.scopeResult', { count: result.rows.length })}{result.truncated
+    {scope.kind === 'table_selection'
+      ? t('exportControls.scopeSelection', { count: result.rows.length, start: scope.offset + 1 })
+      : scope.kind === 'table_page'
+        ? t('exportControls.scopePage', { count: result.rows.length, start: scope.offset + 1 }) +
+          (scope.has_more ? t('exportControls.scopeMore') : '')
+        : t('exportControls.scopeResult', { count: result.rows.length })}{result.truncated
       ? t('exportControls.truncated')
       : ''}{t('exportControls.noQuery')}
   </p>
