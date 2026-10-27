@@ -129,7 +129,7 @@ test(`${config.system}: monitor samples, rates, engines and honest unavailable s
   // Analysis, advisor, replication: data, empty or an explained unavailable state, never an error.
   for (const name of ['Abfrageanalyse', 'Hinweise', 'Replikation']) {
     await page.getByRole('tab', { name }).click();
-    if (!network && name !== 'Hinweise') {
+    if (!network) {
       await expect(page.getByText('Für diesen Treiber nicht unterstützt')).toBeVisible();
       continue;
     }
