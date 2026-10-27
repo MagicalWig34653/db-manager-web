@@ -19,7 +19,7 @@ Entscheidungen: `docs/decisions/ADR-W-P16-codemirror-editor.md`. Aufbauend auf `
   Keine zusätzliche Anfrage (Test beobachtet die Requests).
 - (Review: Rohtext-Modus entfernt; Text/Zahl/NULL, negative Zahlen in Klammern.)
 - Lesezeichenvariablen: `variables.ts`, `VariablesDialog.svelte`, `SqlRunner.execute(session, text?)`/`runWithValues`/`runUnchanged`.
-  Reine clientseitige Textersetzung mit sichtbarer Warnung, Vorschau, Art Text/Zahl/NULL/Rohtext. Verlauf/Lesezeichen enthalten
+  Reine clientseitige Textersetzung mit sichtbarer Warnung, Vorschau, Art Text/Zahl/NULL. Verlauf/Lesezeichen enthalten
   die Vorlage, nie die Werte. Abbrechen führt nichts aus, „Unverändert ausführen“ sendet `:name` wie geschrieben.
 - Schreib-/Navigationssperre unverändert: jede tatsächliche Ausführung läuft weiter über `databaseWriteReceiver`; während der
   Ausführung ist der Editor schreibgeschützt (vorher: Textarea deaktiviert).
@@ -61,7 +61,6 @@ Die Shell lädt den Chunk erst beim Öffnen des SQL-Arbeitsbereichs.
 - Unabhängiges Review (Formatierer-Randfälle, Lexer für MySQL-Spezialsyntax wie `\`-Escapes, Dialogtexte de/en).
 - Repin im Backend (`scripts/build-web.py`: MAX_CHUNKS 64, 8 MiB eingehalten) und Doku des Chunks in `docs/WEBBUILD.md`.
 - Mehrere Editor-Tabs, Spaltenvorschläge für nicht geöffnete Tabellen (benötigen eine eigene, begrenzte Strukturabfrage).
-- Rohtext-Modus der Variablen ist bewusst mächtig; gekennzeichnet, aber nicht verboten. Falls unerwünscht: Modus entfernen.
 
 ## Review-Nachbesserung (Review ad498a2: B-1..B-3, M-1..M-6)
 

@@ -19,7 +19,7 @@ export function placeholderNames(sql: string, driver: Driver): string[] {
   if (!tokens) return [];
   const names: string[] = [];
   for (const token of tokens)
-    if (token.kind === 'param' && !names.includes(token.text.slice(1)))
+    if (token.kind === 'param' && token.text[0] === ':' && !names.includes(token.text.slice(1)))
       names.push(token.text.slice(1));
   return names.slice(0, MAX_VARIABLES);
 }
@@ -64,7 +64,7 @@ export function substitute(
   let out = '';
   let last = 0;
   for (const token of tokens) {
-    if (token.kind !== 'param') continue;
+    if (token.kind !== 'param' || token.text[0] !== ':') continue;
     const name = token.text.slice(1);
     const input = values[name];
     if (!input) throw new VariableError(name, 'missing');

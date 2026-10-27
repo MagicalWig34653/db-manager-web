@@ -8,32 +8,29 @@ import { formatSql } from './format';
 import { rng, scan } from './rereview-corpus';
 
 const ALPHA = ["'", "'", "'", '\\', '\\', ' ', ' ', '  ', 'a', 'b', ',', '\n', 'x'];
-it.fails(
-  'MySQL NO_BACKSLASH_ESCAPES: formatter must not change literal bytes (documented limitation if it does)',
-  () => {
-    const r = rng(7);
-    const bad: string[] = [];
-    let formatted = 0;
-    for (let n = 0; n < 200000; n++) {
-      let s = 'select ';
-      const len = 3 + Math.floor(r() * 14);
-      for (let k = 0; k < len; k++) s += ALPHA[Math.floor(r() * ALPHA.length)];
-      const out = formatSql(s, 'mysql');
-      if (out === null) continue;
-      formatted++;
-      const a = scan(s, 'mysql', true);
-      const b = scan(out, 'mysql', true);
-      const lit = (x: typeof a) =>
-        x ? JSON.stringify(x.filter((y) => y.kind !== 'code').map((y) => y.text)) : 'null';
-      if (lit(a) !== lit(b)) bad.push(JSON.stringify(s) + ' => ' + JSON.stringify(out));
-    }
-    console.log(
-      'NO_BACKSLASH_ESCAPES: formatted',
-      formatted,
-      'literal-changing',
-      bad.length,
-      '\n' + bad.slice(0, 10).join('\n'),
-    );
-    expect(bad).toEqual([]);
-  },
-);
+it('MySQL NO_BACKSLASH_ESCAPES: formatter must not change literal bytes (documented limitation if it does)', () => {
+  const r = rng(7);
+  const bad: string[] = [];
+  let formatted = 0;
+  for (let n = 0; n < 200000; n++) {
+    let s = 'select ';
+    const len = 3 + Math.floor(r() * 14);
+    for (let k = 0; k < len; k++) s += ALPHA[Math.floor(r() * ALPHA.length)];
+    const out = formatSql(s, 'mysql');
+    if (out === null) continue;
+    formatted++;
+    const a = scan(s, 'mysql', true);
+    const b = scan(out, 'mysql', true);
+    const lit = (x: typeof a) =>
+      x ? JSON.stringify(x.filter((y) => y.kind !== 'code').map((y) => y.text)) : 'null';
+    if (lit(a) !== lit(b)) bad.push(JSON.stringify(s) + ' => ' + JSON.stringify(out));
+  }
+  console.log(
+    'NO_BACKSLASH_ESCAPES: formatted',
+    formatted,
+    'literal-changing',
+    bad.length,
+    '\n' + bad.slice(0, 10).join('\n'),
+  );
+  expect(bad).toEqual([]);
+});

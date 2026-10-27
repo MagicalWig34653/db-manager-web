@@ -48,9 +48,7 @@ test('bidi and control characters in pasted SQL are visibly marked (Trojan Sourc
   expect(await page.locator('.cm-editor .cm-specialChar').count()).toBeGreaterThanOrEqual(4);
 });
 
-test('hostile variable values and raw mode never reach history, bookmarks or storage', async ({
-  page,
-}) => {
+test('hostile variable values never reach history, bookmarks or storage', async ({ page }) => {
   const queries = await setup(page);
   await page.getByRole('checkbox', { name: 'Verlauf speichern' }).check();
   await box(page).fill('select :v');

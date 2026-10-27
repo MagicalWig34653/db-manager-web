@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
+  import { HIDDEN_CHARACTERS } from '$lib/features/sql-editor/hidden';
   import { untrack } from 'svelte';
   import type { FeatureProps } from '$lib/features';
   import { t } from '$lib/i18n';
@@ -22,6 +23,11 @@
   let confirmed = $state(false);
   let writeConfirmed = $state(false);
   let inputError = $state('');
+  let hiddenConfirmed = $state(false);
+  const hidden = $derived(HIDDEN_CHARACTERS.test(sql));
+  $effect(() => {
+    if (!hidden) hiddenConfirmed = false;
+  });
   const driver = $derived(connection?.driver === 'postgresql' ? 'postgres' : connection?.driver);
   const driverCaps = $derived(caps?.drivers.find((entry) => entry.driver === driver));
   const locked = $derived(operation.busy || !!shell?.session.writeInFlight);
@@ -172,6 +178,11 @@
       <p>{t('sqlBatch.readWarning')}</p>
       <fieldset disabled={locked || !allowed}>
         <legend>{t('sqlBatch.consent')}</legend>
+        {#if hidden}<label class="warning"
+            ><input type="checkbox" bind:checked={hiddenConfirmed} />{t(
+              'sqlEditor.hiddenText',
+            )}</label
+          >{/if}
         <label><input type="checkbox" bind:checked={confirmed} />{t('sqlBatch.confirm')}</label>
         <label
           ><input type="checkbox" bind:checked={writeConfirmed} />{t(
@@ -181,8 +192,12 @@
       </fieldset>
       <button
         type="submit"
-        disabled={locked || !allowed || !confirmed || !writeConfirmed || !sql.trim()}
-        >{t('sqlBatch.run')}</button
+        disabled={locked ||
+          !allowed ||
+          !confirmed ||
+          !writeConfirmed ||
+          !sql.trim() ||
+          (hidden && !hiddenConfirmed)}>{t('sqlBatch.run')}</button
       >
       {#if operation.busy}<button type="button" onclick={() => operation.cancel()}
           >{t('sqlBatch.cancel')}</button

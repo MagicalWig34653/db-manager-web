@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // State and execution of the SQL workspace; lives in the shell so it survives tab changes.
+import { HIDDEN_CHARACTERS } from '$lib/features/sql-editor/hidden';
 import { recordQuery } from '$lib/features/sql-editor/storage.svelte';
 import {
   placeholderNames,
@@ -26,10 +27,7 @@ export function looksReadOnly(sql: string): boolean {
   return !/\b(into|for\s+(update|share|no\s+key)|lock\s+in\s+share)\b/i.test(text);
 }
 
-// C0/C1 controls (except tab, newline, carriage return), zero-width, bidi and BOM characters.
-// eslint-disable-next-line no-control-regex
-export const HIDDEN_CHARACTERS =
-  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/;
+export { HIDDEN_CHARACTERS };
 
 export class SqlRunner {
   sql = $state('');

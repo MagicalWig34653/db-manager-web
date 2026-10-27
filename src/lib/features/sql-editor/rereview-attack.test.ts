@@ -6,7 +6,7 @@ import { formatSql } from './format';
 
 describe('formatter changes more than whitespace (confirmed on real servers)', () => {
   // Real PostgreSQL 18.6: SELECT 'x'<newline>'y' -> 'xy', but SELECT 'x' 'y' is a syntax error (42601).
-  it.fails('PG: newline between adjacent string literals is significant (continuation)', () => {
+  it('PG: newline between adjacent string literals is significant (continuation)', () => {
     for (const sql of [
       "SELECT 'x'\n'y'",
       "SELECT B'1'\n'0'",
@@ -21,37 +21,31 @@ describe('formatter changes more than whitespace (confirmed on real servers)', (
     }
   });
   // Real SQLite: ?1 is a numbered parameter, "? 1" is a syntax error.
-  it.fails('SQLite: ?NNN parameters stay one token', () => {
+  it('SQLite: ?NNN parameters stay one token', () => {
     expect(formatSql('SELECT ?1, ?23', 'sqlite')).toContain('?1');
     expect(formatSql('SELECT ?1, ?23', 'sqlite')).toContain('?23');
   });
   // SQLite and PostgreSQL do not treat U+000B as whitespace (syntax error); the formatter turns it into a space.
   // Real SQLite: @v(1=1) is ONE variable token with a TCL-style suffix; "(1 = 1)" makes it an illegal token.
-  it.fails(
-    'SQLite: whitespace inside @name(...) / $name(...) variable suffix is not changed',
-    () => {
-      const out = formatSql('SELECT @v(1=1)', 'sqlite');
-      expect(out === null || out.includes('(1=1)')).toBe(true);
-    },
-  );
-  it.fails('U+000B (vertical tab) is not turned into valid SQL on SQLite', () => {
+  it('SQLite: whitespace inside @name(...) / $name(...) variable suffix is not changed', () => {
+    const out = formatSql('SELECT @v(1=1)', 'sqlite');
+    expect(out === null || out.includes('(1=1)')).toBe(true);
+  });
+  it('U+000B (vertical tab) is not turned into valid SQL on SQLite', () => {
     const out = formatSql('SELECT\u000b1', 'sqlite');
     expect(out === null || out.includes('\u000b')).toBe(true);
   });
-  it.fails(
-    'MySQL NO_BACKSLASH_ESCAPES: no silent respacing of literals when backslash-quote pairs mislead the lexer',
-    () => {
-      // Under NO_BACKSLASH_ESCAPES the statement is  'a\'  ,  'b  c'  ... the lexer reads \' as an escape.
-      const sql = "select '\\','\\ '\nx\\''";
-      const out = formatSql(sql, 'mysql');
-      expect(
-        out === null || out.replace(/[ \t\r\n]+/g, '') === sql.replace(/[ \t\r\n]+/g, ''),
-      ).toBe(true);
-      // literals (server view: backslash is a plain character) must be byte identical
-      const lits = (text: string) => text.match(/'[^']*'/g)?.join('|');
-      expect(out === null || lits(out) === lits(sql)).toBe(true);
-    },
-  );
+  it('MySQL NO_BACKSLASH_ESCAPES: no silent respacing of literals when backslash-quote pairs mislead the lexer', () => {
+    // Under NO_BACKSLASH_ESCAPES the statement is  'a\'  ,  'b  c'  ... the lexer reads \' as an escape.
+    const sql = "select '\\','\\ '\nx\\''";
+    const out = formatSql(sql, 'mysql');
+    expect(out === null || out.replace(/[ \t\r\n]+/g, '') === sql.replace(/[ \t\r\n]+/g, '')).toBe(
+      true,
+    );
+    // literals (server view: backslash is a plain character) must be byte identical
+    const lits = (text: string) => text.match(/'[^']*'/g)?.join('|');
+    expect(out === null || lits(out) === lits(sql)).toBe(true);
+  });
 });
 
 describe('formatter limits hold', () => {

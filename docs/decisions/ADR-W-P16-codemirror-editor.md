@@ -26,9 +26,9 @@ Grundlage: Entscheidung E8 (CodeMirror 6, MIT, vorab freigegeben), ADR-W-P16-bro
    `tabelle.`. Die Hinweise sind an die Verbindungsidentität (ohne Passwort) gebunden und werden bei anderer Verbindung verworfen.
 7. **Lesezeichenvariablen.** `:name` wird mit demselben Lexer wie der Formatierer gefunden (nicht in Zeichenketten,
    Kommentaren, quotierten Bezeichnern, Dollar-Quotes, nicht bei `::`/`:=` oder `a[1:2]`). Vor dem Ausführen öffnet sich ein
-   Dialog mit Warnung „reine Textersetzung im Browser“, Art je Variable (Text, Zahl, NULL, Rohtext) und Vorschau des
-   gesendeten SQL. Text wird mit verdoppelten Hochkommas (MySQL zusätzlich Backslash) gequotet, Zahl streng geprüft, Rohtext
-   unverändert eingefügt (gekennzeichnet). Ersetzt wird ausschließlich clientseitig; das Backend sieht nur den fertigen Text und
+   Dialog mit Warnung „reine Textersetzung im Browser“, Art je Variable (Text, Zahl, NULL) und Vorschau des
+   gesendeten SQL. Text wird mit verdoppelten Hochkommas (MySQL zusätzlich Backslash) gequotet, Zahl streng geprüft
+   (negative Zahlen in Klammern). Ersetzt wird ausschließlich clientseitig; das Backend sieht nur den fertigen Text und
    kennt keine Platzhalter. Eingefügte Werte werden nie erneut gescannt. Verlauf und Lesezeichen speichern die Vorlage mit
    `:name`, nie die Werte; die Werte bleiben nur im Arbeitsspeicher der Seite. „Unverändert ausführen“ sendet den Text wie
    geschrieben. Schreib-/Navigationssperre (`databaseWriteReceiver`) gilt unverändert für jede tatsächliche Ausführung.

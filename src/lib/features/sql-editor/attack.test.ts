@@ -23,8 +23,10 @@ describe('formatter: correct behavior held under attack', () => {
   });
   it('keeps mysql backslash escapes, doubled quotes and backtick identifiers', () => {
     const sql = 'SELECT \'a\\\'   b\', "c\\"  d", `e``  f` FROM t';
-    const out = fmt(sql, 'mysql')!;
-    for (const part of ["'a\\'   b'", '"c\\"  d"', '`e``  f`']) expect(out).toContain(part);
+    // Backslash meaning depends on the server mode (NO_BACKSLASH_ESCAPES): the formatter refuses.
+    expect(fmt(sql, 'mysql')).toBeNull();
+    const out = fmt("SELECT 'a''   b', `e``  f` FROM t", 'mysql')!;
+    for (const part of ["'a''   b'", '`e``  f`']) expect(out).toContain(part);
   });
   it('keeps sqlite bracket identifiers and tagged dollar quotes (letters only)', () => {
     expect(fmt('SELECT [a  b] FROM [t  u]', 'sqlite')).toContain('[a  b]');
@@ -47,7 +49,7 @@ describe('formatter: correct behavior held under attack', () => {
   });
   it('is idempotent on a hostile corpus', () => {
     const corpus: [string, Driver][] = [
-      ['select a--b\nfrom t', 'mysql'],
+      ['select a- -b\nfrom t', 'mysql'],
       ["select '#x', 1 # c\n, 2", 'mysql'],
       ['select x::int, a[1:2], $1 from t where a<>b and c!~d', 'postgresql'],
       ["select a->'x'->>'y' from t where b=1", 'sqlite'],

@@ -37,12 +37,9 @@ const readOnlySelect = (sql: string) =>
   /^\s*(select|values|with)\b/i.test(sql) &&
   !SIDE_EFFECT.test(sql.replace(/'(?:[^']|'')*'/g, "''"));
 
-// Confirmed defects of this review round, covered by it.fails in rereview-attack.test.ts; excluded here so the
-// differential still guards everything else: SQLite ?NNN parameters are split, MySQL "--x" (no space) is lexed as a comment.
+// Only a SQLite-specific artifact stays excluded: "@@x" and "a:b" are variable syntax the sqlite3 module rejects either way.
 const known = (sql: string, d: Driver) =>
-  (d === 'sqlite' && /@@|[@$:][A-Za-z_]\w*\(|\?\d|[A-Za-z0-9_)\]]:[A-Za-z_]/.test(sql)) ||
-  (d === 'mysql' && /--[^\s]/.test(sql)) ||
-  /\u000b/.test(sql);
+  d === 'sqlite' && /@@|[A-Za-z0-9_)\]]:[A-Za-z_]/.test(sql);
 
 const norm = (v: unknown): unknown =>
   typeof v === 'bigint'

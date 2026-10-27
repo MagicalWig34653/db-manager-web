@@ -24,7 +24,8 @@ export interface Token {
   end: number;
 }
 
-const SPACE = /[ \t\r\n\f\v]/;
+// Only these are separators; U+000B and every other character stay ordinary (non-space) characters.
+const SPACE = /[ \t\r\n\f]/;
 const WORD_START_BASE = /[A-Za-z_\u0080-\uffff$]/;
 const WORD_PART = /[A-Za-z0-9_\u0080-\uffff$]/;
 // Characters of multi-character operators. A run of them is ONE token (@>, #>>, <@, ->>, ||, <=>, !=).
@@ -63,7 +64,7 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
     if (SPACE.test(c)) {
       while (i < sql.length && SPACE.test(sql[i])) i++;
       push('space', start, i);
-    } else if ((c === '-' && next === '-') || (c === '#' && driver === 'mysql')) {
+    } else if (isLineComment(sql, i, driver)) {
       while (i < sql.length && sql[i] !== '\n') i++;
       push('line-comment', start, i);
     } else if (c === '/' && next === '*') {
@@ -140,6 +141,11 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
         i = end;
         push(q === "'" ? 'string' : 'quoted-identifier', start, i);
       } else push('word', start, i);
+    } else if (c === '?' && driver !== 'postgresql' && /[0-9]/.test(next ?? '')) {
+      // SQLite ?NNN / MySQL-style numbered parameter: one token.
+      i++;
+      while (i < sql.length && /[0-9]/.test(sql[i])) i++;
+      push('param', start, i);
     } else if (c === ':') {
       // "::" (cast) and ":=" (assignment) are two-character operators; a lone colon is a single token.
       i += next === ':' || next === '=' ? 2 : 1;
@@ -148,7 +154,7 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
       i++;
       // Operator runs stay together unless a comment starts.
       while (i < sql.length && operators.includes(sql[i])) {
-        if (sql[i] === '-' && sql[i + 1] === '-') break;
+        if (sql[i] === '-' && isLineComment(sql, i, driver)) break;
         if (sql[i] === '/' && sql[i + 1] === '*') break;
         i++;
       }
@@ -159,6 +165,15 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
     }
   }
   return tokens;
+}
+
+// MySQL and MariaDB start a "--" comment only when whitespace or a control character follows (or the text ends).
+function isLineComment(sql: string, i: number, driver: Driver): boolean {
+  if (sql[i] === '#') return driver === 'mysql';
+  if (sql[i] !== '-' || sql[i + 1] !== '-') return false;
+  if (driver !== 'mysql') return true;
+  const after = sql[i + 2];
+  return after === undefined || /[\u0000-\u0020\u007f]/.test(after);
 }
 
 // "a:b", "x[1:n]" and "f(1):x" are not placeholders: a colon glued to the previous code character is left alone.

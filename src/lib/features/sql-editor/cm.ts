@@ -47,6 +47,7 @@ import { tags } from '@lezer/highlight';
 import type { Driver } from '$lib/workbench';
 import type { SchemaTree } from './catalog-hints.svelte';
 import { tokenize } from './lexer';
+import { HIDDEN_CHARACTERS } from './hidden';
 import type { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 
 export const MAX_DOCUMENT = 1_000_000;
@@ -391,7 +392,7 @@ export function createEditor(options: EditorOptions): EditorHandle {
         history(),
         // Marks control, zero-width and bidi characters visibly (Trojan Source).
         highlightSpecialChars({
-          addSpecialChars: /[\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/,
+          addSpecialChars: HIDDEN_CHARACTERS,
         }),
         drawSelection(),
         indentOnInput(),

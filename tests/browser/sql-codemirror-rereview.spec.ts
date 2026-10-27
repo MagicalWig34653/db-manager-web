@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Independent re-review (W-P16) attack specs for the hidden-character warning and the variable dialog.
-// test.fail() marks a CONFIRMED defect (assertion = correct behavior); it turns red as soon as the defect is fixed.
+// test() marks a CONFIRMED defect (assertion = correct behavior); it turns red as soon as the defect is fixed.
 import { test, expect, type Page } from '@playwright/test';
 import { editorText } from './editor';
 import { browse, description, v2Caps } from '../../src/lib/features/bulk/testing';
@@ -92,23 +92,22 @@ test('every way to run SQL with a bidi character asks first (shortcut, button, b
   expect(queries).toEqual(['select ‮:v']);
 });
 
-test.fail(
-  'the confirmed statement is the one that was warned about, and history records what ran',
-  async ({ page }) => {
-    const queries = await setup(page);
-    await page.getByRole('checkbox', { name: 'Verlauf speichern' }).check();
-    await box(page).fill(BIDI);
-    await box(page).press('ControlOrMeta+Enter');
-    await expect(warning(page)).toBeVisible();
-    // The editor is still editable while the warning stands; the user replaces the text.
-    await box(page).fill('select 42');
-    await warning(page).getByRole('button', { name: 'Trotzdem ausführen' }).click();
-    await expect.poll(() => queries.length).toBe(1);
-    // Correct behavior: either the stale warning is withdrawn on edit (nothing runs) or what runs is what history shows.
-    const history = await page.locator('.sql-library pre').allTextContents();
-    expect(history.length === 0 || history[0] === queries[0]).toBe(true);
-  },
-);
+test('the confirmed statement is the one that was warned about, and history records what ran', async ({
+  page,
+}) => {
+  const queries = await setup(page);
+  await page.getByRole('checkbox', { name: 'Verlauf speichern' }).check();
+  await box(page).fill(BIDI);
+  await box(page).press('ControlOrMeta+Enter');
+  await expect(warning(page)).toBeVisible();
+  // The editor is read-only while the warning stands, so the warned statement cannot diverge from the text.
+  await expect(page.locator('.cm-content')).toHaveAttribute('contenteditable', 'false');
+  await warning(page).getByRole('button', { name: 'Trotzdem ausführen' }).click();
+  await expect.poll(() => queries.length).toBe(1);
+  // Correct behavior: either the stale warning is withdrawn on edit (nothing runs) or what runs is what history shows.
+  const history = await page.locator('.sql-library pre').allTextContents();
+  expect(history.length === 0 || history[0] === queries[0]).toBe(true);
+});
 
 // Invisible characters that are identifier characters in PostgreSQL/MySQL but neither highlighted nor warned about.
 for (const [name, char] of [
@@ -117,11 +116,13 @@ for (const [name, char] of [
   ['tag character U+E0041', '\u{e0041}'],
   ['braille blank U+2800', '⠀'],
 ] as const)
-  test.fail(`${name} inside SQL is warned about before running`, async ({ page }) => {
+  test(`${name} inside SQL is warned about before running`, async ({ page }) => {
     const queries = await setup(page);
     await box(page).fill(`select 1 as a${char}b`);
-    await box(page).press('ControlOrMeta+Enter');
-    await expect(warning(page)).toBeVisible({ timeout: 1500 });
+    await expect(async () => {
+      await box(page).press('ControlOrMeta+Enter');
+      await expect(warning(page)).toBeVisible({ timeout: 800 });
+    }).toPass({ timeout: 8000 });
     expect(queries).toEqual([]);
   });
 

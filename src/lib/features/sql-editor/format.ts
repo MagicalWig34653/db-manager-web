@@ -102,8 +102,8 @@ export const MAX_FORMAT_LENGTH = 100_000;
 const MAX_FORMAT_DEPTH = 40;
 const OPERATOR_GLYPHS = new Set('+-*/<>=~!@#%^&|?:'.split(''));
 const WORDISH = /[A-Za-z0-9_$\u0080-\uffff]/;
-const WHITESPACE_ONLY = /^[ \t\r\n\f\v]*$/;
-const strip = (text: string) => text.replace(/[ \t\r\n\f\v]+/g, '');
+const WHITESPACE_ONLY = /^[ \t\r\n\f]*$/;
+const strip = (text: string) => text.replace(/[ \t\r\n\f]+/g, '');
 
 /**
  * Returns the formatted statement text, or null when the input cannot be formatted safely.
@@ -117,6 +117,7 @@ export function formatSql(sql: string, driver: Driver): string | null {
   const tokens = all.filter((token) => token.kind !== 'space');
   if (tokens.length === 0) return sql;
   if (tokens.some((token) => token.kind === 'word' && PROCEDURAL.has(lower(token)))) return null;
+  if (isAmbiguous(tokens, driver)) return null;
 
   const parts: string[] = [];
   let lineStart = true;
@@ -226,7 +227,7 @@ export function formatSql(sql: string, driver: Driver): string | null {
     append(token.text, spaceBetween(tokens, i, sql));
   }
   dropWhitespace();
-  const out = parts.join('').replace(/^[ \t\r\n\f\v]+/, '');
+  const out = parts.join('').replace(/^[ \t\r\n\f]+/, '');
   // Independent safety net: only whitespace may differ, and the token sequence must survive a new lexing pass.
   if (strip(out) !== strip(sql)) return null;
   const again = tokenize(out, driver);
@@ -263,13 +264,49 @@ function spaceBetween(tokens: Token[], i: number, sql: string): boolean {
   return true;
 }
 
+/**
+ * Whitespace can carry meaning in some places. The formatter refuses instead of guessing there:
+ * - two literals in a row ('a' 'b', also across comments): a newline between them continues the string (PostgreSQL),
+ * - MySQL/MariaDB literals containing a backslash: the meaning of "\\" depends on the server mode NO_BACKSLASH_ESCAPES,
+ * - SQLite variables directly followed by "(" (TCL-style @v(1) suffix).
+ */
+function isAmbiguous(tokens: Token[], driver: Driver): boolean {
+  let before = undefined as Token | undefined;
+  for (const token of tokens) {
+    if (token.kind === 'line-comment' || token.kind === 'block-comment') continue;
+    if (before?.kind === 'string' && token.kind === 'string') return true;
+    if (
+      driver === 'mysql' &&
+      (token.kind === 'string' || token.kind === 'quoted-identifier') &&
+      token.text.includes('\\')
+    )
+      return true;
+    if (
+      driver === 'sqlite' &&
+      before !== undefined &&
+      ((before.kind === 'word' && /^[@$]/.test(before.text)) ||
+        (before.kind === 'param' && before.text[0] === ':')) &&
+      before.end === token.start &&
+      token.text === '('
+    )
+      return true;
+    before = token;
+  }
+  return false;
+}
+
 function spaceBeforeParen(tokens: Token[], i: number): boolean {
   const previous = tokens[i - 1];
   if (!previous || previous.text === '(' || previous.text === '[') return false;
-  if (previous.text === ',' || previous.kind !== 'word') return previous.kind !== 'param';
-  if (SPACE_BEFORE_PAREN.has(lower(previous))) return true;
-  // "INSERT INTO t (a)" / "CREATE TABLE t (a)": a name after these words is not a function call.
-  return ['into', 'table', 'view', 'index', 'update'].includes(lower(tokens[i - 2]));
+  // A name directly followed by "(" is a call in MySQL/MariaDB ("count(*)" but not "count (*)" without IGNORE_SPACE):
+  // the original spacing is kept in both directions.
+  if (
+    previous.kind === 'word' ||
+    previous.kind === 'quoted-identifier' ||
+    previous.kind === 'param'
+  )
+    return previous.end !== tokens[i].start;
+  return true;
 }
 
 function isUnary(tokens: Token[], signIndex: number): boolean {

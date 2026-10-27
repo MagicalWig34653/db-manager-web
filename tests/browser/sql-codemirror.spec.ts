@@ -245,6 +245,7 @@ test('hidden and bidi characters ask for confirmation before the query runs', as
 
 test('suggestion list stays usable at 320 px and is not a scroll container', async ({ page }) => {
   await setup(page);
+  await expect(page.locator('.cm-editor')).toBeVisible();
   await expect(page.getByRole('button', { name: /customers/ })).toBeVisible();
   await page.setViewportSize({ width: 320, height: 700 });
   await box(page).pressSequentially('select * from cus');

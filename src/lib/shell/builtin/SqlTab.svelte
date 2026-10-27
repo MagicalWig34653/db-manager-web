@@ -56,7 +56,7 @@
     bind:value={sql.sql}
     connection={session.connection}
     objects={session.objects}
-    readOnly={sql.running}
+    readOnly={sql.running || sql.hiddenPending !== null}
   />
   <div class="editor-toolbar">
     <div class="execution-actions">
@@ -197,6 +197,7 @@
   value={sql.sql}
   disabled={sql.running}
   onrestore={(value) => {
+    sql.cancelPrompt();
     sql.sql = value;
     sql.focus();
   }}
