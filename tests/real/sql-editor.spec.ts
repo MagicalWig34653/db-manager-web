@@ -134,3 +134,32 @@ test('postgresql: casts and dollar quotes are not placeholders, backslashes stay
   await expect(page.getByText(':not_a_param', { exact: true })).toBeVisible();
   void request;
 });
+
+// Formatting must not change what a statement does: unformatted and formatted statements give equal results.
+import { formatSql } from '../../src/lib/features/sql-editor/format';
+for (const driver of ['sqlite', 'postgresql'] as const) {
+  test(`${driver}: formatted statements return the same results as the originals`, async ({
+    request,
+  }) => {
+    const corpus =
+      driver === 'sqlite'
+        ? [
+            'select - -1, + +2, 3 - -4, 5- - 6',
+            "select '{\"a\":1}'->>'$.a', 'x   y' || '  z', x'41', 7 -- k\n+ 1",
+            'select 10 -(-5), 1 /* c */ + 2, 3<=4, 5<>6',
+          ]
+        : [
+            'select - -1, + +2, 3 - -4, 5- - 6',
+            "select '{\"a\":[1]}'::jsonb @> '{\"a\":[1]}', '{\"a\":1}'::jsonb #>> '{a}', array[1,2] <@ array[1,2,3]",
+            "select E'a\\'  b', U&'d\\0061t  a', B'101', X'4a', $t1$ a   b $t1$, 'm\n  n   \nx'",
+            'select 5 -(-3), 1 /* /* n */ */ + 2, 2 || 3, 7 # 2, 6 & 3, ~5',
+          ];
+    for (const sql of corpus) {
+      const out = formatSql(sql, driver);
+      expect(out, sql).not.toBeNull();
+      const original = await query(request, driver, sql);
+      const formatted = await query(request, driver, out!);
+      expect(JSON.stringify(formatted[0].rows), sql).toBe(JSON.stringify(original[0].rows));
+    }
+  });
+}
