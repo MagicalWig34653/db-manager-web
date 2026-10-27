@@ -71,7 +71,9 @@
     if (result === 'saved' || result === 'buffered') name = '';
   }
   async function saveEdit(entry: ViewEntry) {
-    if (await library?.edit(entry, editName, entry.sql)) editing = null;
+    const done = await library?.edit(entry, editName, entry.sql);
+    // Saved, or a conflict dialog took over: leave the inline editor either way.
+    if (done || library?.conflict) editing = null;
   }
   function download() {
     if (!library) return;
