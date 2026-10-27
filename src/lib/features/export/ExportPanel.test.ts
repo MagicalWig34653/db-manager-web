@@ -321,4 +321,18 @@ describe('ExportPanel', () => {
     await fireEvent.click(screen.getByTestId('start'));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('nur lesende'));
   });
+
+  it('also falls back to API 0.11 when the 0.21 probe is answered with a non-JSON page', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url === '/api/v21/capabilities'
+          ? new Response('<html></html>', { headers: { 'content-type': 'text/html' } })
+          : json(capabilities),
+      ),
+    );
+    await ready();
+    expect(screen.queryByTestId('text-formats')).toBeNull();
+    expect(screen.getByTestId('start')).toBeEnabled();
+  });
 });

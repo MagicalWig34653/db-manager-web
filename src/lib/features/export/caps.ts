@@ -29,23 +29,30 @@ export async function loadCapabilities(
   signal: AbortSignal,
   client = new ApiClient(),
 ): Promise<ExportCaps> {
+  let extended: unknown = null;
   try {
-    const data = await client.requestRaw('/api/v21/capabilities', token, undefined, signal);
-    if (!v21.ExtendedExportCapabilities(data))
+    extended = await client.requestRaw('/api/v21/capabilities', token, undefined, signal);
+  } catch (cause) {
+    // An older backend has no such route: 404, or a non-JSON fallback page. Anything else is a real failure.
+    const older =
+      cause instanceof ApiError &&
+      (cause.code === 'not_found' || cause.code === 'invalid_response');
+    if (!older) throw cause;
+  }
+  if (extended !== null) {
+    if (!v21.ExtendedExportCapabilities(extended))
       throw new ApiError('invalid_response', t('exportDump.err.invalidCaps'));
     return {
       api: 'v21',
-      available: data.available,
-      formats: data.formats as ExportFormat[],
-      drivers: data.drivers.map((entry) => ({
+      available: extended.available,
+      formats: extended.formats as ExportFormat[],
+      drivers: extended.drivers.map((entry) => ({
         driver: entry.driver,
         reason: entry.reason,
         dataStatements: entry.data_statements,
         compatibility: entry.compatibility,
       })),
     };
-  } catch (cause) {
-    if (!(cause instanceof ApiError && cause.code === 'not_found')) throw cause;
   }
   try {
     const data = await client.requestRaw('/api/v11/capabilities', token, undefined, signal);
