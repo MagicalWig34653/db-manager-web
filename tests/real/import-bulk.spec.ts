@@ -259,10 +259,26 @@ for (const driver of ['sqlite', 'postgresql']) {
           cell(await sql(page, apiDriver, `SELECT ${hex} FROM w13_items WHERE id = 1`)),
         ).toLowerCase(),
       ).toBe(payload.toString('hex'));
-      await page
-        .getByRole('button', { name: 'Verwerfen' })
-        .click()
-        .catch(() => {});
+      // The uploaded row is stale on screen: discard, reload and open the fresh row.
+      await page.getByRole('button', { name: 'Verwerfen' }).click();
+      await expect(
+        page.getByRole('button', { name: 'Zeile hinzufügen', exact: true }),
+      ).toBeEnabled();
+      await page.getByRole('button', { name: 'Bearbeiten' }).first().click();
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.getByTestId('file-download').click(),
+      ]);
+      const bytes = Buffer.concat(
+        (await (await download.createReadStream()).toArray()) as Buffer[],
+      );
+      expect(bytes.equals(payload)).toBe(true);
+      // Foreign key lookup fills the field with the chosen key.
+      await page.getByLabel('Angabe für owner_id', { exact: true }).selectOption('value');
+      await page.getByTestId('fk-open-owner_id').click();
+      await expect(page.getByTestId('fk-choice').first()).toBeVisible();
+      await page.getByTestId('fk-choice').filter({ hasText: 'Zweite' }).click();
+      await expect(page.getByLabel('Wert für owner_id', { exact: true })).toHaveValue('2');
     });
   });
 }
