@@ -29,7 +29,7 @@ def prepare(backend, token, pg, ctx):
         else:
             query(connection, 'CREATE TABLE "odd""name" (id BIGINT PRIMARY KEY, v TEXT, n NUMERIC(40,20), b BYTEA)')
             blob = "decode('00ff','hex')"
-        query(connection, "INSERT INTO \"odd\"\"name\"(id, v, n, b) VALUES (1,'Grüße ''雪'', \"x\"\nzeile2 \\ backslash <b>&amp; % $ _ # { } ^ ~','12345678901234567890.12345678901234567890',%s), (2,NULL,NULL,NULL), (3,'',NULL,%s), (9007199254740993,'-- DBMANAGER EXPORT COMPLETE','0.5',NULL)" % (blob, blob))
+        query(connection, "INSERT INTO \"odd\"\"name\"(id, v, n, b) VALUES (1,'Grüße ''雪'', \"x\"\nzeile2 \\ backslash <b>&amp; % $ _ # { } ^ ~','12345678901234567890.12345678901234567890',BLOB), (2,NULL,NULL,NULL), (3,'',NULL,BLOB), (9007199254740993,'-- DBMANAGER EXPORT COMPLETE','0.5',NULL)".replace('BLOB', blob))
         query(connection, 'CREATE TABLE t_big (id INTEGER PRIMARY KEY, v TEXT)')
         if driver == 'sqlite':
             query(connection, 'WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM c WHERE x<500) INSERT INTO t_big(id, v) SELECT x, \'row\' || x FROM c')
