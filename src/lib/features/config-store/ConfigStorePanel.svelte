@@ -36,7 +36,8 @@
     const current = store;
     historyMessage = '';
     exportMessage = '';
-    void current.ensureReady();
+    // Opening the panel re-checks immediately after an outage (no wait for the throttle).
+    void untrack(() => current.ensureReady(current.degraded));
   });
   // Theme and language follow the server once it is the storage; the sync object lives as long as the store.
   $effect(() => {
