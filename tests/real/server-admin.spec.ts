@@ -130,9 +130,7 @@ test(`${config.system}: monitor samples, rates, engines and honest unavailable s
   for (const name of ['Abfrageanalyse', 'Hinweise', 'Replikation']) {
     await page.getByRole('tab', { name }).click();
     if (!network && name !== 'Hinweise') {
-      await expect(
-        page.getByTestId('monitor-view-analysis').or(page.getByText(/nicht unterstützt/).first()),
-      ).toBeVisible();
+      await expect(page.getByText('Für diesen Treiber nicht unterstützt')).toBeVisible();
       continue;
     }
     await expect(

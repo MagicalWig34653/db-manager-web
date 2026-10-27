@@ -115,7 +115,8 @@ def main():
                                   'database': 'probe', 'tls_mode': 'verify-full'}
                     base.HIDDEN.append(PASSWORD)
                     scenario(system, directory, binary, token, results, connection, ca)
-                    assert not fx.leftovers() or True
+                    fx.cleanup()
+                    assert not fx.leftovers(), fx.leftovers()
     print('W-P17/27 real: passed for', ', '.join(results), '- skipped (no Docker):', ', '.join(skipped) or 'none', 'against backend', sha, flush=True)
 
 if __name__ == '__main__':
