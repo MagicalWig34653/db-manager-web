@@ -1,0 +1,8 @@
+{
+  "version": "0.17.0",
+  "source": "https://github.com/MagicalWig34653/db-manager",
+  "source_commit": "d9463ba4b07cf45d8a90ba95d17951d521c5f01e",
+  "source_path": "contracts/api-v0.17.0.json",
+  "sha256": "ec2f75e2159f06fcc841c19089ba82fa9e58b998f55dfc27efcabed6771b39f3",
+  "review": "Independent backend review accepted (wave 4 review B and re-review, docs/handoffs/WAVE4-REVIEW-B.md); integrated on backend main 751dbd1; read-only server administration (status, variables, processes)"
+}

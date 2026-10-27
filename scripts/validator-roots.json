@@ -186,6 +186,8 @@
     "ProgramsRequest",
     "ProgramsResult"
   ],
+  "17": ["ServerAdminCapabilities", "ServerAdminReadRequest", "ServerAdminReadResult"],
+  "20": ["MonitorCapabilities", "MonitorRequest", "MonitorResult"],
   "23": [
     "AccountAccess",
     "AccountAccessRequest",
