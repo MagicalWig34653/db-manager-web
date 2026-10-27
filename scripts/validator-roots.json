@@ -186,6 +186,28 @@
     "ProgramsRequest",
     "ProgramsResult"
   ],
+  "18": [
+    "Error",
+    "ImportCapabilities",
+    "ImportExecuteRequest",
+    "ImportJob",
+    "ImportPlan",
+    "ImportPlanRequest",
+    "ImportResult"
+  ],
+  "19": [
+    "Error",
+    "FileValueRequest",
+    "FileValueUploadRequest",
+    "ForeignKeyLookupRequest",
+    "ForeignKeyLookupResult",
+    "MutationResult",
+    "RowsBulkCapabilities",
+    "RowsBulkExecuteRequest",
+    "RowsBulkPlan",
+    "RowsBulkPlanRequest",
+    "RowsBulkResult"
+  ],
   "23": [
     "AccountAccess",
     "AccountAccessRequest",
