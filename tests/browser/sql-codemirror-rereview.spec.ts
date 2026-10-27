@@ -48,8 +48,11 @@ test('every way to run SQL with a bidi character asks first (shortcut, button, b
   const queries = await setup(page);
   // 1. shortcut
   await box(page).fill(BIDI);
-  await box(page).press('ControlOrMeta+Enter');
-  await expect(warning(page)).toBeVisible();
+  // The shortcut is ignored while the connection is still busy (catalog loading); retry until the warning shows.
+  await expect(async () => {
+    await box(page).press('ControlOrMeta+Enter');
+    await expect(warning(page)).toBeVisible({ timeout: 500 });
+  }).toPass({ timeout: 10000 });
   expect(queries).toEqual([]);
   await warning(page).getByRole('button', { name: 'Abbrechen' }).click();
   // 2. button
