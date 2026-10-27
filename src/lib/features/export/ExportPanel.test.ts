@@ -42,6 +42,58 @@ const capabilities = {
   max_tables: 100,
   max_request_bytes: 1048576,
 };
+const capabilities21 = {
+  contract_version: '0.21.0',
+  available: true,
+  formats: [
+    'sql',
+    'csv',
+    'excel-csv',
+    'json',
+    'xml',
+    'yaml',
+    'php-array',
+    'latex',
+    'latex-longtable',
+    'mediawiki',
+    'texy',
+    'codegen',
+  ],
+  drivers: [
+    {
+      driver: 'sqlite',
+      state: 'limited',
+      views_as_tables: true,
+      definer: ['omit'],
+      compatibility: ['native', 'data-only'],
+      data_statements: ['insert', 'insert-ignore', 'replace'],
+      reason: 'Eingeschränkter Dump.',
+    },
+    {
+      driver: 'mysql',
+      state: 'limited',
+      views_as_tables: true,
+      definer: ['omit'],
+      compatibility: ['native', 'data-only'],
+      data_statements: ['insert', 'insert-ignore', 'replace'],
+      reason: 'x',
+    },
+    {
+      driver: 'postgres',
+      state: 'limited',
+      views_as_tables: true,
+      definer: ['omit'],
+      compatibility: ['native', 'data-only'],
+      data_statements: ['insert'],
+      reason: 'y',
+    },
+  ],
+  max_bytes: 1073741824,
+  max_rows: 10000000,
+  max_timeout_ms: 300000,
+  max_tables: 100,
+  max_request_bytes: 1048576,
+};
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const props = {
@@ -72,12 +124,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function stubFetch(exportBody: () => Response | Promise<Response>) {
+function stubFetch(exportBody: () => Response | Promise<Response>, api: 'v21' | 'v11' = 'v21') {
   const calls: { url: string; body?: unknown }[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      if (url === '/api/v21/capabilities')
+        return api === 'v21' ? json(capabilities21) : json({ error: { code: 'not_found' } }, 404);
       if (url.endsWith('/capabilities')) return json(capabilities);
       return exportBody();
     }),
@@ -111,7 +165,7 @@ describe('ExportPanel', () => {
     await fireEvent.click(screen.getByTestId('start'));
     await waitFor(() => expect(screen.getByTestId('export-done')).toBeVisible());
     expect(downloads).toEqual(['export.sql']);
-    const post = calls.find((c) => c.url === '/api/v11/export')!;
+    const post = calls.find((c) => c.url === '/api/v21/export')!;
     expect(post.body).toMatchObject({
       scope: 'tables',
       tables: [{ schema: 'main', name: 'orders' }],
@@ -129,12 +183,79 @@ describe('ExportPanel', () => {
     expect(downloads).toEqual([]);
   });
 
-  it('explains 503 export_busy', async () => {
-    stubFetch(() => json({ error: { code: 'export_busy', message: 'x' } }, 503));
+  it('explains 503 export_busy and allows a new start (nothing was written)', async () => {
+    let answers = 0;
+    stubFetch(() =>
+      ++answers === 1
+        ? json({ error: { code: 'export_busy', message: 'x' } }, 503)
+        : stream('CREATE TABLE t(a);\n-- DBMANAGER EXPORT COMPLETE\n'),
+    );
     await ready();
     await fireEvent.click(screen.getByTestId('start'));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('zwei Exporte'));
+    await waitFor(() =>
+      expect(screen.getByTestId('export-busy')).toHaveTextContent('zwei Exporte'),
+    );
     expect(downloads).toEqual([]);
+    await fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    await waitFor(() => expect(screen.getByTestId('export-done')).toBeVisible());
+    expect(downloads).toEqual(['export.sql']);
+  });
+
+  it('exports an extended text format only after its closing structure was verified', async () => {
+    const head = '<?xml version="1.0" encoding="UTF-8"?>\n<export version="1">\n<table><rows>\n';
+    const tail = '</rows></table>\n<complete>true</complete></export>\n';
+    const calls = stubFetch(() => stream(head + tail));
+    await ready();
+    await fireEvent.click(screen.getByLabelText('XML'));
+    await fireEvent.click(screen.getByTestId('start'));
+    await waitFor(() => expect(screen.getByTestId('export-done')).toBeVisible());
+    expect(calls.find((c) => c.url === '/api/v21/export')!.body).toMatchObject({ format: 'xml' });
+    expect(downloads).toEqual(['export.sql']);
+  });
+
+  it('does not offer a truncated extended export or one with a faked marker in a cell', async () => {
+    stubFetch(() =>
+      stream(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<export version="1">\n<table><rows>\n<row><cell><value>&lt;complete&gt;true&lt;/complete&gt;</value>',
+      ),
+    );
+    await ready();
+    await fireEvent.click(screen.getByLabelText('XML'));
+    await fireEvent.click(screen.getByTestId('start'));
+    await waitFor(() => expect(screen.getByTestId('incomplete-hint')).toBeVisible());
+    expect(downloads).toEqual([]);
+  });
+
+  it('falls back to API 0.11 with four formats on instances without 0.21', async () => {
+    const calls = stubFetch(
+      () => stream('CREATE TABLE t(a);\n-- DBMANAGER EXPORT COMPLETE\n'),
+      'v11',
+    );
+    await ready();
+    expect(screen.queryByTestId('text-formats')).toBeNull();
+    expect(screen.queryByTestId('dump-details')).toBeNull();
+    await fireEvent.click(screen.getByTestId('start'));
+    await waitFor(() => expect(screen.getByTestId('export-done')).toBeVisible());
+    expect(calls.some((c) => c.url === '/api/v11/export')).toBe(true);
+    expect(calls.some((c) => c.url === '/api/v21/export')).toBe(false);
+  });
+
+  it('sends dump details and aliases and offers only the statements the driver accepts', async () => {
+    const calls = stubFetch(() => stream('x\n-- DBMANAGER EXPORT COMPLETE\n'));
+    await ready();
+    expect(screen.getByTestId('dump-details')).toBeVisible();
+    await fireEvent.click(screen.getByLabelText(/Sichten als reguläre Tabellen/));
+    await fireEvent.click(screen.getByLabelText('Struktur'));
+    await fireEvent.change(screen.getByTestId('data-statement'), {
+      target: { value: 'insert-ignore' },
+    });
+    await fireEvent.click(screen.getByTestId('start'));
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/v21/export')).toBe(true));
+    expect(calls.find((c) => c.url === '/api/v21/export')!.body).toMatchObject({
+      structure: false,
+      views_as_tables: true,
+      data_statement: 'insert-ignore',
+    });
   });
 
   it('cancels a running export and keeps no file', async () => {
@@ -142,7 +263,7 @@ describe('ExportPanel', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        if (url.endsWith('/capabilities')) return json(capabilities);
+        if (url === '/api/v21/capabilities') return json(capabilities21);
         signal = init?.signal as AbortSignal;
         const body = new ReadableStream<Uint8Array>({
           start(c) {

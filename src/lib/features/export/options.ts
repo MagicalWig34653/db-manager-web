@@ -3,8 +3,8 @@
 // effective settings before anything is sent.
 import { t, formatNumber } from '$lib/i18n';
 import type { components } from '$lib/contract/v11/api-types';
-import type { ExportFormat } from './verify';
-import type { ExportRequest } from './run';
+import { defaultDelimiter, isCsvFormat, type ExportFormat } from './verify';
+import type { ExportApi, ExportRequest } from './run';
 import { MEMORY_LIMIT_BYTES } from './sinks';
 
 export type Scope = 'tables' | 'database' | 'server' | 'query';
@@ -36,7 +36,29 @@ export interface ExportForm {
   maxMiB: string;
   timeoutS: string;
   statementKiB: string;
+  // Dump details of API 0.21 (SQL only).
+  viewsAsTables: boolean;
+  compatibility: '' | 'native' | 'data-only';
+  comments: boolean;
+  dataStatement: '' | 'insert' | 'insert-ignore' | 'replace';
+  /** Catalog key of a source table -> catalog key of the existing target table (aliases). */
+  aliases: Record<string, string>;
 }
+
+/** Formats that exist since API 0.21; they export data only, never DDL. */
+export const EXTENDED_FORMATS: readonly ExportFormat[] = [
+  'xml',
+  'yaml',
+  'php-array',
+  'latex',
+  'latex-longtable',
+  'mediawiki',
+  'texy',
+  'codegen',
+];
+export const isExtendedFormat = (format: ExportFormat) => EXTENDED_FORMATS.includes(format);
+export const tableKey = (o: { schema?: string; name: string }) =>
+  `${o.schema ?? ''}\u0000${o.name}`;
 
 export const defaultForm = (): ExportForm => ({
   scope: 'tables',
@@ -60,6 +82,11 @@ export const defaultForm = (): ExportForm => ({
   maxMiB: '',
   timeoutS: '',
   statementKiB: '',
+  viewsAsTables: false,
+  compatibility: '',
+  comments: false,
+  dataStatement: '',
+  aliases: {},
 });
 
 export interface BuildContext {
@@ -68,6 +95,10 @@ export interface BuildContext {
   streamsToDisk: boolean;
   /** Number of regular tables in the catalog (scope "database"). */
   catalogTables: number;
+  /** Contract the instance speaks; defaults to 0.21. 0.11 instances only know four formats. */
+  api?: ExportApi;
+  /** Regular tables of the catalog, used to resolve alias targets (API 0.21). */
+  catalog?: TableRef[];
 }
 
 export interface Built {
@@ -75,7 +106,7 @@ export interface Built {
   problems: string[];
 }
 
-const isCsv = (format: ExportFormat) => format === 'csv' || format === 'excel-csv';
+const isCsv = isCsvFormat;
 const FILENAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$/;
 
 function whole(text: string, min: number, max: number): number | null | 'bad' {
@@ -85,6 +116,12 @@ function whole(text: string, min: number, max: number): number | null | 'bad' {
   const number = Number(value);
   return number >= min && number <= max ? number : 'bad';
 }
+
+const selectedKeys = (form: ExportForm) => new Set(form.tables.map(tableKey));
+const refOf = (table: TableRef): TableRef => ({
+  ...(table.schema ? { schema: table.schema } : {}),
+  name: table.name,
+});
 
 export function parseDatabases(text: string): string[] {
   return [
@@ -100,6 +137,9 @@ export function parseDatabases(text: string): string[] {
 export function buildRequest(form: ExportForm, context: BuildContext): Built {
   const problems: string[] = [];
   const driver = context.connection.driver;
+  const api = context.api ?? 'v21';
+  if (api === 'v11' && isExtendedFormat(form.format))
+    problems.push(t('exportDump.problem.needsV21'));
   const request: ExportRequest = {
     connection: context.connection,
     format: form.format,
@@ -121,8 +161,7 @@ export function buildRequest(form: ExportForm, context: BuildContext): Built {
     const names = parseDatabases(form.databases);
     if (names.length === 0) problems.push(t('exportDump.problem.noDatabases'));
     if (names.length > 20) problems.push(t('exportDump.problem.tooManyDatabases'));
-    if (form.format !== 'sql' && form.format !== 'json')
-      problems.push(t('exportDump.problem.serverFormat'));
+    if (isCsv(form.format)) problems.push(t('exportDump.problem.serverFormat'));
     if (form.format === 'sql' && driver !== 'mysql')
       problems.push(t('exportDump.problem.serverSql'));
     request.databases = names;
@@ -138,11 +177,16 @@ export function buildRequest(form: ExportForm, context: BuildContext): Built {
   }
 
   if (form.format === 'sql') {
-    if (!form.structure && !form.data) problems.push(t('exportDump.problem.noContent'));
-    request.structure = form.structure;
+    const dataOnly = api === 'v21' && form.compatibility === 'data-only';
+    if (dataOnly && (form.structure || form.drop || form.ifNotExists))
+      problems.push(t('exportDump.problem.dataOnlyConflict'));
+    const structure = dataOnly ? false : form.structure;
+    if (!structure && !form.data) problems.push(t('exportDump.problem.noContent'));
+    request.structure = structure;
     request.data = form.data;
-    if (form.drop) request.drop = true;
-    if (form.ifNotExists) request.if_not_exists = true;
+    // DROP and IF NOT EXISTS belong to the DDL part; the contract rejects them without structure.
+    if (form.drop && structure) request.drop = true;
+    if (form.ifNotExists && structure) request.if_not_exists = true;
     if (form.extended) request.extended = true;
     if (form.transaction) request.transaction = true;
     if (form.disableFk) {
@@ -153,6 +197,35 @@ export function buildRequest(form: ExportForm, context: BuildContext): Built {
     if (statement === 'bad' || (typeof statement === 'number' && statement < 1))
       problems.push(t('exportDump.problem.statement'));
     else if (statement !== null) request.max_statement_bytes = statement * 1024;
+    if (api === 'v21') {
+      if (form.viewsAsTables) request.views_as_tables = true;
+      if (form.compatibility !== '') request.compatibility = form.compatibility;
+      if (form.comments) request.comments = true;
+      if (form.dataStatement !== '' && form.dataStatement !== 'insert') {
+        if (driver === 'postgres') problems.push(t('exportDump.problem.dataStatementPostgres'));
+        else request.data_statement = form.dataStatement;
+      }
+      const aliases = Object.entries(form.aliases).filter(
+        ([source, target]) => target !== '' && selectedKeys(form).has(source),
+      );
+      if (aliases.length > 0) {
+        const catalog = context.catalog ?? [];
+        const find = (key: string) => catalog.find((table) => tableKey(table) === key);
+        if (form.scope !== 'tables' || (structure && !dataOnly))
+          problems.push(t('exportDump.problem.aliasNeedsData'));
+        const targets = aliases.map(([, target]) => target);
+        if (new Set(targets).size !== targets.length)
+          problems.push(t('exportDump.problem.aliasDuplicate'));
+        request.aliases = aliases.flatMap(([source, target]) => {
+          const from = find(source);
+          const to = find(target);
+          if (!from || !to) return [];
+          return [{ source: refOf(from), target: refOf(to) }];
+        });
+        if (request.aliases.length !== aliases.length)
+          problems.push(t('exportDump.problem.aliasUnknown'));
+      }
+    }
   }
   if (isCsv(form.format)) {
     if (form.delimiter) request.delimiter = form.delimiter;
@@ -198,6 +271,14 @@ const formatKeys: Record<ExportFormat, string> = {
   csv: 'exportDump.format.csv',
   'excel-csv': 'exportDump.format.excelCsv',
   json: 'exportDump.format.json',
+  xml: 'exportDump.format.xml',
+  yaml: 'exportDump.format.yaml',
+  'php-array': 'exportDump.format.phpArray',
+  latex: 'exportDump.format.latex',
+  'latex-longtable': 'exportDump.format.latexLongtable',
+  mediawiki: 'exportDump.format.mediawiki',
+  texy: 'exportDump.format.texy',
+  codegen: 'exportDump.format.codegen',
 };
 export const scopeLabel = (scope: Scope) => t(scopeKeys[scope]);
 export const formatLabel = (format: ExportFormat) => t(formatKeys[format]);
@@ -241,6 +322,17 @@ export function previewRows(request: ExportRequest, streamsToDisk: boolean): Pre
         .filter(Boolean)
         .join(' + '),
     });
+    const extra = [
+      request.views_as_tables ? t('exportDump.viewsAsTables') : '',
+      request.compatibility === 'data-only' ? t('exportDump.compat.dataOnly') : '',
+      request.comments ? t('exportDump.comments') : '',
+      request.data_statement ? request.data_statement.toUpperCase().replace('-', ' ') : '',
+      request.aliases?.length
+        ? t('exportDump.preview.aliasCount', { n: request.aliases.length })
+        : '',
+    ].filter(Boolean);
+    if (extra.length)
+      rows.push({ label: t('exportDump.preview.dumpDetails'), value: extra.join(', ') });
     rows.push({
       label: t('exportDump.preview.sqlOptions'),
       value: [
@@ -256,7 +348,7 @@ export function previewRows(request: ExportRequest, streamsToDisk: boolean): Pre
   } else if (isCsvFormat(format)) {
     rows.push({
       label: t('exportDump.preview.csv'),
-      value: `${request.delimiter === '\t' ? 'Tab' : (request.delimiter ?? (format === 'excel-csv' ? ';' : ','))} · ${request.crlf || format === 'excel-csv' ? 'CRLF' : 'LF'}`,
+      value: `${request.delimiter === '\t' ? 'Tab' : (request.delimiter ?? defaultDelimiter(format))} · ${request.crlf || format === 'excel-csv' ? 'CRLF' : 'LF'}`,
     });
   }
   rows.push({
@@ -278,7 +370,17 @@ export function previewRows(request: ExportRequest, streamsToDisk: boolean): Pre
   });
   return rows;
 }
-const isCsvFormat = isCsv;
+
+const noticeKey: Record<string, string> = {
+  xml: 'xml',
+  yaml: 'yaml',
+  'php-array': 'php',
+  latex: 'latex',
+  'latex-longtable': 'longtable',
+  mediawiki: 'wiki',
+  texy: 'wiki',
+  codegen: 'codegen',
+};
 
 /** Fidelity and safety remarks that belong next to the chosen settings. */
 export function notices(request: ExportRequest, driver: string): string[] {
@@ -287,6 +389,16 @@ export function notices(request: ExportRequest, driver: string): string[] {
   if (request.format === 'csv') out.push(t('exportDump.notice.csvFormula'));
   if (request.scope === 'query') out.push(t('exportDump.notice.queryBestEffort'));
   if (request.scope === 'server') out.push(t('exportDump.notice.serverSnapshot'));
+  const kind = (request.format ?? 'sql') as ExportFormat;
+  if (isExtendedFormat(kind)) {
+    out.push(t('exportDump.notice.textFormat'));
+    out.push(t(`exportDump.notice.fmt.${noticeKey[kind]}`));
+  }
+  if (request.views_as_tables) out.push(t('exportDump.notice.views'));
+  if (request.data_statement && request.data_statement !== 'insert')
+    out.push(t('exportDump.notice.dataStatement'));
+  if (request.aliases?.length) out.push(t('exportDump.notice.alias'));
+  if (request.compatibility === 'data-only') out.push(t('exportDump.notice.dataOnly'));
   if ((request.format ?? 'sql') === 'sql') out.push(t('exportDump.notice.sqlFidelity'));
   if ((request.format ?? 'sql') === 'sql' && driver === 'mysql')
     out.push(t('exportDump.notice.mysqlDdl'));

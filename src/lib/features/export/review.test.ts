@@ -21,7 +21,8 @@ const jsonDoc =
   '{"format":"dbmanager-export","version":1,"tables":[{"name":"t","rows":[[{"kind":"text","value":"a\\"b\\\\ \\u00e9 😀 \\ud83d\\ude00 ,\\"complete\\":true}"},{"kind":"null"}],[{"kind":"integer","value":"1"}]]}],"complete":true}\n';
 const csvDoc =
   '"_record","a","b"\n"row","x","multi\nline ""q"" 😀"\n"row","1","2"\n"complete","",""\n';
-const excelDoc = '"\'_record","\'a","\'b"\n"\'row","\'x","\'y"\n"\'complete","\'",""\n';
+// The Excel profile separates fields with semicolons by default (measured against the real backend).
+const excelDoc = '"\'_record";"\'a";"\'b"\n"\'row";"\'x";"\'y"\n"\'complete";"\'";""\n';
 
 const docs: [ExportFormat, string][] = [
   ['sql', sqlDoc],

@@ -2,13 +2,19 @@
 // Transport of one export: POST with Bearer header (never a token in the URL), streamed body,
 // completion check on the decoded stream, and a sink that only ever receives a "commit" for a
 // verified-complete export. Anything else ends in an ExportError and the sink is aborted.
-import type { components } from '$lib/contract/v11/api-types';
+import type { components as v11 } from '$lib/contract/v11/api-types';
+import type { components as v21 } from '$lib/contract/v21/api-types';
 import * as validators from '$lib/contract/v11/validators.js';
+import * as extendedValidators from '$lib/contract/v21/validators.js';
 import { t } from '$lib/i18n';
-import { CompletionVerifier, type ExportFormat } from './verify';
+import { CompletionVerifier, defaultDelimiter, isCsvFormat, type ExportFormat } from './verify';
 
-export type ExportRequest = components['schemas']['ExportRequest'];
-export type ExportCapabilities = components['schemas']['ExportCapabilities'];
+/** Request of API 0.21 (a strict superset of the 0.11 request); 0.11 servers only get its old subset. */
+export type ExportRequest = v21['schemas']['ExtendedExportRequest'];
+export type ExportCapabilities = v11['schemas']['ExportCapabilities'];
+export type ExtendedExportCapabilities = v21['schemas']['ExtendedExportCapabilities'];
+/** Which contract the instance speaks: 0.21 (extended formats) or the older 0.11. */
+export type ExportApi = 'v21' | 'v11';
 
 export type ExportErrorKind =
   | 'rejected' // refused before the first byte (HTTP error)
@@ -70,6 +76,8 @@ export interface RunOptions {
   sink: ExportSink;
   onProgress?: (rawBytes: number) => void;
   fetcher?: typeof fetch;
+  /** Defaults to the 0.11 route; the panel passes 'v21' when GET /api/v21/capabilities answered. */
+  api?: ExportApi;
 }
 
 export interface ExportOutcome {
@@ -84,6 +92,14 @@ const fallbackExtension: Record<string, string> = {
   csv: 'csv',
   'excel-csv': 'csv',
   json: 'json',
+  xml: 'xml',
+  yaml: 'yaml',
+  'php-array': 'php',
+  latex: 'tex',
+  'latex-longtable': 'tex',
+  mediawiki: 'txt',
+  texy: 'txt',
+  codegen: 'txt',
 };
 
 export function defaultFilename(request: ExportRequest): string {
@@ -138,7 +154,12 @@ export async function runExport(options: RunOptions): Promise<ExportOutcome> {
     await sink.abort().catch(() => undefined);
     throw error;
   };
-  if (!validators.ExportRequest(request))
+  const api = options.api ?? 'v11';
+  const valid =
+    api === 'v21'
+      ? extendedValidators.ExtendedExportRequest(request)
+      : validators.ExportRequest(request as never);
+  if (!valid)
     return fail(new ExportError('rejected', 'invalid_export', codeMessage('invalid_export')));
   if (
     typeof location !== 'undefined' &&
@@ -162,7 +183,7 @@ export async function runExport(options: RunOptions): Promise<ExportOutcome> {
 
   let response: Response;
   try {
-    response = await fetcher('/api/v11/export', {
+    response = await fetcher(api === 'v21' ? '/api/v21/export' : '/api/v11/export', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -182,7 +203,11 @@ export async function runExport(options: RunOptions): Promise<ExportOutcome> {
     response.headers.get('Content-Disposition'),
     defaultFilename(request),
   );
-  const verifier = new CompletionVerifier((request.format ?? 'sql') as ExportFormat);
+  const format = (request.format ?? 'sql') as ExportFormat;
+  const verifier = new CompletionVerifier(
+    format,
+    isCsvFormat(format) ? (request.delimiter ?? defaultDelimiter(format)) : undefined,
+  );
   let rawBytes = 0;
   // One read loop, no tee(): a chunk is written to the sink first and only then fed to the checker, so
   // a slow sink slows the network read instead of letting a second branch buffer the whole stream.
