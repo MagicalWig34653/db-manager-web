@@ -53,6 +53,14 @@ async function toServer(page: Page) {
 }
 const toSql = (page: Page) => page.locator('a.database-label[href$="/sql"]').click();
 
+async function runSql(page: Page, statement: string) {
+  const editor = page.locator('#sql-editor');
+  await editor.fill(statement);
+  const answered = page.waitForResponse((r) => r.url().endsWith('/api/v1/query'));
+  await editor.press('Control+Enter');
+  expect((await answered).status()).toBe(200);
+}
+
 test.describe.configure({ mode: 'serial' });
 test.skip(!config, 'DBM_REAL_CONFIG and the disposable backend/MariaDB fixture are required.');
 
@@ -164,9 +172,7 @@ test('history is written only with the server opt-in; secrets are refused withou
     .toBe(false);
   await toSql(page);
   const editor = page.locator('#sql-editor');
-  await editor.fill('SELECT 100');
-  await editor.press('Control+Enter');
-  await expect(page.getByText('Ergebnis 1').first()).toBeVisible();
+  await runSql(page, 'SELECT 100');
   expect((await list(request, 'history')).map((h) => h.data.sql)).toEqual(['SELECT 41']); // nothing new
   // Server refuses a history write directly (409 history_disabled).
   const refused = await api(request, '/api/v24/config/history', {
@@ -185,8 +191,7 @@ test('history is written only with the server opt-in; secrets are refused withou
     )
     .toBe(true);
   await toSql(page);
-  await editor.fill('SELECT 200');
-  await editor.press('Control+Enter');
+  await runSql(page, 'SELECT 200');
   await expect
     .poll(async () => (await list(request, 'history')).map((h) => h.data.sql))
     .toContain('SELECT 200');
