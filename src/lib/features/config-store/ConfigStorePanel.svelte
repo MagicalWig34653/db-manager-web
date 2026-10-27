@@ -31,6 +31,7 @@
   let exporting = $state(false);
   let appearance = $state<AppearanceSync>();
 
+  $effect(() => store.observe((phase) => onwritephase(phase)));
   $effect(() => {
     const current = store;
     historyMessage = '';
@@ -134,6 +135,7 @@
       />
       {t('configStore.historyOptIn')}</label
     >
+    {#if store.historyPaused}<p role="status">{t('configStore.historyPaused')}</p>{/if}
     <p>{store.historyEnabled ? t('configStore.historyHint') : t('configStore.historyOffHint')}</p>
     {#if historyMessage}<p role="alert">{historyMessage}</p>{/if}
     {#if !store.historyEnabled}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { beforeEach, describe, expect, it } from 'vitest';
-import { WriteBuffer } from './buffer.svelte';
+import { ownerOf, WriteBuffer } from './buffer.svelte';
 import { ConfigClient, ConfigError } from './client';
 import { ServerLibrary } from './library.svelte';
 import { errorText } from './model';
@@ -128,7 +128,7 @@ describe('errors never echo input', () => {
   it('maps secret rejection and quota to catalog text without the SQL', async () => {
     const store = make();
     await store.ensureReady();
-    const sql = "ALTER USER x IDENTIFIED BY 'hunter2-PASSWORD'";
+    const sql = "SELECT 'hunter2-rejectme'"; // refused by the (fake) server, not by the local rules
     const result = await store.write('bookmarks', SCOPE, { name: 'n', sql });
     expect(result).toEqual({ ok: false, code: 'secret_rejected' });
     const text = errorText(result.ok ? '' : result.code);
@@ -232,7 +232,9 @@ describe('outage buffer', () => {
     expect(store.degraded).toBe(true);
     expect(store.buffer.entries).toHaveLength(1);
     // Persisted in this browser: a fresh buffer (page reload) still has it.
-    expect(new WriteBuffer(() => localStorage).entries).toHaveLength(1);
+    const reloaded = new WriteBuffer(() => localStorage);
+    reloaded.bind(await ownerOf(fake.token));
+    expect(reloaded.entries).toHaveLength(1);
     const lib = new ServerLibrary(store, SCOPE, () => []);
     expect(lib.shown('bookmarks')[0]).toMatchObject({ name: 'Buffered', pending: true });
     fake.down = false;

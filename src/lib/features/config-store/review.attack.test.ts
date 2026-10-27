@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Independent review attack tests for W-P20 web (docs/handoffs/W-P20-web-review.md). Tests named "HOLDS" pin a
-// property that was verified; tests written with `it.fails` document a CONFIRMED defect (the assertion states the
-// wanted behavior; the suite stays green while the defect exists and turns red when it is fixed, so the marker must
-// then be removed).
+// property that was verified; tests marked FIXED were `it.fails` markers of confirmed defects (W-01 to W-12) and are now ordinary tests.
 import { readdirSync, readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
@@ -225,7 +223,7 @@ const recordServerHistoryVia = async (store: ConfigStore, sql: string) => {
 };
 
 describe('store API does not enforce the mode itself (defect, Low)', () => {
-  it.fails('after a switch to local mode no data route is called through the store', async () => {
+  it('after a switch to local mode no data route is called through the store', async () => {
     const store = make();
     await store.ensureReady();
     fake.state = 'not_configured';
@@ -291,72 +289,63 @@ describe('data protection', () => {
     expect(applied).not.toHaveBeenCalled();
   });
 
-  it.fails(
-    'DEFECT (Medium, hardening): outage buffer persists SQL that the server would reject (JWT, URL with credentials) in plaintext localStorage',
-    async () => {
-      const store = make();
-      resetConfigStore(store);
-      await store.ensureReady();
-      await store.setHistoryEnabled(true);
-      fake.down = true;
-      const jwt =
-        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1rwW1gFWFOEjXk';
-      await recordServerHistory(
-        { ...emptyConnection(), password: 'pw' },
-        `SELECT '${jwt}'`,
-        fake.token,
-      );
-      await recordServerHistory(
-        emptyConnection(),
-        "SELECT 'postgres://admin:s3cr3t@db.internal/app'",
-        fake.token,
-      );
-      const stored = localStorage.getItem(BUFFER_KEY) ?? '';
-      expect(stored).not.toContain(jwt);
-      expect(stored).not.toContain('s3cr3t');
-    },
-  );
+  it('FIXED (Medium, hardening): outage buffer persists SQL that the server would reject (JWT, URL with credentials) in plaintext localStorage', async () => {
+    const store = make();
+    resetConfigStore(store);
+    await store.ensureReady();
+    await store.setHistoryEnabled(true);
+    fake.down = true;
+    const jwt =
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1rwW1gFWFOEjXk';
+    await recordServerHistory(
+      { ...emptyConnection(), password: 'pw' },
+      `SELECT '${jwt}'`,
+      fake.token,
+    );
+    await recordServerHistory(
+      emptyConnection(),
+      "SELECT 'postgres://admin:s3cr3t@db.internal/app'",
+      fake.token,
+    );
+    const stored = localStorage.getItem(BUFFER_KEY) ?? '';
+    expect(stored).not.toContain(jwt);
+    expect(stored).not.toContain('s3cr3t');
+  });
 
-  it.fails(
-    'DEFECT (Medium for W-P30): the outage buffer is not bound to the token; another token flushes it to its own account',
-    async () => {
-      const first = make('token-a');
-      void first;
-      new WriteBuffer(() => localStorage).add({
-        kind: 'bookmarks',
-        scope: 's',
-        client_ref: 'ref-1',
-        time: '2026-10-27T10:00:00.000Z',
-        data: { name: 'private', sql: 'SELECT 1' },
-      });
-      fake.token = 'token-b';
-      const second = make('token-b');
-      await second.ensureReady();
-      expect(fake.count('bookmarks')).toBe(0);
-    },
-  );
+  it('FIXED (Medium for W-P30): the outage buffer is not bound to the token; another token flushes it to its own account', async () => {
+    const first = make('token-a');
+    void first;
+    new WriteBuffer(() => localStorage).add({
+      kind: 'bookmarks',
+      scope: 's',
+      client_ref: 'ref-1',
+      time: '2026-10-27T10:00:00.000Z',
+      data: { name: 'private', sql: 'SELECT 1' },
+    });
+    fake.token = 'token-b';
+    const second = make('token-b');
+    await second.ensureReady();
+    expect(fake.count('bookmarks')).toBe(0);
+  });
 
-  it.fails(
-    'DEFECT (Low/Medium): "delete all" leaves buffered bookmarks in the browser; the next re-check replays them and revives deleted data',
-    async () => {
-      const store = make();
-      resetConfigStore(store);
-      await store.ensureReady();
-      fake.seed('favorites', { table: 'orders' }, 's');
-      fake.down = true;
-      await store.write('bookmarks', 's', { name: 'pending', sql: 'SELECT 42' });
-      expect(store.buffer.entries).toHaveLength(1);
-      fake.down = false; // server is back, but nobody re-checked yet (store.degraded is still true)
-      const flow = new ClearFlow(store, () => () => {});
-      await flow.loadPlan([...KINDS]);
-      flow.typed = flow.plan!.confirmation;
-      await flow.execute();
-      expect(flow.phase).toBe('done');
-      await store.ensureReady(true); // the next SQL statement does this
-      expect(fake.count('bookmarks')).toBe(0);
-      expect(store.buffer.entries).toHaveLength(0);
-    },
-  );
+  it('FIXED (Low/Medium): "delete all" leaves buffered bookmarks in the browser; the next re-check replays them and revives deleted data', async () => {
+    const store = make();
+    resetConfigStore(store);
+    await store.ensureReady();
+    fake.seed('favorites', { table: 'orders' }, 's');
+    fake.down = true;
+    await store.write('bookmarks', 's', { name: 'pending', sql: 'SELECT 42' });
+    expect(store.buffer.entries).toHaveLength(1);
+    fake.down = false; // server is back, but nobody re-checked yet (store.degraded is still true)
+    const flow = new ClearFlow(store, () => () => {});
+    await flow.loadPlan([...KINDS]);
+    flow.typed = flow.plan!.confirmation;
+    await flow.execute();
+    expect(flow.phase).toBe('done');
+    await store.ensureReady(true); // the next SQL statement does this
+    expect(fake.count('bookmarks')).toBe(0);
+    expect(store.buffer.entries).toHaveLength(0);
+  });
 });
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -396,52 +385,43 @@ describe('migration', () => {
     expect(fake.count('bookmarks')).toBe(3);
   });
 
-  it.fails(
-    'DEFECT (Medium): confirmation given for a preview without history also covers history (and the server opt-in) after the checkbox is toggled',
-    async () => {
-      seed(KEYS[0], 2, 40, true);
-      const store = make();
-      await store.ensureReady();
-      const migration = new Migration(store, phases().receive, () => []);
-      await migration.refreshPreview();
-      migration.confirmed = true; // user confirmed "2 bookmarks, 0 history"
-      migration.includeHistory = true;
-      await migration.refreshPreview(); // preview now includes history
-      expect(migration.canRun).toBe(false); // wanted: a changed preview needs a new confirmation
-    },
-  );
+  it('FIXED (Medium): confirmation given for a preview without history also covers history (and the server opt-in) after the checkbox is toggled', async () => {
+    seed(KEYS[0], 2, 40, true);
+    const store = make();
+    await store.ensureReady();
+    const migration = new Migration(store, phases().receive, () => []);
+    await migration.refreshPreview();
+    migration.confirmed = true; // user confirmed "2 bookmarks, 0 history"
+    migration.includeHistory = true;
+    await migration.refreshPreview(); // preview now includes history
+    expect(migration.canRun).toBe(false); // wanted: a changed preview needs a new confirmation
+  });
 
-  it.fails(
-    'DEFECT (Medium): batches are cut by count (100) only; > 1 MiB of local entries make the migration fail permanently (request_too_large)',
-    async () => {
-      for (const key of KEYS.slice(0, 5)) seed(key, 20, 12000);
-      const store = make();
-      await store.ensureReady();
-      const migration = new Migration(store, phases().receive, () => []);
-      await migration.refreshPreview();
-      expect(migration.preview!.items.length).toBeGreaterThanOrEqual(100);
-      migration.confirmed = true;
-      await migration.run();
-      expect(migration.phase).toBe('done');
-    },
-  );
+  it('FIXED (Medium): batches are cut by count (100) only; > 1 MiB of local entries make the migration fail permanently (request_too_large)', async () => {
+    for (const key of KEYS.slice(0, 5)) seed(key, 20, 12000);
+    const store = make();
+    await store.ensureReady();
+    const migration = new Migration(store, phases().receive, () => []);
+    await migration.refreshPreview();
+    expect(migration.preview!.items.length).toBeGreaterThanOrEqual(100);
+    migration.confirmed = true;
+    await migration.run();
+    expect(migration.phase).toBe('done');
+  });
 
-  it.fails(
-    'DEFECT (Low): a lost answer during the import is reported as "settled" to the navigation lock, not as "unknown"',
-    async () => {
-      seed(KEYS[0], 2, 40);
-      const store = make();
-      await store.ensureReady();
-      const { seen, receive } = phases();
-      const migration = new Migration(store, receive, () => []);
-      await migration.refreshPreview();
-      migration.confirmed = true;
-      fake.loseNextWriteAnswer = true;
-      await migration.run();
-      expect(migration.phase).toBe('failed');
-      expect(seen).toContain('unknown');
-    },
-  );
+  it('FIXED (Low): a lost answer during the import is reported as "settled" to the navigation lock, not as "unknown"', async () => {
+    seed(KEYS[0], 2, 40);
+    const store = make();
+    await store.ensureReady();
+    const { seen, receive } = phases();
+    const migration = new Migration(store, receive, () => []);
+    await migration.refreshPreview();
+    migration.confirmed = true;
+    fake.loseNextWriteAnswer = true;
+    await migration.run();
+    expect(migration.phase).toBe('failed');
+    expect(seen).toContain('unknown');
+  });
 
   it('HOLDS: double click starts exactly one import', async () => {
     seed(KEYS[0], 2, 40);
@@ -459,25 +439,22 @@ describe('migration', () => {
 // (3) Concurrency, clear, paging
 // ---------------------------------------------------------------------------------------------------------------
 describe('concurrency and clear', () => {
-  it.fails(
-    'DEFECT (Low): after a second 412 the conflict dialog keeps a stale "current" version, so "save mine" cannot succeed',
-    async () => {
-      const item = fake.seed('bookmarks', { name: 'a', sql: 'SELECT 1' }, 's');
-      const store = make();
-      await store.ensureReady();
-      const library = new ServerLibrary(store, 's', () => []);
-      await library.load();
-      const entry = library.bookmarks[0];
-      fake.items.get(item.id)!.version++; // somebody else changed it
-      await library.edit(entry, 'mine', 'SELECT 1');
-      expect(library.conflict).not.toBeNull();
-      fake.items.get(item.id)!.version++; // and again before the choice is made
-      await library.resolve('mine'); // fails with 412 (expected once)
-      // Whatever the dialog does next, a second attempt must be able to win:
-      const second = await library.resolve('mine');
-      expect(second).toBe(true);
-    },
-  );
+  it('FIXED (Low): after a second 412 the conflict dialog keeps a stale "current" version, so "save mine" cannot succeed', async () => {
+    const item = fake.seed('bookmarks', { name: 'a', sql: 'SELECT 1' }, 's');
+    const store = make();
+    await store.ensureReady();
+    const library = new ServerLibrary(store, 's', () => []);
+    await library.load();
+    const entry = library.bookmarks[0];
+    fake.items.get(item.id)!.version++; // somebody else changed it
+    await library.edit(entry, 'mine', 'SELECT 1');
+    expect(library.conflict).not.toBeNull();
+    fake.items.get(item.id)!.version++; // and again before the choice is made
+    await library.resolve('mine'); // fails with 412 (expected once)
+    // Whatever the dialog does next, a second attempt must be able to win:
+    const second = await library.resolve('mine');
+    expect(second).toBe(true);
+  });
 
   it('HOLDS: a stale delete never removes the entry and reloads', async () => {
     const item = fake.seed('bookmarks', { name: 'a', sql: 'SELECT 1' }, 's');
@@ -517,31 +494,28 @@ describe('concurrency and clear', () => {
     expect(fake.calls.filter((c) => c.path.endsWith('/clear/execute'))).toHaveLength(1);
   });
 
-  it.fails(
-    'DEFECT (Low): the setting autosave drops a change made while the previous save is in flight',
-    async () => {
-      const store = make();
-      await store.ensureReady();
-      let release!: () => void;
-      const gate = new Promise<void>((resolve) => (release = resolve));
-      const slow = new ConfigClient(async (input, init) => {
-        if ((init?.method ?? 'GET') === 'POST') await gate;
-        return fake.fetch(input, init);
-      });
-      const guarded = new ConfigStore(fake.token, { client: slow, buffer: store.buffer });
-      await guarded.ensureReady();
-      const sync = new AppearanceSync(guarded, () => {}, 0);
-      await sync.load();
-      sync.push('dark', 'de');
-      await new Promise((r) => setTimeout(r, 10)); // first save now waits for the gate
-      sync.push('light', 'de'); // second change while saving
-      await new Promise((r) => setTimeout(r, 10));
-      release();
-      await new Promise((r) => setTimeout(r, 50));
-      const doc = [...fake.items.values()].find((i) => i.key === 'appearance');
-      expect(doc?.data.theme).toBe('light');
-    },
-  );
+  it('FIXED (Low): the setting autosave drops a change made while the previous save is in flight', async () => {
+    const store = make();
+    await store.ensureReady();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = new ConfigClient(async (input, init) => {
+      if ((init?.method ?? 'GET') === 'POST') await gate;
+      return fake.fetch(input, init);
+    });
+    const guarded = new ConfigStore(fake.token, { client: slow, buffer: store.buffer });
+    await guarded.ensureReady();
+    const sync = new AppearanceSync(guarded, () => {}, 0);
+    await sync.load();
+    sync.push('dark', 'de');
+    await new Promise((r) => setTimeout(r, 10)); // first save now waits for the gate
+    sync.push('light', 'de'); // second change while saving
+    await new Promise((r) => setTimeout(r, 10));
+    release();
+    await new Promise((r) => setTimeout(r, 50));
+    const doc = [...fake.items.values()].find((i) => i.key === 'appearance');
+    expect(doc?.data.theme).toBe('light');
+  });
 });
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -564,57 +538,51 @@ describe('hostile text is rendered as text', () => {
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
   });
 
-  it.fails(
-    'DEFECT (Low): a corrupted browser buffer entry with an invalid time reaches the date formatter unchanged (Intl RangeError in the view)',
-    async () => {
-      localStorage.setItem(
-        BUFFER_KEY,
-        JSON.stringify({
-          version: 1,
-          entries: [
-            {
-              kind: 'history',
-              scope: 's',
-              client_ref: 'r1',
-              time: 'garbage',
-              data: { sql: 'SELECT 1' },
-            },
-          ],
-        }),
-      );
-      const store = make();
-      const library = new ServerLibrary(store, 's', () => []);
-      for (const entry of library.shown('history'))
-        expect(Number.isFinite(Date.parse(entry.time))).toBe(true);
-    },
-  );
+  it('FIXED (Low): a corrupted browser buffer entry with an invalid time reaches the date formatter unchanged (Intl RangeError in the view)', async () => {
+    localStorage.setItem(
+      BUFFER_KEY,
+      JSON.stringify({
+        version: 1,
+        entries: [
+          {
+            kind: 'history',
+            scope: 's',
+            client_ref: 'r1',
+            time: 'garbage',
+            data: { sql: 'SELECT 1' },
+          },
+        ],
+      }),
+    );
+    const store = make();
+    const library = new ServerLibrary(store, 's', () => []);
+    for (const entry of library.shown('history'))
+      expect(Number.isFinite(Date.parse(entry.time))).toBe(true);
+  });
 });
 
 describe('mode re-check while the library panel is open', () => {
   const connection = { ...emptyConnection(), database: 'recheck-db' };
-  it.fails(
-    'DEFECT (Medium): a periodic capabilities re-check replaces the open panel by "checking" and destroys the draft (name, conflict dialog)',
-    async () => {
-      fake.state = 'not_configured';
-      let release!: () => void;
-      let hold = false;
-      const gate = new Promise<void>((resolve) => (release = resolve));
-      const store = make(fake.token, async (input, init) => {
-        if (hold && String(input) === '/api/v24/capabilities') await gate;
-        return fake.fetch(input, init);
-      });
-      resetConfigStore(store);
-      render(SqlLibraryPanel, {
-        props: { connection, token: fake.token, value: 'SELECT 1', onrestore: () => {} },
-      });
-      const input = (await screen.findByLabelText('Name des Lesezeichens')) as HTMLInputElement;
-      await fireEvent.input(input, { target: { value: 'my draft' } });
-      hold = true;
-      const pending = store.ensureReady(true); // what the next executed statement triggers after 30 s
-      await new Promise((r) => setTimeout(r, 20));
-      expect(screen.queryByLabelText('Name des Lesezeichens')).not.toBeNull(); // wanted: the panel stays
-      release();
-      await pending;
-    },
-  );
+  it('FIXED (Medium): a periodic capabilities re-check replaces the open panel by "checking" and destroys the draft (name, conflict dialog)', async () => {
+    fake.state = 'not_configured';
+    let release!: () => void;
+    let hold = false;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const store = make(fake.token, async (input, init) => {
+      if (hold && String(input) === '/api/v24/capabilities') await gate;
+      return fake.fetch(input, init);
+    });
+    resetConfigStore(store);
+    render(SqlLibraryPanel, {
+      props: { connection, token: fake.token, value: 'SELECT 1', onrestore: () => {} },
+    });
+    const input = (await screen.findByLabelText('Name des Lesezeichens')) as HTMLInputElement;
+    await fireEvent.input(input, { target: { value: 'my draft' } });
+    hold = true;
+    const pending = store.ensureReady(true); // what the next executed statement triggers after 30 s
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByLabelText('Name des Lesezeichens')).not.toBeNull(); // wanted: the panel stays
+    release();
+    await pending;
+  });
 });

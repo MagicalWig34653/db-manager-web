@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { ConnectionDraft } from '$lib/workbench';
+import { looksSecret } from '$lib/features/config-store/secrets';
 import { recordServerHistory } from '$lib/features/config-store/record';
 import { connectionIdentity, scopeFor } from '$lib/features/config-store/identity';
 
@@ -44,7 +45,8 @@ export function safeSql(sql: string, secrets: string[] = []): boolean {
     sql.length <= MAX_SQL &&
     size(JSON.stringify(sql)) <= MAX_BYTES / 2 - 2048 &&
     !secrets.some((secret) => secret.length > 0 && sql.includes(secret)) &&
-    !SECRET_PATTERNS.some((pattern) => pattern.test(sql))
+    !SECRET_PATTERNS.some((pattern) => pattern.test(sql)) &&
+    !looksSecret(sql)
   );
 }
 function parseEntry(value: unknown): Entry {

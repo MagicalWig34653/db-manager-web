@@ -90,6 +90,11 @@
           rejected: formatNumber(migration.summary.rejected),
         })}
       </p>
+      {#if migration.summary.tooLarge}
+        <p>
+          {t('configStore.migration.tooLarge', { count: formatNumber(migration.summary.tooLarge) })}
+        </p>
+      {/if}
       {#if migration.summary.rejected}
         <ul>
           {#each Object.entries(migration.summary.reasons) as [reason, count] (reason)}

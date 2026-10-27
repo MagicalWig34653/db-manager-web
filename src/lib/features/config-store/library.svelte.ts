@@ -6,6 +6,7 @@ import { safeSql } from '../sql-editor/storage.svelte';
 import type { ConfigStore } from './store.svelte';
 import type { Item } from './client';
 import { errorText } from './model';
+import { looksSecret } from './secrets';
 
 export interface ViewEntry {
   id: string;
@@ -119,6 +120,7 @@ export class ServerLibrary {
         !name.trim() ||
         name.length > 100 ||
         secrets.some((s) => s && name.includes(s)) ||
+        looksSecret(name) ||
         !safeSql(sql, secrets)
       )
         return (this.error = errorText('local_secret'));
@@ -163,7 +165,12 @@ export class ServerLibrary {
     try {
       this.error = '';
       const secrets = this.secrets();
-      if (!name.trim() || secrets.some((s) => s && name.includes(s)) || !safeSql(sql, secrets)) {
+      if (
+        !name.trim() ||
+        looksSecret(name) ||
+        secrets.some((s) => s && name.includes(s)) ||
+        !safeSql(sql, secrets)
+      ) {
         this.error = errorText('local_secret');
         return false;
       }
@@ -203,6 +210,11 @@ export class ServerLibrary {
         sql: conflict.mine.sql,
       });
       if (!result.ok) {
+        if (result.code === 'version_conflict') {
+          // Changed again while the choice was open: show the newest server version and let the user decide again.
+          const fresh = await this.store.getItem('bookmarks', conflict.current.id);
+          this.conflict = { ...conflict, current: fresh.ok ? fresh.value : null };
+        }
         this.error = errorText(result.code);
         return false;
       }

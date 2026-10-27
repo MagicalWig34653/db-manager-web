@@ -2874,6 +2874,8 @@ export const en = {
       'History is no longer written. Entries already stored remain until you delete them.',
     historyChanged:
       'This setting was changed elsewhere. The current state from the server is shown.',
+    historyPaused:
+      'History paused: the history consent could not be read from the server. Nothing is stored until the server answers again.',
     historySaveFailed: 'The setting was not saved.',
     usageTitle: 'Usage',
     usageRefresh: 'Refresh usage',
@@ -2907,6 +2909,7 @@ export const en = {
       result:
         'Transferred: {created} new, {exists} already present, {updated} updated, {rejected} rejected.',
       failed: 'The transfer was interrupted. Local data is unchanged; you can start it again.',
+      tooLarge: '{count} entries are too large for the server and stay local.',
       rejectedHint: 'Rejected entries stay local.',
       deleteLocal: 'Delete transferred entries from this browser',
       deleteLocalHint:
@@ -2966,7 +2969,7 @@ export const en = {
       what: 'What is stored: query history (only with your consent), bookmarks, saved searches, favorites, recently used tables, theme and language, and column layouts. Passwords, tokens, connection data and query results are never stored.',
       where:
         'Where: in the operator’s server storage (an encrypted database). The connection is mapped only by an irreversible identifier. Without server storage everything stays in this browser.',
-      who: 'Who sees it: everyone using the same access token shares the data; the operator sees times, sizes and counts, not the content.',
+      who: 'Who sees it: everyone using the same access token shares the data. Database administrators without the server key see only times, sizes and counts. Whoever runs or administers the server including its key can read the content.',
       secrets:
         'The server rejects SQL and names with detected credentials. Detection is not complete: do not write secret values into queries or names.',
       delete:
@@ -3005,6 +3008,7 @@ export const en = {
       insecure_origin: 'Insecure connection: only HTTPS or localhost is allowed.',
       result_too_large: 'The answer is too large.',
       local_secret: 'Not stored: name or SQL contain credentials, are empty or too large.',
+      local_mode: 'Server storage is not active; nothing is sent to the server.',
       buffer_full: 'The buffer in the browser is full. The entry was not stored.',
     },
   },

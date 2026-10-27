@@ -26,6 +26,7 @@ export class AppearanceSync {
   private last = '';
   private timer: ReturnType<typeof setTimeout> | undefined;
   private saving = false;
+  private dirty = false;
   private wanted: Value | null = null;
 
   constructor(
@@ -59,27 +60,40 @@ export class AppearanceSync {
     this.timer = setTimeout(() => void this.save(), this.delay);
   }
 
+  /** Sends the wanted value; changes made while a save is in flight are coalesced and sent right afterwards. */
   async save() {
-    const value = this.wanted;
-    if (!value || this.saving) return;
+    if (this.saving) {
+      this.dirty = true;
+      return;
+    }
     this.saving = true;
     try {
-      this.notice = '';
-      const result = await this.store.saveDocument('settings', APPEARANCE_KEY, value, this.item);
-      if (result.ok) {
-        this.item = result.value;
-        this.last = JSON.stringify(value);
-        this.wanted = null;
-      } else if (result.code === 'version_conflict') {
-        this.item = 'conflict' in result ? result.conflict : null;
-        const server = read(this.item);
-        if (server) {
-          this.last = JSON.stringify(server);
-          this.apply(server);
-          this.notice = t('configStore.appearance.conflict');
+      do {
+        this.dirty = false;
+        const value = this.wanted;
+        if (!value) break;
+        this.notice = '';
+        const result = await this.store.saveDocument('settings', APPEARANCE_KEY, value, this.item);
+        if (result.ok) {
+          this.item = result.value;
+          this.last = JSON.stringify(value);
+          if (this.wanted && JSON.stringify(this.wanted) === this.last) this.wanted = null;
+          // A newer wish (different from what was just saved) goes out in the next round.
+          if (this.wanted) this.dirty = true;
+        } else if (result.code === 'version_conflict') {
+          this.item = 'conflict' in result ? result.conflict : null;
+          const server = read(this.item);
+          if (server) {
+            this.last = JSON.stringify(server);
+            this.apply(server);
+            this.notice = t('configStore.appearance.conflict');
+          }
+          this.wanted = null;
+        } else {
+          this.notice = t('configStore.appearance.failed');
+          this.dirty = false;
         }
-        this.wanted = null;
-      } else this.notice = t('configStore.appearance.failed');
+      } while (this.dirty);
     } finally {
       this.saving = false;
     }

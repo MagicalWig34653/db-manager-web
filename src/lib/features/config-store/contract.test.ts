@@ -142,7 +142,13 @@ describe('write buffer', () => {
         version: 1,
         entries: [
           { kind: 'x' },
-          { kind: 'history', scope: 'bad scope', client_ref: 'r', time: 't', data: { sql: 'x' } },
+          {
+            kind: 'history',
+            scope: 'bad scope',
+            client_ref: 'r',
+            time: '2026-10-01T00:00:00.000Z',
+            data: { sql: 'x' },
+          },
         ],
       }),
     );
@@ -152,7 +158,13 @@ describe('write buffer', () => {
     });
     expect(broken.storageFailed).toBe(true);
     expect(
-      broken.add({ kind: 'history', scope: '', client_ref: 'r2', time: 't', data: { sql: 'x' } }),
+      broken.add({
+        kind: 'history',
+        scope: '',
+        client_ref: 'r2',
+        time: '2026-10-01T00:00:00.000Z',
+        data: { sql: 'x' },
+      }),
     ).toBe(true);
     expect(broken.entries).toHaveLength(1); // memory only
   });

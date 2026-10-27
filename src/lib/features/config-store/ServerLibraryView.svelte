@@ -36,6 +36,7 @@
   const when = (time: string) =>
     formatDate(new Date(time), { dateStyle: 'short', timeStyle: 'short' });
 
+  $effect(() => store.observe((phase) => onwritephase(phase)));
   $effect(() => {
     const source = connection;
     let active = true;
@@ -102,6 +103,7 @@
       {t('configStore.degraded', { count: store.buffer.entries.length })}
     </p>{/if}
   {#if library}
+    {#if store.historyPaused}<p role="status">{t('configStore.historyPaused')}</p>{/if}
     {#if !store.historyEnabled}<p>{t('configStore.library.historyOff')}</p>{/if}
     {#if library.error}<p role="alert">{library.error}</p>{/if}
     {#if library.conflict}

@@ -5,13 +5,23 @@
 import type { WritePhase } from '$lib/rows';
 import { readLocalLibraries, removeLocalWhere } from '../sql-editor/storage.svelte';
 import type { ConfigStore } from './store.svelte';
-import { chunk, errorText, prepareMigration, type MigrationPreview, type Prepared } from './model';
+import {
+  chunkBySize,
+  errorText,
+  jsonBytes,
+  MAX_BATCH_BYTES,
+  prepareMigration,
+  type MigrationPreview,
+  type Prepared,
+} from './model';
 
 export interface MigrationSummary {
   created: number;
   exists: number;
   updated: number;
   rejected: number;
+  /** Entries too large for the server (they stay local). */
+  tooLarge: number;
   /** Rejection reason code → count (codes only, never input). */
   reasons: Record<string, number>;
 }
@@ -20,7 +30,23 @@ export class Migration {
   phase = $state<'idle' | 'ready' | 'running' | 'done' | 'failed' | 'deleted'>('idle');
   preview = $state<MigrationPreview | null>(null);
   includeHistory = $state(false);
-  confirmed = $state(false);
+  private confirmedFor = $state('');
+  /** The confirmation is bound to the exact preview and options it was given for; any change withdraws it. */
+  private signature() {
+    const items = this.preview?.items ?? [];
+    return JSON.stringify([
+      this.includeHistory,
+      items.length,
+      items[0]?.client_ref ?? '',
+      items.at(-1)?.client_ref ?? '',
+    ]);
+  }
+  get confirmed() {
+    return !!this.preview && this.confirmedFor !== '' && this.confirmedFor === this.signature();
+  }
+  set confirmed(value: boolean) {
+    this.confirmedFor = value && this.preview ? this.signature() : '';
+  }
   summary = $state<MigrationSummary | null>(null);
   error = $state('');
   deletedCount = $state(0);
@@ -72,15 +98,25 @@ export class Migration {
       exists: 0,
       updated: 0,
       rejected: 0,
+      tooLarge: 0,
       reasons: {},
     };
+    let unknown = false;
     try {
       if (this.preview.items.some((i) => i.kind === 'history') && !this.store.historyEnabled) {
         const optIn = await this.store.setHistoryEnabled(true);
         if (!optIn.ok) throw optIn;
       }
       const size = this.store.caps?.max_import_items ?? 100;
-      for (const batch of chunk(this.preview.items, size)) {
+      const limits = new Map(this.store.caps?.kinds.map((k) => [k.kind, k.max_item_bytes]));
+      // An entry above the server's item limit (or one that could never fit a request) stays local with a clear count.
+      const sendable = this.preview.items.filter((entry) => {
+        const own = jsonBytes(entry.data);
+        const fits = own <= Math.min(MAX_BATCH_BYTES - 1024, limits.get(entry.kind) ?? Infinity);
+        if (!fits) summary.tooLarge++;
+        return fits;
+      });
+      for (const batch of chunkBySize(sendable, size)) {
         const result = await this.store.importBatch(
           batch.map((p) => ({
             kind: p.kind,
@@ -110,11 +146,12 @@ export class Migration {
       this.store.revision++;
     } catch (cause) {
       const code = (cause as { code?: string })?.code ?? 'error';
+      unknown = code === 'outcome_unknown';
       this.error = errorText(code);
       this.phase = 'failed';
       this.summary = summary;
     } finally {
-      receive('settled');
+      receive(unknown ? 'unknown' : 'settled');
     }
   }
 

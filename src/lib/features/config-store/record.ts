@@ -16,8 +16,25 @@ export async function recordServerHistory(
   const store = configStoreFor(token);
   await store.ensureReady();
   if (!store.active) return false;
+  if (!store.privacyKnown) {
+    // The opt-in cannot be read (outage right after start): pause and show it instead of silently dropping.
+    store.historyPaused = true;
+    return true;
+  }
   if (!store.historyEnabled) return true;
   if (!safeSql(sql, [connection.password, token])) return true;
   await store.write('history', await scopeFor(connection), { sql });
   return true;
+}
+
+/** Writes "recently used" when a table is opened; only in server mode, failures are ignored (comfort data). */
+export async function recordRecent(
+  connection: ConnectionDraft,
+  token: string,
+  object: { name: string; schema?: string },
+): Promise<void> {
+  const store = configStoreFor(token);
+  await store.ensureReady();
+  if (!store.active || store.degraded) return;
+  await store.touchRecent(await scopeFor(connection), object.name, object.schema);
 }

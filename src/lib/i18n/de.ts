@@ -2940,6 +2940,8 @@ export const de = {
       'Der Verlauf wird nicht mehr geschrieben. Bereits gespeicherte Einträge bleiben, bis du sie löschst.',
     historyChanged:
       'Diese Einstellung wurde anderswo geändert. Der aktuelle Stand vom Server wird angezeigt.',
+    historyPaused:
+      'Verlauf pausiert: Die Zustimmung zum Verlauf konnte vom Server nicht gelesen werden. Es wird nichts gespeichert, bis der Server wieder antwortet.',
     historySaveFailed: 'Die Einstellung wurde nicht gespeichert.',
     usageTitle: 'Belegung',
     usageRefresh: 'Belegung aktualisieren',
@@ -2975,6 +2977,7 @@ export const de = {
         'Übertragen: {created} neu, {exists} schon vorhanden, {updated} aktualisiert, {rejected} abgelehnt.',
       failed:
         'Die Übertragung wurde unterbrochen. Lokale Daten sind unverändert; du kannst sie erneut starten.',
+      tooLarge: '{count} Einträge sind für den Server zu groß und bleiben lokal.',
       rejectedHint: 'Abgelehnte Einträge bleiben lokal.',
       deleteLocal: 'Übertragene Einträge aus diesem Browser löschen',
       deleteLocalHint:
@@ -3037,7 +3040,7 @@ export const de = {
       what: 'Was gespeichert wird: Abfrageverlauf (nur mit deiner Zustimmung), Lesezeichen, gespeicherte Suchen, Favoriten, zuletzt benutzte Tabellen, Thema und Sprache sowie Spaltenlayouts. Nie gespeichert werden Passwörter, Tokens, Verbindungsdaten und Abfrageergebnisse.',
       where:
         'Wo: im Serverspeicher des Betreibers (eine verschlüsselte Datenbank). Die Verbindung wird nur als nicht umkehrbare Kennung zugeordnet. Ohne Serverspeicher bleibt alles in diesem Browser.',
-      who: 'Wer sieht es: Alle, die dasselbe Zugangstoken nutzen, teilen die Daten; der Betreiber sieht Zeiten, Größen und Anzahlen, nicht den Inhalt.',
+      who: 'Wer sieht es: Alle, die dasselbe Zugangstoken nutzen, teilen die Daten. Datenbankadministratoren ohne den Serverschlüssel sehen nur Zeiten, Größen und Anzahlen. Wer den Server samt Schlüssel betreibt oder verwaltet, kann die Inhalte lesen.',
       secrets:
         'Der Server lehnt SQL und Namen mit erkannten Zugangsdaten ab. Die Erkennung ist nicht vollständig: schreibe keine geheimen Werte in Abfragen oder Namen.',
       delete:
@@ -3079,6 +3082,7 @@ export const de = {
       result_too_large: 'Die Antwort ist zu groß.',
       local_secret:
         'Nicht gespeichert: Name oder SQL enthalten Zugangsdaten, sind leer oder zu groß.',
+      local_mode: 'Der Serverspeicher ist nicht aktiv; es wird nichts an den Server gesendet.',
       buffer_full: 'Der Zwischenspeicher im Browser ist voll. Der Eintrag wurde nicht gespeichert.',
     },
   },

@@ -13,7 +13,10 @@ import {
   type Schemas,
 } from './client';
 import { WriteBuffer, type BufferedWrite } from './buffer.svelte';
-import { chunk, newRef } from './model';
+import type { WritePhase } from '$lib/rows';
+import { chunkBySize, newRef } from './model';
+import { ownerOf } from './buffer.svelte';
+import { anySecret } from './secrets';
 
 export type Mode = 'server' | 'local';
 export type Result<T = Item> =
@@ -36,6 +39,10 @@ export class ConfigStore {
   degraded = $state(false);
   caps = $state<Capabilities | null>(null);
   historyEnabled = $state(false);
+  /** The opt-in could be read from the server (false during an outage right after start). */
+  privacyKnown = $state(false);
+  /** History statements were skipped because the opt-in could not be read; shown instead of dropping silently. */
+  historyPaused = $state(false);
   usage = $state<Schemas['ConfigStatus'] | null>(null);
   /** Increments after every history or bookmark change made through this store; lists reload on it. */
   revision = $state(0);
@@ -47,6 +54,7 @@ export class ConfigStore {
   private checking: Promise<void> | null = null;
   private flushing: Promise<void> | null = null;
   private privacy: Item | null = null;
+  private observers = new Set<(phase: WritePhase) => void>();
   private checkedAt = 0;
 
   constructor(
@@ -62,48 +70,71 @@ export class ConfigStore {
     return this.mode === 'server';
   }
 
-  /** Reads the capabilities once; in local mode and after an outage it re-checks at most every 30 s. */
+  /** Reports write phases (sending / settled / unknown) of every write this store sends to the shell's write lock. */
+  observe(observer: (phase: WritePhase) => void): () => void {
+    this.observers.add(observer);
+    return () => this.observers.delete(observer);
+  }
+  private notify(phase: WritePhase) {
+    for (const observer of this.observers) observer(phase);
+  }
+
+  /**
+   * Reads the capabilities. The first check shows "checking"; later checks run in the background and change state
+   * only on a real mode change, so an open panel (drafts, dialogs) is never replaced. Local mode re-checks at most
+   * every 30 s, an outage every 5 s.
+   */
   ensureReady(force = false): Promise<void> {
     if (this.checking) return this.checking;
+    const age = this.now() - this.checkedAt;
     const fresh =
       this.phase === 'ready' &&
       !force &&
-      !this.degraded &&
-      (this.mode === 'server' || this.now() - this.checkedAt < RECHECK_MS);
+      (this.degraded ? age < 5000 : this.mode === 'server' || age < RECHECK_MS);
     if (fresh) return Promise.resolve();
     this.checking = this.refresh().finally(() => (this.checking = null));
     return this.checking;
   }
 
   private async refresh() {
-    this.phase = 'loading';
+    if (this.phase === 'unknown') this.phase = 'loading';
     try {
       if (!this.token) throw new ConfigError('unauthorized');
-      const caps = await this.client.capabilities(this.token);
+      const [owner, caps] = await Promise.all([
+        ownerOf(this.token),
+        this.client.capabilities(this.token),
+      ]);
+      this.buffer.bind(owner);
       this.caps = caps;
       if (caps.available && caps.mode === 'server') {
         this.mode = 'server';
         this.reason = 'ok';
-        this.degraded = false;
-        await this.loadPrivacy();
-        if (!this.degraded) await this.flush();
+        const outage = await this.loadPrivacy();
+        this.degraded = outage;
+        if (!outage) await this.flush();
       } else {
         this.mode = 'local';
         this.reason = caps.reason === 'ok' ? 'error' : caps.reason;
         this.degraded = false;
       }
     } catch (cause) {
-      this.mode = 'local';
-      this.reason =
-        cause instanceof ConfigError && cause.code === 'not_found' ? 'unsupported' : 'error';
-      this.degraded = false;
+      if (this.mode === 'server' && this.phase === 'ready' && isOutage(cause)) {
+        // A transient failure of the check itself does not turn a working server mode into local mode.
+        this.degraded = true;
+      } else {
+        this.mode = 'local';
+        this.reason =
+          cause instanceof ConfigError && cause.code === 'not_found' ? 'unsupported' : 'error';
+        this.degraded = false;
+      }
     } finally {
       this.checkedAt = this.now();
       this.phase = 'ready';
     }
   }
 
-  private async loadPrivacy() {
+  /** Reads the history opt-in; returns true when the server did not answer (outage). */
+  private async loadPrivacy(): Promise<boolean> {
     try {
       const page = await this.client.list(this.token, 'settings', {
         scope: '',
@@ -114,25 +145,38 @@ export class ConfigStore {
       this.privacy = item;
       this.historyEnabled =
         !!item && ownBool(item.data.history_enabled) && item.data.history_enabled;
+      this.privacyKnown = true;
+      this.historyPaused = false;
+      return false;
     } catch (cause) {
-      if (isOutage(cause)) this.degraded = true;
-      else throw cause;
+      if (isOutage(cause)) return true;
+      throw cause;
     }
   }
 
-  /** Runs a call; outages mark the store degraded, a refused history write corrects the opt-in state. */
-  private async guard<T>(call: () => Promise<T>): Promise<Result<T>> {
+  /**
+   * Runs a call. The store enforces its own mode: without the server mode no data route is ever called. Writes report
+   * their phases to the observers; outages mark the store degraded, a refused history write corrects the opt-in state.
+   */
+  private async guard<T>(call: () => Promise<T>, write = false): Promise<Result<T>> {
+    if (this.mode !== 'server') return { ok: false, code: 'local_mode' };
+    if (write) this.notify('sending');
+    let phase: WritePhase = 'settled';
     try {
       return { ok: true, value: await call() };
     } catch (cause) {
       if (cause instanceof ConfigError) {
         if (isOutage(cause)) this.degraded = true;
         if (cause.code === 'history_disabled') this.historyEnabled = false;
+        if (cause.code === 'outcome_unknown') phase = 'unknown';
         return { ok: false, code: cause.code };
       }
       if (cause instanceof DOMException && cause.name === 'AbortError')
         return { ok: false, code: 'aborted' };
+      if (write) phase = 'unknown';
       return { ok: false, code: 'error' };
+    } finally {
+      if (write) this.notify(phase);
     }
   }
 
@@ -158,11 +202,13 @@ export class ConfigStore {
         this.privacy = item;
       }
       this.historyEnabled = value;
+      this.privacyKnown = true;
+      this.historyPaused = false;
       return value;
-    });
+    }, true);
     if (!result.ok && ['version_conflict', 'already_exists', 'not_found'].includes(result.code)) {
       // Changed elsewhere: show the current server state instead of overwriting it blindly.
-      await this.guard(() => this.loadPrivacy());
+      await this.guard(async () => void (await this.loadPrivacy()));
     }
     return result;
   }
@@ -176,7 +222,7 @@ export class ConfigStore {
     kind: Kind,
     body: Schemas['ConfigCreateRequest'],
   ): Promise<Result<{ item: Item; created: boolean }>> {
-    const result = await this.guard(() => this.client.create(this.token, kind, body));
+    const result = await this.guard(() => this.client.create(this.token, kind, body), true);
     if (result.ok && (kind === 'history' || kind === 'bookmarks')) this.revision++;
     return result;
   }
@@ -184,8 +230,9 @@ export class ConfigStore {
     return this.guard(() => this.client.get(this.token, kind, id));
   }
   async updateItem(item: Item, data: Record<string, unknown>) {
-    const result = await this.guard(() =>
-      this.client.update(this.token, item.kind, item.id, item.version, data),
+    const result = await this.guard(
+      () => this.client.update(this.token, item.kind, item.id, item.version, data),
+      true,
     );
     if (result.ok && item.kind === 'bookmarks') this.revision++;
     return result;
@@ -199,7 +246,7 @@ export class ConfigStore {
         if (!(cause instanceof ConfigError && cause.code === 'not_found')) throw cause;
       }
       return true as const;
-    });
+    }, true);
     if (result.ok && (item.kind === 'history' || item.kind === 'bookmarks')) this.revision++;
     return result;
   }
@@ -217,6 +264,7 @@ export class ConfigStore {
     scope: string,
     data: Record<string, unknown>,
   ): Promise<Result<{ item?: Item }>> {
+    if (anySecret(data)) return { ok: false, code: 'local_secret' };
     const clientRef = newRef();
     const time = new Date().toISOString();
     const result = await this.createItem(kind, { scope, client_ref: clientRef, data });
@@ -239,17 +287,19 @@ export class ConfigStore {
   }
   private async runFlush() {
     const size = this.caps?.max_import_items ?? 100;
-    for (const batch of chunk<BufferedWrite>([...this.buffer.entries], size)) {
-      const result = await this.guard(() =>
-        this.client.importItems(this.token, {
-          items: batch.map((e) => ({
-            kind: e.kind,
-            scope: e.scope,
-            client_ref: e.client_ref,
-            time: e.time,
-            data: e.data,
-          })),
-        }),
+    for (const batch of chunkBySize<BufferedWrite>([...this.buffer.entries], size)) {
+      const result = await this.guard(
+        () =>
+          this.client.importItems(this.token, {
+            items: batch.map((e) => ({
+              kind: e.kind,
+              scope: e.scope,
+              client_ref: e.client_ref,
+              time: e.time,
+              data: e.data,
+            })),
+          }),
+        true,
       );
       if (!result.ok) return; // still unavailable (or refused as a whole): keep everything
       this.degraded = false;
@@ -261,7 +311,7 @@ export class ConfigStore {
 
   /** One import batch (idempotent through client_ref); the caller maps results to its own entries by index. */
   importBatch(items: Schemas['ConfigImportItem'][]) {
-    return this.guard(() => this.client.importItems(this.token, { items }));
+    return this.guard(() => this.client.importItems(this.token, { items }), true);
   }
   exportAll() {
     return this.guard(() => this.client.exportText(this.token));
@@ -272,12 +322,15 @@ export class ConfigStore {
     );
   }
   async clearExecute(body: Schemas['ConfigClearExecuteRequest']) {
-    const result = await this.guard(() => this.client.clearExecute(this.token, body));
+    const result = await this.guard(() => this.client.clearExecute(this.token, body), true);
     if (result.ok) {
       this.revision++;
+      // Buffered entries of the deleted kinds must not be replayed later and revive deleted data.
+      this.buffer.removeKinds(body.kinds, body.scope || undefined);
       if (body.kinds.includes('settings') && (!body.scope || body.scope === ''))
         this.privacy = null;
-      if (body.kinds.includes('settings')) await this.guard(() => this.loadPrivacy());
+      if (body.kinds.includes('settings'))
+        await this.guard(async () => void (await this.loadPrivacy()));
     }
     return result;
   }

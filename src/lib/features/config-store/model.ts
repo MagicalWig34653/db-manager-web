@@ -2,6 +2,7 @@
 import { t } from '$lib/i18n';
 import { safeSql, type Entry, type LocalSnapshot } from '../sql-editor/storage.svelte';
 import { ConfigError, type Kind } from './client';
+import { looksSecret } from './secrets';
 
 const knownCodes = new Set([
   'invalid_request',
@@ -29,6 +30,8 @@ const knownCodes = new Set([
   'insecure_origin',
   'result_too_large',
   'local_secret',
+  'local_mode',
+  'buffer_full',
 ]);
 /** Catalog text for a stable error code. Server messages, SQL and input are never part of it. */
 export function errorText(cause: unknown): string {
@@ -91,7 +94,9 @@ export async function prepareMigration(
         if (
           !safeSql(entry.sql, options.secrets) ||
           (kind === 'bookmarks' &&
-            (!entry.name.trim() || options.secrets.some((s) => s && entry.name.includes(s))))
+            (!entry.name.trim() ||
+              looksSecret(entry.name) ||
+              options.secrets.some((s) => s && entry.name.includes(s))))
         ) {
           skipped++;
           continue;
@@ -122,6 +127,29 @@ export function chunk<T>(list: T[], size: number): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < list.length; i += Math.max(1, size)) result.push(list.slice(i, i + size));
   return result;
+}
+
+/** Upper bound for one import body: the server accepts 1 MiB; stay clearly below it. */
+export const MAX_BATCH_BYTES = 900 * 1024;
+export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
+
+/** Cuts a list into batches of at most `count` items and `bytes` serialized bytes (each item alone must fit). */
+export function chunkBySize<T>(list: T[], count: number, bytes = MAX_BATCH_BYTES): T[][] {
+  const batches: T[][] = [];
+  let current: T[] = [];
+  let size = 64; // {"items":[...]} wrapper
+  for (const item of list) {
+    const own = jsonBytes(item) + 1;
+    if (current.length && (current.length >= Math.max(1, count) || size + own > bytes)) {
+      batches.push(current);
+      current = [];
+      size = 64;
+    }
+    current.push(item);
+    size += own;
+  }
+  if (current.length) batches.push(current);
+  return batches;
 }
 
 export function newRef(): string {
