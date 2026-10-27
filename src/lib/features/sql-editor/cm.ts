@@ -255,9 +255,9 @@ const theme = EditorView.theme({
     color: 'var(--foreground)',
     border: '1px solid var(--border)',
   },
-  '.cm-tooltip-autocomplete > ul': {
+  '.cm-tooltip.cm-tooltip-autocomplete > ul': {
     // No scroll container without focusable content (axe scrollable-region-focusable); the keyboard scrolls it.
-    overflowY: 'hidden',
+    overflow: 'hidden',
     fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
     maxWidth: 'min(420px, 90vw)',
   },
