@@ -120,3 +120,37 @@ test('DELIMITER help, explicit analyze warning and editor stay usable at 320px',
   await expect(panel.getByText(/SQLite verwendet EXPLAIN QUERY PLAN/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('a batch answer that arrives after the session was replaced is never shown (late response)', async ({
+  page,
+}) => {
+  const { calls, release } = await open(page, true);
+  try {
+    await page.getByTestId('batch-sql').fill('SELECT 1;');
+    await consent(page);
+    await page.getByRole('button', { name: 'Bestätigt ausführen' }).click();
+    await expect.poll(() => calls.length).toBe(1);
+    // The user replaces the backend token while the write request hangs: the whole session is separated.
+    await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+    await page.getByLabel('Zugriffstoken').fill('another-synthetic-token');
+    await page.getByRole('button', { name: 'Übernehmen' }).click();
+    await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
+    release();
+    await page.waitForLoadState('networkidle');
+    // The late answer neither revives the old workspace nor shows statements of the old session.
+    await expect(page.getByTestId('batch-statement')).toHaveCount(0);
+    await expect(page.getByTestId('sql-batch-panel')).toHaveCount(0);
+    await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
+    expect(calls).toHaveLength(1);
+    // The write lock of the old session is released: unload is not guarded any more.
+    expect(
+      await page.evaluate(() => {
+        const event = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(event);
+        return event.defaultPrevented;
+      }),
+    ).toBe(false);
+  } finally {
+    release();
+  }
+});

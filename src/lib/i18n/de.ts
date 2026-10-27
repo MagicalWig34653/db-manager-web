@@ -2626,6 +2626,7 @@ export const de = {
     notRepeated:
       'Der Vorgang wird nicht wiederholt. Verwirf den Entwurf, lade aktuelle Daten und beginne bei Bedarf eine neue bestätigte Änderung.',
     discardReload: 'Entwurf verwerfen und Daten neu laden',
+    fkLoadFailed: 'Die Fremdschlüssel-Nachschlagehilfen sind nicht verfügbar: {reason}',
   },
   structureView: {
     yes: 'Ja',

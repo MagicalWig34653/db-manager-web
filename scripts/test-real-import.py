@@ -37,7 +37,7 @@ def main():
     prefix = 'dbmanager-wp1213-' + secrets.token_hex(6)
     parent = ROOT / 'node_modules/.cache'; parent.mkdir(parents=True, exist_ok=True)
     processes = []; logs = []; created = False
-    run(['npm', 'run', 'build'], cwd=ROOT)
+    if os.environ.get('DBM_EMBEDDED') != '1': run(['npm', 'run', 'build'], cwd=ROOT)
     with tempfile.TemporaryDirectory(prefix=prefix + '-', dir=parent) as temp:
         directory = Path(temp); source = directory / 'backend'; source.mkdir()
         try:
@@ -72,7 +72,7 @@ def main():
                 assert caps['available'] is True, (feature, caps)
             webport = port(); webbase = f'http://127.0.0.1:{webport}'
             log = (directory / 'web.log').open('w'); logs.append(log)
-            processes.append(subprocess.Popen(['npm', 'run', 'preview', '--', '--port', str(webport), '--strictPort'], cwd=ROOT, env=dict(os.environ, DB_MANAGER_BACKEND_URL=backend), stdout=log, stderr=log, start_new_session=True))
+            processes.append(subprocess.Popen((['node', 'scripts/embedded-proxy.mjs', str(webport)] if os.environ.get('DBM_EMBEDDED') == '1' else ['npm', 'run', 'preview', '--', '--port', str(webport), '--strictPort']), cwd=ROOT, env=dict(os.environ, DB_MANAGER_BACKEND_URL=backend), stdout=log, stderr=log, start_new_session=True))
             wait(lambda: urllib.request.urlopen(webbase, timeout=2).status == 200, 'web preview')
             config = directory / 'config.json'
             config.write_text(json.dumps({'baseURL': webbase, 'outputDir': str(directory / 'results'), 'token': token, 'password': password, 'postgresPort': pgport, 'backendURL': backend})); config.chmod(0o600)

@@ -43,6 +43,35 @@ describe('REVIEW F-2: SQL marker inside a multi-line text literal', () => {
     ])
       expect(verdict('sql', body.replace(/;$/, '') + end).complete, body).toBe(true);
   });
+  it('handles SQLite [bracket] identifiers that contain quotes (review: hostile DDL)', () => {
+    const end = ';\n-- DBMANAGER EXPORT COMPLETE\n';
+    // Valid dump: the quote inside [o'k] must not open a literal.
+    expect(
+      verdict(
+        'sql',
+        "CREATE TABLE IF NOT EXISTS [o'k] (id INTEGER, [a b] TEXT);\nINSERT INTO [o'k] VALUES (1, 'x'" +
+          end,
+      ).complete,
+    ).toBe(true);
+    // Cut stream inside a text literal after such DDL must still be rejected.
+    expect(
+      verdict('sql', "CREATE TABLE [o'k] (id);\nINSERT INTO t VALUES ('x" + end).complete,
+    ).toBe(false);
+    // Array types and subscripts are not bracket identifiers.
+    expect(verdict('sql', 'CREATE TABLE t (a text[], b int[3]' + end).complete).toBe(true);
+    // A marker line inside a bracket identifier is not an end.
+    expect(verdict('sql', 'CREATE TABLE [a' + end).complete).toBe(false);
+  });
+  it('bracket identifiers survive every chunk size', () => {
+    const text =
+      "CREATE TABLE [o'k] (id);\nINSERT INTO [o'k] VALUES ('a''b');\n-- DBMANAGER EXPORT COMPLETE\n";
+    for (let size = 1; size <= 9; size++) {
+      const verifier = new CompletionVerifier('sql');
+      const bytes = enc(text);
+      for (let i = 0; i < bytes.length; i += size) verifier.push(bytes.subarray(i, i + size));
+      expect(verifier.finish().complete, `chunk ${size}`).toBe(true);
+    }
+  });
   it('works across arbitrary chunk boundaries and CRLF', () => {
     const text =
       "-- h\r\nINSERT INTO t VALUES ('a''b;\n-- x');\r\n-- DBMANAGER EXPORT COMPLETE\r\n";

@@ -6,7 +6,11 @@
 // comments, starting its own line after a finished statement, and the very last thing in the stream.
 //
 // Handled lexis: '...' with '' doubling, E'...' with backslash escapes (PostgreSQL), "..." and `...`
-// identifiers with doubling, -- line comments, /* */ block comments (nested, PostgreSQL).
+// identifiers with doubling, [...] identifiers (SQLite copies the stored CREATE statement verbatim, and a name such as
+// [o'k] contains a quote; ']' closes, there is no escape; '[' directly after a word, ']' or ')' is an array
+// subscript/type like text[] and stays plain code), -- line comments, /* */ block comments (nested, PostgreSQL).
+// Not handled on purpose: PostgreSQL dollar quotes ($$...$$) and MySQL backslash escapes; the backend emits neither
+// (text goes out as quoted literals, E-strings or CONVERT(X'..')).
 
 const NL = 0x0a;
 const QUOTE_S = 0x27;
@@ -20,7 +24,7 @@ const SEMICOLON = 0x3b;
 const MARKER = '-- DBMANAGER EXPORT COMPLETE';
 const MARKER_BYTES = new TextEncoder().encode(MARKER);
 
-type State = 'code' | 'string' | 'estring' | 'ident' | 'backtick' | 'line' | 'block';
+type State = 'code' | 'bracket' | 'string' | 'estring' | 'ident' | 'backtick' | 'line' | 'block';
 
 export class SqlLexer {
   private state: State = 'code';
@@ -75,6 +79,9 @@ export class SqlLexer {
         return;
       case 'estring':
         this.escapedString(byte);
+        return;
+      case 'bracket':
+        if (byte === 0x5d) this.state = 'code';
         return;
       case 'line':
         if (byte === NL) {
@@ -144,6 +151,8 @@ export class SqlLexer {
     } else if (byte === QUOTE_D) {
       this.state = 'ident';
       this.quotePending = false;
+    } else if (byte === 0x5b && !isWord(this.prev) && this.prev !== 0x5d && this.prev !== 0x29) {
+      this.state = 'bracket';
     } else if (byte === BACKTICK) {
       this.state = 'backtick';
       this.quotePending = false;

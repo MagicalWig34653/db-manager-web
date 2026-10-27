@@ -49,7 +49,7 @@ def start_backend(directory, binary, token, ca=None):
 def start_web(directory, backend):
     webport = port(); assert webport != 4179
     log = (directory / f'web-{webport}.log').open('w')
-    process = subprocess.Popen(['npm', 'run', 'preview', '--', '--port', str(webport), '--strictPort'], cwd=ROOT,
+    process = subprocess.Popen((['node', 'scripts/embedded-proxy.mjs', str(webport)] if os.environ.get('DBM_EMBEDDED') == '1' else ['npm', 'run', 'preview', '--', '--port', str(webport), '--strictPort']), cwd=ROOT,
                                env=dict(os.environ, DB_MANAGER_BACKEND_URL=backend), stdout=log, stderr=log, start_new_session=True)
     webbase = f'http://127.0.0.1:{webport}'
     wait(lambda: urllib.request.urlopen(webbase, timeout=2).status == 200, 'web preview')
@@ -86,7 +86,7 @@ def main():
     wanted = [s for s in os.environ.get('DBM_REAL_SYSTEMS', 'sqlite,mysql,maria,postgres').split(',') if s]
     parent = ROOT / 'node_modules/.cache'; parent.mkdir(parents=True, exist_ok=True)
     results = []; skipped = []
-    run(['npm', 'run', 'build'], cwd=ROOT)
+    if os.environ.get('DBM_EMBEDDED') != '1': run(['npm', 'run', 'build'], cwd=ROOT)
     with tempfile.TemporaryDirectory(prefix='dbmanager-wp17-27-', dir=parent) as temp:
         directory = Path(temp); source = directory / 'backend'; source.mkdir()
         sha = fetch_backend(source)

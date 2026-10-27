@@ -211,6 +211,7 @@
     }
   }
   async function begin(action: Operation, index?: number) {
+    lookupError = '';
     if (busy || needsReload || !eligibility) return;
     operationController.abort();
     operationController = new AbortController();
@@ -369,7 +370,6 @@
   let foreignKeysLoaded = false;
   async function loadForeignKeys() {
     if (foreignKeysLoaded || !support.lookup || destroyed) return;
-    foreignKeysLoaded = true;
     try {
       const found = await structureClient.read(
         toConnection(connection),
@@ -377,9 +377,16 @@
         token,
         contextController.signal,
       );
-      if (!destroyed) foreignKeys = singleForeignKeys(found);
-    } catch {
-      if (!destroyed) foreignKeys = [];
+      if (destroyed) return;
+      foreignKeys = singleForeignKeys(found);
+      foreignKeysLoaded = true;
+    } catch (cause) {
+      if (destroyed || contextController.signal.aborted) return;
+      // Not remembered: the next editor opens retries. The user sees why the lookup helpers are missing.
+      foreignKeys = [];
+      lookupError = t('rowEditor.fkLoadFailed', {
+        reason: cause instanceof Error ? cause.message : '',
+      });
     }
   }
   async function loadBulk() {

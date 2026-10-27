@@ -92,7 +92,7 @@ def main():
     created = False
     processes = []
     logs = []
-    run(['npm', 'run', 'build'], cwd=ROOT)
+    if os.environ.get('DBM_EMBEDDED') != '1': run(['npm', 'run', 'build'], cwd=ROOT)
     with tempfile.TemporaryDirectory(prefix=prefix + '-', dir=parent) as temp:
         directory = Path(temp)
         source = directory / 'backend'
@@ -171,7 +171,7 @@ def main():
             environment = dict(os.environ, DB_MANAGER_BACKEND_URL=base)
             log = (directory / 'web.log').open('w')
             logs.append(log)
-            processes.append(subprocess.Popen(['npm', 'run', 'preview', '--', '--port', str(webport), '--strictPort'], cwd=ROOT, env=environment, stdout=log, stderr=log, start_new_session=True))
+            processes.append(subprocess.Popen((['node', 'scripts/embedded-proxy.mjs', str(webport)] if os.environ.get('DBM_EMBEDDED') == '1' else ['npm', 'run', 'preview', '--', '--port', str(webport), '--strictPort']), cwd=ROOT, env=environment, stdout=log, stderr=log, start_new_session=True))
             wait(lambda: urllib.request.urlopen(webbase, timeout=2).status == 200, 'production web preview with real same-origin API proxy')
             config = directory / 'config.json'
             config.write_text(json.dumps({'baseURL': webbase, 'token': token, 'password': password, 'postgresPort': pgport, 'backendURL': base, 'outputDir': str(directory / 'results')}))

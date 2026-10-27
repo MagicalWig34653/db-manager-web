@@ -35,3 +35,13 @@ Port 4179 (fremder Prozess) wurde nicht angefasst, kein fremder Prozess beendet.
 
 - MySQL/MariaDB-Echtläufe für Import, Bulk, Export-Formate und Partitionen (Empfehlung 4 des Reviews) fehlen weiter.
 - Der SQL-Lexer kennt keine PostgreSQL-Dollar-Quotes (das Backend gibt keine aus) und keine MySQL-Backslash-Escapes (Text geht dort über `CONVERT(X'..')`).
+
+## Nachträge aus dem Review von Pin Bündel 5
+
+| Punkt | Umsetzung |
+| --- | --- |
+| tests/real/rows.spec.ts | Wie die Backend-Spec angepasst: Escape lässt den Editor während des gehaltenen Writes offen, die verlorene Antwort ("unbekannt") wird abgewartet, danach wird die Sitzung getrennt. |
+| SQLite-Klammerbezeichner | `sql-lexer.ts` kennt `[o'k]` (`]` schließt, kein Escape). `[` direkt nach einem Wort, `]` oder `)` bleibt Code (`text[]`, `int[3]`). Tests: gültiger Dump mit `[o'k]`, abgeschnittener Strom im Textliteral nach solcher DDL wird abgelehnt, Marke im Klammerbezeichner zählt nicht, alle Chunkgrößen 1 bis 9. Dollar-Quotes und MySQL-Backslash-Escapes sind im Lexer-Kopf als bewusst nicht behandelt dokumentiert (das Backend gibt keine aus). |
+| Fremdschlüssel-Laden | Das Merk-Flag wird erst nach erfolgreichem Abruf gesetzt; bei Fehler steht im Editor ein sichtbarer Hinweis (`rowEditor.fkLoadFailed`), der nächste Editor versucht es erneut. Spec ergänzt. |
+| Späte Schreibantwort nach Sitzungswechsel | Spec in `tests/browser/sql-batch.spec.ts`: SQL-Stapel hängt, Token wechselt, Antwort wird freigegeben; kein Ergebnis wird angezeigt, kein Wiederaufleben des Arbeitsplatzes, Entladesperre gelöst, nur ein Request. |
+| `DBM_EMBEDDED=1` | Alle `scripts/test-real-*.py` (über `real_wave4.py` auch Export-Formate und Partitionen) überspringen dann `npm run build` und die Vite-Preview. Stattdessen reicht `scripts/embedded-proxy.mjs` (eigener freier Port, reiner Durchreicher auf `DB_MANAGER_BACKEND_URL`) alles an das Go-Backend weiter, dessen eingebettete Oberfläche geprüft wird. Das Backend muss der Build mit den eingebetteten Assets sein (`DBM_BACKEND_REPO` auf den Release-Stand). |

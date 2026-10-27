@@ -606,3 +606,31 @@ test('opening a table reads no structure; the foreign key read happens once when
   await page.waitForLoadState('networkidle');
   expect(structureReads).toBe(1);
 });
+
+test('a failed foreign key read is announced in the editor and retried at the next open', async ({
+  page,
+}) => {
+  await bulkBackend(page);
+  let reads = 0;
+  await page.route('**/api/v5/tables/structure', (route) => {
+    reads++;
+    return route.fulfill({
+      status: reads === 1 ? 500 : 404,
+      json: { error: { code: 'internal', message: 'catalog down' } },
+    });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+  await page.getByLabel('Zugriffstoken').fill('synthetic-token');
+  await page.getByRole('button', { name: 'Übernehmen' }).click();
+  await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
+  await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
+  await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
+  await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /items/ }).first().click();
+  await page.getByRole('button', { name: 'Bearbeiten' }).first().click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Nachschlagehilfen' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Bearbeiten' }).first().click();
+  await expect.poll(() => reads).toBe(2);
+});

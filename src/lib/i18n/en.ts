@@ -2569,6 +2569,7 @@ export const en = {
     notRepeated:
       'The operation is not repeated. Discard the draft, load current data and start a new confirmed change if needed.',
     discardReload: 'Discard draft and reload data',
+    fkLoadFailed: 'The foreign key lookup helpers are not available: {reason}',
   },
   structureView: {
     yes: 'Yes',
