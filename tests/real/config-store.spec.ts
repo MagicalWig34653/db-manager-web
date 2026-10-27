@@ -114,14 +114,14 @@ test('local W-P16 data is previewed, migrated only after confirmation, idempoten
   await signIn(page);
   await toServer(page);
   const panel = page.locator('#config-store');
-  await expect(panel).toContainText('3 Lesezeichen und 0 Verlaufseinträge würden übertragen');
+  await expect(panel).toContainText('2 Lesezeichen und 0 Verlaufseinträge würden übertragen');
   expect((await list(request, 'bookmarks')).length).toBe(0);
   await panel.getByRole('checkbox', { name: /Auch den lokalen Verlauf/ }).check();
   await expect(panel.getByRole('button', { name: 'Jetzt übertragen' })).toBeDisabled();
   await panel.getByRole('checkbox', { name: /Ich bestätige/ }).check();
   await panel.getByRole('button', { name: 'Jetzt übertragen' }).dblclick();
   await expect(panel).toContainText(
-    'Übertragen: 3 neu, 0 schon vorhanden, 0 aktualisiert, 1 abgelehnt',
+    'Übertragen: 3 neu, 0 schon vorhanden, 0 aktualisiert, 0 abgelehnt',
   );
   const bookmarks = await list(request, 'bookmarks');
   expect(bookmarks.map((b) => b.data.name).sort()).toEqual(['Local one', 'Local two']);

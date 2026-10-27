@@ -39,22 +39,23 @@ const SECRET_PATTERNS: RegExp[] = [
 ];
 
 /** Reject credential statements and active credentials; never serialize a connection. */
-export function safeSql(sql: string, secrets: string[] = []): boolean {
+export function safeSql(sql: string, secrets: string[] = [], strict = true): boolean {
   return (
     !!sql.trim() &&
     sql.length <= MAX_SQL &&
     size(JSON.stringify(sql)) <= MAX_BYTES / 2 - 2048 &&
     !secrets.some((secret) => secret.length > 0 && sql.includes(secret)) &&
     !SECRET_PATTERNS.some((pattern) => pattern.test(sql)) &&
-    !looksSecret(sql)
+    (!strict || !looksSecret(sql))
   );
 }
-function parseEntry(value: unknown): Entry {
+/** `strict` applies the server-level rules; entries already stored are read leniently so old data stays visible. */
+function parseEntry(value: unknown, strict = false): Entry {
   const e = value as Entry;
   if (
     !e ||
     typeof e.sql !== 'string' ||
-    !safeSql(e.sql) ||
+    !safeSql(e.sql, [], strict) ||
     typeof e.name !== 'string' ||
     e.name.length > 100 ||
     typeof e.time !== 'string' ||
@@ -80,8 +81,8 @@ function parse(text: string): Data {
   return {
     version: 1,
     enabled: data.enabled,
-    history: data.enabled ? data.history.map(parseEntry) : [],
-    bookmarks: data.bookmarks.map(parseEntry),
+    history: data.enabled ? data.history.map((item: unknown) => parseEntry(item)) : [],
+    bookmarks: data.bookmarks.map((item: unknown) => parseEntry(item)),
   };
 }
 
@@ -187,7 +188,7 @@ export class SqlLibrary {
       data.bookmarks.length > MAX_ENTRIES
     )
       throw new Error('Invalid bookmarks');
-    const entries: Entry[] = data.bookmarks.map(parseEntry);
+    const entries: Entry[] = data.bookmarks.map((item: unknown) => parseEntry(item, true));
     if (
       entries.some(
         (e) =>

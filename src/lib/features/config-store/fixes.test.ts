@@ -253,3 +253,36 @@ describe('recently used', () => {
     expect(local.calls.every((c) => c.path === '/api/v24/capabilities')).toBe(true);
   });
 });
+
+describe('legacy local entries stay readable', () => {
+  it('an old entry that the stricter rules refuse is still loaded and skipped (not lost) by the migration', async () => {
+    const key = PREFIX + '9'.repeat(64);
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 1,
+        enabled: false,
+        history: [],
+        bookmarks: [
+          {
+            id: 'a',
+            name: 'Old',
+            sql: "SELECT '0123456789abcdef0123456789abcdef'",
+            time: '2026-10-01T00:00:00.000Z',
+          },
+          { id: 'b', name: 'Fine', sql: 'SELECT 1', time: '2026-10-01T00:00:00.000Z' },
+        ],
+      }),
+    );
+    expect(new SqlLibrary(key).bookmarks).toHaveLength(2);
+    const store = make();
+    await store.ensureReady();
+    const migration = new Migration(
+      store,
+      () => () => {},
+      () => [],
+    );
+    await migration.refreshPreview();
+    expect(migration.preview).toMatchObject({ bookmarks: 1, skipped: 1 });
+  });
+});
