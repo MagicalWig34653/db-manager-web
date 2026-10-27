@@ -78,3 +78,33 @@ Nichts gemergt; Review und Integration liegen beim Lead. Zentrale STATUS-/ARBEIT
 - Geheimniserkennung bleibt heuristisch (Backend ADR 7); die Oberfläche weist darauf hin.
 - Der Backend-Build-Test „Precache ≤ 8 MiB“ wurde nicht ausgeführt, nur die Webgröße gemessen (+0,14 MiB).
 - Unabhängiges Review und Integration stehen aus. Kein Webpin, kein Deployment.
+
+## Nachtrag: Review-Auflagen umgesetzt (27.10.2026)
+
+Review `review/w-p20-web` @ `6942ab3` (Freigabe mit Auflagen) eingemerged (enthält Web-main `1145be4`). Alle 11 `it.fails` in
+`review.attack.test.ts` sind zu normalen Tests umgedreht (Titel „FIXED (…)“).
+
+| Befund | Umsetzung |
+| --- | --- |
+| W-01 | Migrationsbestätigung ist an Vorschau und Optionen gebunden (Signatur aus Opt-in-Haken, Anzahl, erstem/letztem `client_ref`); jede Änderung widerruft sie, `canRun` verlangt neue Bestätigung |
+| W-02 | Stapel nach Anzahl (`max_import_items`) und Bytes (≤ 900 KiB, `chunkBySize`), auch beim Hintergrund-Flush; Einträge über dem Serverlimit je Sammlung bleiben lokal mit Zähler und Hinweis |
+| W-03 | Erstprüfung zeigt „wird geprüft“, spätere Prüfungen laufen im Hintergrund und ändern den Zustand nur bei echtem Moduswechsel; ein fehlschlagender Re-Check im Serverbetrieb wird nur `degraded`, nie Lokalmodus; Panel/Entwurf/412-Dialog bleiben. Öffnen des Speicherpanels nach Ausfall prüft sofort |
+| W-04 | Pufferein­träge tragen `owner` (SHA-256-Kurzhash des Tokens, nie das Token); sichtbar, ersetzt und hochgeladen wird nur unter eigener Identität, fremde bleiben getrennt erhalten |
+| W-05 | `secrets.ts` portiert die Backend-Regeln (Wort- und Strukturregeln, JWT, URL/DSN, PEM, Basic, curl -u, Key=Value, Tokenformate, 32+-Läufe, NFKC/Homoglyphen); gilt für SQL, Namen, Puffer (nie gespeichert, beim Laden verworfen) und die Migration. Lineare Laufzeit (Lookbehind, `@`-Vorprüfung) getestet. Bereits lokal gespeicherte Altdaten werden weiter gelesen (lenient), aber von der Migration übersprungen und gezählt |
+| W-06 | Der Store meldet für **alle** Schreibaktionen `sending`/`settled`/`unknown` (`store.observe`): Opt-in, Lesezeichen, Favoriten, Zuletzt, Dokumente/Autosave, Löschen, Hintergrund-Flush; Panels leiten das an `Session.writeCount`. Migration meldet bei verlorener Antwort `unknown` |
+| W-07 | „Alle löschen“ und Einzel-Clear räumen betroffene Puffereinträge; `time` im Puffer wird beim Laden/Hinzufügen validiert |
+| W-08 | Zweites 412 im Auswahldialog lädt die neueste Serverfassung nach, der Dialog bleibt bedienbar |
+| W-09 | Autosave Thema/Sprache führt Änderungen während laufendem Speichern zusammen und sendet sie danach |
+| W-10 | Store-API ruft im Lokalmodus nie eine Datenroute (Ergebnis `local_mode`, kein Request) |
+| W-11 | Datenschutztext: Datenbankadministratoren ohne Serverschlüssel sehen nur Zeiten/Größen/Anzahlen; wer den Server samt Schlüssel betreibt, kann Inhalte lesen |
+| W-12 | Opt-in nicht lesbar (Ausfall nach Start): Verlauf pausiert sichtbar („Verlauf pausiert“) statt still zu verwerfen |
+| optional | „Zuletzt benutzt“ wird beim Öffnen einer Tabelle nur im Serverbetrieb geschrieben (`recordRecent`) |
+
+Neue Tests `fixes.test.ts` (25) sowie angepasste Bestandstests. Layouts und gespeicherte Suchen bleiben Folgepaket W-P21 (Client
+vorhanden, keine Oberfläche).
+
+Prüfstand nach den Auflagen: `npm run check` 0/0, `npm test` 1197/1197 (davon 11 ehemalige Defekt-Tests), `format:check` ok,
+Browsersuite 155/155, `test:csp` 3/3, `test:pwa` 6/6, `scripts/test-real-config-store.py` 7/7 gegen Backend-Main `a40b20d`
+(Wegwerf-MariaDB 12.3, entfernt). Größe `dist`: Web-main `1145be4` 4,76 MiB, Branch 4,91 MiB (+0,15 MiB, Backend-Grenze 8 MiB;
+der Backend-Precache-Test selbst nicht ausgeführt). Hinweis: der Echtlauf-Spec erwartet jetzt die lokale Ablehnung des
+32-Hex-Eintrags (Server-Ablehnung weiterhin per Unit-/Backend-Test abgedeckt).
