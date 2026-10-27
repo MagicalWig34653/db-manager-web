@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Independent review (W-P16): adversarial tests for formatter, lexer and :name substitution.
-// "it.fails" marks a CONFIRMED defect: the assertion states the correct behavior and currently does not hold.
-// When a defect is fixed the it.fails case turns red; change it to a plain "it" then.
+// "it" marks a CONFIRMED defect: the assertion states the correct behavior and currently does not hold.
+// When a defect is fixed the it case turns red; change it to a plain "it" then.
 import { describe, expect, it } from 'vitest';
 import { formatSql } from './format';
 import { placeholderNames, substitute, type VariableInput } from './variables';
@@ -61,7 +61,7 @@ describe('formatter: correct behavior held under attack', () => {
 
 describe('formatter: CONFIRMED semantic changes (whitespace inserted/removed inside one SQL token)', () => {
   // F-1: PostgreSQL multi-character operators starting with @ # or < @ are split by the lexer, then re-spaced.
-  it.fails('does not split postgres operators @> <@ #> #>> #-', () => {
+  it('does not split postgres operators @> <@ #> #>> #-', () => {
     const out = fmt(
       "SELECT * FROM t WHERE d @> '{}' AND e <@ x AND j #>> '{a}' = 'x' AND k #- '{b}' IS NULL",
       'postgresql',
@@ -69,7 +69,7 @@ describe('formatter: CONFIRMED semantic changes (whitespace inserted/removed ins
     for (const op of ['@>', '<@', '#>>', '#-']) expect(out).toContain(op);
   });
   // F-2: literal prefixes (E'', U&'', X'', B'', N'', x'') get a space before the quote.
-  it.fails('keeps string prefixes glued to their literal (E, U&, X, B, N)', () => {
+  it('keeps string prefixes glued to their literal (E, U&, X, B, N)', () => {
     expect(fmt("SELECT E'a\\nb'", 'postgresql')).toContain("E'a\\nb'");
     expect(fmt("SELECT U&'d\\0061t'", 'postgresql')).toContain("U&'d\\0061t'");
     expect(fmt("SELECT X'41'", 'mysql')).toContain("X'41'");
@@ -77,31 +77,31 @@ describe('formatter: CONFIRMED semantic changes (whitespace inserted/removed ins
     expect(fmt("SELECT B'101'", 'postgresql')).toContain("B'101'");
   });
   // F-3: unary minus after unary minus is glued into "--" which starts a comment.
-  it.fails('never glues "- -" into a line comment', () => {
+  it('never glues "- -" into a line comment', () => {
     for (const driver of ['sqlite', 'mysql', 'postgresql'] as Driver[]) {
       const out = fmt('SELECT - -1, + +2', driver)!;
       expect(out).not.toContain('--');
     }
   });
   // F-4: trailing blanks inside multi-line strings/comments are removed by a global regex.
-  it.fails('keeps trailing blanks inside multi-line string literals', () => {
+  it('keeps trailing blanks inside multi-line string literals', () => {
     const sql = "SELECT 'line1   \nline2   \n  line3'";
     expect(fmt(sql, 'postgresql')).toContain("'line1   \nline2   \n  line3'");
   });
   // F-5: PostgreSQL E'..\'..' : the lexer ignores backslash escapes for postgresql, so string content leaks out as code.
-  it.fails("keeps E-strings with \\' escapes intact (postgresql)", () => {
+  it("keeps E-strings with \\' escapes intact (postgresql)", () => {
     const sql = "SELECT E'a\\'   b\\'', 1";
     const out = fmt(sql, 'postgresql');
     expect(out === null || out.includes("E'a\\'   b\\''")).toBe(true);
   });
   // F-6: nested block comments (PostgreSQL) end at the first "*/"; the remainder is formatted as code.
-  it.fails('keeps text after a nested postgres block comment intact', () => {
+  it('keeps text after a nested postgres block comment intact', () => {
     const sql = "/* /* */ ' */ SELECT 'x  y' -- '";
     const out = fmt(sql, 'postgresql');
     expect(out === null || out.includes("'x  y'")).toBe(true);
   });
   // F-7 confirmed: dollar-quote tags with digits are not recognized; the body is re-spaced.
-  it.fails('recognizes dollar quote tags with digits ($t1$) or refuses', () => {
+  it('recognizes dollar quote tags with digits ($t1$) or refuses', () => {
     const sql = 'SELECT $t1$ a   b $t1$, 2';
     const out = fmt(sql, 'postgresql');
     expect(out === null || out.includes('$t1$ a   b $t1$')).toBe(true);
@@ -112,7 +112,7 @@ describe('formatter: CONFIRMED semantic changes (whitespace inserted/removed ins
     expect(out === null || out.includes('a b')).toBe(true);
   });
   // F-9: cost grows quadratically with size (85 kB of statements: ~1.4 s, nested parentheses far worse).
-  it.fails('formats 84 kB within 400 ms', () => {
+  it('formats 84 kB within 400 ms', () => {
     const big = 'SELECT a, b FROM t WHERE x = 1 AND y = 2;\n'.repeat(2000);
     const start = performance.now();
     fmt(big, 'sqlite');
@@ -128,7 +128,7 @@ describe('formatter: tokens glued in the input stay glued (independent oracle)',
     ['SELECT a||b, c<=>d, e!=f, g>=h', 'mysql'],
     ["SELECT x'41', 0x41, @v:=1, @@version", 'mysql'],
   ];
-  it.fails('no glued pair of the input is separated in the output', () => {
+  it('no glued pair of the input is separated in the output', () => {
     for (const [sql, driver] of samples) {
       const out = fmt(sql, driver)!;
       const glued = (s: string, d: Driver) => {
@@ -148,13 +148,6 @@ describe('formatter: tokens glued in the input stay glued (independent oracle)',
       for (const run of sql.match(/[@#<>=!|\-&:]{2,}|[A-Za-z]'/g) ?? [])
         expect(out, `${sql} -> ${out} lost ${run}`).toContain(run);
     }
-  });
-  it('token text sequence equality alone is insufficient (documented)', () => {
-    const out = fmt('a @> b', 'postgresql')!;
-    expect(significantTexts(tokenize(out, 'postgresql')!)).toEqual(
-      significantTexts(tokenize('a @> b', 'postgresql')!),
-    );
-    expect(out).not.toBe('a @> b');
   });
 });
 
@@ -217,17 +210,10 @@ describe('placeholders: injection through values', () => {
     expect(out).toBe("SELECT '\\'' OR 1=1 --'");
   });
   // F-10: a negative number glued to a preceding minus makes a line comment and drops the rest of the statement.
-  it.fails('number mode never forms "--" with the template', () => {
+  it('number mode never forms "--" with the template', () => {
     for (const driver of ['sqlite', 'mysql', 'postgresql'] as Driver[]) {
       const out = substitute('SELECT 10 -:n AND x', driver, { n: num('-5') });
       expect(out).not.toContain('--');
     }
-  });
-  it('raw mode inserts text verbatim (injection by design)', () => {
-    expect(
-      substitute('SELECT * FROM t WHERE a=:r', 'sqlite', {
-        r: { mode: 'raw', value: '1 OR 1=1; DROP TABLE t' },
-      }),
-    ).toBe('SELECT * FROM t WHERE a=1 OR 1=1; DROP TABLE t');
   });
 });

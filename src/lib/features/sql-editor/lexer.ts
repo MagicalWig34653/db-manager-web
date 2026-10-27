@@ -24,45 +24,67 @@ export interface Token {
   end: number;
 }
 
-const WORD_START = /[A-Za-z_\u0080-￿@$#]/;
-const WORD_PART = /[A-Za-z0-9_\u0080-￿@$#]/;
-const OPERATOR_CHARS = '+-*/%<>=!|&^~:?';
+const SPACE = /[ \t\r\n\f\v]/;
+const WORD_START_BASE = /[A-Za-z_\u0080-\uffff$]/;
+const WORD_PART = /[A-Za-z0-9_\u0080-\uffff$]/;
+// Characters of multi-character operators. A run of them is ONE token (@>, #>>, <@, ->>, ||, <=>, !=).
+// '#' is a comment in MySQL and '@' starts a variable/parameter in MySQL and SQLite, so they are not operator characters there.
+function operatorChars(driver: Driver): string {
+  return driver === 'postgresql'
+    ? '+-*/<>=~!@#%^&|?'
+    : '+-*/<>=~!%^&|' + (driver === 'sqlite' ? '?' : '');
+}
+const startsWord = (c: string, driver: Driver) =>
+  WORD_START_BASE.test(c) || (c === '@' && driver !== 'postgresql');
 
 /** Returns null if a string, quoted identifier or block comment is not terminated (not safe to touch). */
 export function tokenize(sql: string, driver: Driver): Token[] | null {
   const tokens: Token[] = [];
+  const operators = operatorChars(driver);
   let i = 0;
   const push = (kind: TokenKind, start: number, end: number) =>
     tokens.push({ kind, text: sql.slice(start, end), start, end });
+  // Reads a quoted run starting at the opening quote at index `from`; returns the end or -1 when unterminated.
+  const quoted = (from: number, backslash: boolean): number => {
+    const quote = sql[from];
+    let j = from + 1;
+    while (j < sql.length) {
+      if (backslash && sql[j] === '\\') j += 2;
+      else if (sql[j] === quote && sql[j + 1] === quote) j += 2;
+      else if (sql[j] === quote) return j + 1;
+      else j++;
+    }
+    return -1;
+  };
   while (i < sql.length) {
     const c = sql[i];
     const next = sql[i + 1];
     const start = i;
-    if (/\s/.test(c)) {
-      while (i < sql.length && /\s/.test(sql[i])) i++;
+    if (SPACE.test(c)) {
+      while (i < sql.length && SPACE.test(sql[i])) i++;
       push('space', start, i);
     } else if ((c === '-' && next === '-') || (c === '#' && driver === 'mysql')) {
       while (i < sql.length && sql[i] !== '\n') i++;
       push('line-comment', start, i);
     } else if (c === '/' && next === '*') {
-      const close = sql.indexOf('*/', i + 2);
-      if (close < 0) return null;
-      i = close + 2;
-      push('block-comment', start, i);
-    } else if (c === "'" || c === '"' || c === '`') {
-      const backslash = driver === 'mysql';
-      i++;
-      let closed = false;
-      while (i < sql.length) {
-        if (backslash && sql[i] === '\\' && c !== '`') i += 2;
-        else if (sql[i] === c && sql[i + 1] === c) i += 2;
-        else if (sql[i] === c) {
-          i++;
-          closed = true;
-          break;
+      // PostgreSQL block comments nest; MySQL and SQLite end at the first "*/".
+      let depth = 1;
+      i += 2;
+      while (i < sql.length && depth > 0) {
+        if (sql[i] === '*' && sql[i + 1] === '/') {
+          depth--;
+          i += 2;
+        } else if (driver === 'postgresql' && sql[i] === '/' && sql[i + 1] === '*') {
+          depth++;
+          i += 2;
         } else i++;
       }
-      if (!closed) return null;
+      if (depth > 0) return null;
+      push('block-comment', start, i);
+    } else if (c === "'" || c === '"' || c === '`') {
+      const end = quoted(i, driver === 'mysql' && c !== '`');
+      if (end < 0) return null;
+      i = end;
       push(c === "'" ? 'string' : 'quoted-identifier', start, i);
     } else if (c === '[' && driver === 'sqlite') {
       const close = sql.indexOf(']', i + 1);
@@ -70,7 +92,9 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
       i = close + 1;
       push('quoted-identifier', start, i);
     } else if (c === '$' && driver === 'postgresql') {
-      const tag = /^\$[A-Za-z_\u0080-￿]*\$/.exec(sql.slice(i));
+      const tag = /^\$(?:[A-Za-z_\u0080-\uffff][A-Za-z0-9_\u0080-\uffff]*)?\$/.exec(
+        sql.slice(i, i + 200),
+      );
       if (tag) {
         const close = sql.indexOf(tag[0], i + tag[0].length);
         if (close < 0) return null;
@@ -82,7 +106,7 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
         push('word', start, i);
       }
     } else if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(next ?? ''))) {
-      const match = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/.exec(sql.slice(i));
+      const match = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/.exec(sql.slice(i, i + 400));
       i += match ? match[0].length : 1;
       // Letters directly after digits (1abc, 0xFF) belong to one token.
       while (i < sql.length && WORD_PART.test(sql[i])) i++;
@@ -96,22 +120,37 @@ export function tokenize(sql: string, driver: Driver): Token[] | null {
       i++;
       while (i < sql.length && /[A-Za-z0-9_]/.test(sql[i])) i++;
       push('param', start, i);
-    } else if (WORD_START.test(c)) {
+    } else if (startsWord(c, driver)) {
       i++;
-      while (i < sql.length && WORD_PART.test(sql[i])) i++;
-      push('word', start, i);
-    } else if (OPERATOR_CHARS.includes(c)) {
+      while (i < sql.length && (WORD_PART.test(sql[i]) || (sql[i] === '@' && driver === 'mysql')))
+        i++;
+      const word = sql.slice(start, i);
+      // Literal prefixes are part of the literal: E'..' B'..' X'..' N'..' U&'..' (and U&"..").
+      const unicode =
+        /^[Uu]$/.test(word) && sql[i] === '&' && (sql[i + 1] === "'" || sql[i + 1] === '"');
+      const prefixed = unicode || (/^[EeBbXxNn]$/.test(word) && sql[i] === "'");
+      if (prefixed) {
+        const quoteAt = unicode ? i + 1 : i;
+        const q = sql[quoteAt];
+        const end = quoted(
+          quoteAt,
+          (driver === 'postgresql' && /^[Ee]$/.test(word)) || (driver === 'mysql' && q !== '`'),
+        );
+        if (end < 0) return null;
+        i = end;
+        push(q === "'" ? 'string' : 'quoted-identifier', start, i);
+      } else push('word', start, i);
+    } else if (c === ':') {
+      // "::" (cast) and ":=" (assignment) are two-character operators; a lone colon is a single token.
+      i += next === ':' || next === '=' ? 2 : 1;
+      push('operator', start, i);
+    } else if (operators.includes(c)) {
       i++;
-      if (c === ':') {
-        // "::" (cast) and ":=" (assignment) are two-character operators; a lone colon is a single token.
-        if (next === ':' || next === '=') i++;
-      } else {
-        while (i < sql.length && OPERATOR_CHARS.includes(sql[i]) && sql[i] !== ':') {
-          // Operator runs stay together unless a comment starts.
-          if (sql[i] === '-' && sql[i + 1] === '-') break;
-          if (sql[i] === '/' && sql[i + 1] === '*') break;
-          i++;
-        }
+      // Operator runs stay together unless a comment starts.
+      while (i < sql.length && operators.includes(sql[i])) {
+        if (sql[i] === '-' && sql[i + 1] === '-') break;
+        if (sql[i] === '/' && sql[i + 1] === '*') break;
+        i++;
       }
       push('operator', start, i);
     } else {

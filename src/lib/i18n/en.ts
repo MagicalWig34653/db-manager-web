@@ -1494,20 +1494,24 @@ export const en = {
     find: 'Find and replace',
     formatted: 'SQL formatted. Undo with Ctrl+Z.',
     formatRefused:
-      'Not formatted: unterminated string or comment, or routine body/DELIMITER. The text was left unchanged.',
+      'Not formatted: unterminated string or comment, routine body/DELIMITER, text too large or too deeply nested, or the check found more than a whitespace change. The text was left unchanged.',
+    hiddenTitle: 'Invisible or direction-changing characters in the SQL',
+    hiddenText:
+      'The SQL text contains control, zero-width or text-direction characters that can look different from what they do (Trojan Source). They are marked in the editor. Review the text before running it.',
+    hiddenRun: 'Run anyway',
     findLoading: 'The editor is still loading. Search will be available shortly.',
     variables: {
       title: 'Fill in variables',
       description:
         'The SQL text contains placeholders such as :name. Enter values before the query runs.',
       warning:
-        'Plain text replacement in the browser: the server knows no placeholders and only receives the finished text. The editor text stays unchanged. Raw text is inserted as is and can change the query.',
+        'Plain text replacement in the browser: the server knows no placeholders and only receives the finished text. The editor text stays unchanged.',
       kind: 'Kind of value for :{name}',
       value: 'Value for :{name}',
       preview: 'Preview of the SQL that is sent',
       run: 'Run',
       unchanged: 'Run unchanged',
-      mode: { text: 'Text (quoted)', number: 'Number', null: 'NULL', raw: 'Raw text (as is)' },
+      mode: { text: 'Text (quoted)', number: 'Number', null: 'NULL' },
       error: {
         missing: 'A value for :{name} is missing.',
         number: 'The value for :{name} is not a number.',

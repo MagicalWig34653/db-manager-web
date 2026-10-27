@@ -16,16 +16,15 @@ describe('placeholders', () => {
 });
 
 describe('substitute', () => {
-  it('quotes text, validates numbers and supports NULL and raw text', () => {
-    const sql = 'select * from t where a = :a and b = :b and c = :c and d in (:d)';
+  it('quotes text, validates numbers and supports NULL', () => {
+    const sql = 'select * from t where a = :a and b = :b and c = :c';
     expect(
       substitute(sql, 'sqlite', {
         a: { mode: 'text', value: "o'neil" },
         b: { mode: 'number', value: ' 42 ' },
         c: { mode: 'null', value: 'ignored' },
-        d: { mode: 'raw', value: '1, 2' },
       }),
-    ).toBe("select * from t where a = 'o''neil' and b = 42 and c = NULL and d in (1, 2)");
+    ).toBe("select * from t where a = 'o''neil' and b = 42 and c = NULL");
   });
   it('escapes backslashes only for mysql', () => {
     const values = { a: { mode: 'text' as const, value: "x\\' or 1=1 -- " } };

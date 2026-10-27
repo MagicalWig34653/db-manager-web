@@ -39,15 +39,14 @@ async function setup(page: Page): Promise<string[]> {
 const box = (page: Page) => page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true });
 
 // Trojan Source: bidi override/isolate characters and zero-width characters must be visibly marked.
-test.fail(
-  'bidi and control characters in pasted SQL are visibly marked (Trojan Source)',
-  async ({ page }) => {
-    await setup(page);
-    await box(page).fill('select ‮1⁦ , ​2\u0001');
-    await expect(page.locator('.cm-editor .cm-specialChar').first()).toBeVisible({ timeout: 2000 });
-    expect(await page.locator('.cm-editor .cm-specialChar').count()).toBeGreaterThanOrEqual(4);
-  },
-);
+test('bidi and control characters in pasted SQL are visibly marked (Trojan Source)', async ({
+  page,
+}) => {
+  await setup(page);
+  await box(page).fill('select ‮1⁦ , ​2\u0001');
+  await expect(page.locator('.cm-editor .cm-specialChar').first()).toBeVisible({ timeout: 2000 });
+  expect(await page.locator('.cm-editor .cm-specialChar').count()).toBeGreaterThanOrEqual(4);
+});
 
 test('hostile variable values and raw mode never reach history, bookmarks or storage', async ({
   page,

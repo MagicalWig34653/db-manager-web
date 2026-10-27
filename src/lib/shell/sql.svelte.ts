@@ -26,6 +26,11 @@ export function looksReadOnly(sql: string): boolean {
   return !/\b(into|for\s+(update|share|no\s+key)|lock\s+in\s+share)\b/i.test(text);
 }
 
+// C0/C1 controls (except tab, newline, carriage return), zero-width, bidi and BOM characters.
+// eslint-disable-next-line no-control-regex
+export const HIDDEN_CHARACTERS =
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/;
+
 export class SqlRunner {
   sql = $state('');
   running = $state(false);
@@ -39,6 +44,8 @@ export class SqlRunner {
   variablePrompt = $state<string[] | null>(null);
   /** Last entered values, kept in memory only for this page load (never stored, never part of history). */
   variableValues = $state<Record<string, VariableInput>>({});
+  /** Statement waiting for the user's confirmation because it contains hidden or direction-changing characters. */
+  hiddenPending = $state<string | null>(null);
   /** Registered by the mounted editor component. */
   focus: () => void = () => {};
   private controller: AbortController | undefined;
@@ -50,7 +57,7 @@ export class SqlRunner {
    * `text` is the already resolved SQL (placeholders replaced or deliberately sent unchanged). Without it the
    * editor text is checked for ":name" placeholders first and the variable dialog is requested instead of running.
    */
-  async execute(session: Session, text?: string) {
+  async execute(session: Session, text?: string, confirmedHidden = false) {
     const connection = session.connection;
     if (
       !connection ||
@@ -68,6 +75,12 @@ export class SqlRunner {
       }
     }
     const statement = text ?? this.sql;
+    // Bidi, zero-width and control characters can make SQL read differently from what it does: ask first.
+    if (!confirmedHidden && HIDDEN_CHARACTERS.test(statement)) {
+      this.hiddenPending = statement;
+      return;
+    }
+    this.hiddenPending = null;
     // History and bookmarks store the editor text with its placeholders, never the substituted values.
     recordQuery(connection, this.sql, session.backendToken);
     const version = session.sessionVersion;
@@ -129,8 +142,14 @@ export class SqlRunner {
     this.variablePrompt = null;
     await this.execute(session, this.sql);
   }
+  async runHiddenConfirmed(session: Session) {
+    const statement = this.hiddenPending;
+    this.hiddenPending = null;
+    if (statement !== null) await this.execute(session, statement, true);
+  }
   cancelPrompt() {
     this.variablePrompt = null;
+    this.hiddenPending = null;
   }
   cancel() {
     this.controller?.abort();
@@ -138,6 +157,7 @@ export class SqlRunner {
   /** Drops results and errors but keeps the editor text (new connection). */
   clearResults() {
     this.variablePrompt = null;
+    this.hiddenPending = null;
     this.execution = null;
     this.error = '';
     this.cancelled = false;

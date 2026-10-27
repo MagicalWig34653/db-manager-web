@@ -100,6 +100,16 @@
       >
     </div>
   </div>
+  {#if sql.hiddenPending !== null}<div class="feedback warning-feedback" role="alert">
+      <TriangleAlert size={18} />
+      <div>
+        <strong>{t('sqlEditor.hiddenTitle')}</strong>
+        <p>{t('sqlEditor.hiddenText')}</p>
+        <Button variant="outline" onclick={() => void sql.runHiddenConfirmed(session)}
+          >{t('sqlEditor.hiddenRun')}</Button
+        ><Button variant="ghost" onclick={() => sql.cancelPrompt()}>{t('shared.cancel')}</Button>
+      </div>
+    </div>{/if}
   {#if note}<p class="editor-note" role="status">{note}</p>{/if}
 </section>
 <section class="results-panel" aria-label={t('sql.resultsLabel')} aria-busy={sql.running}>

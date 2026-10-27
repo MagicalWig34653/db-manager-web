@@ -226,3 +226,29 @@ test('when the editor chunk cannot be loaded a plain textarea keeps SQL usable',
   await expect.poll(() => seen.queries).toEqual(['select 5']);
   await expect(page.locator('.cm-editor')).toHaveCount(0);
 });
+
+test('hidden and bidi characters ask for confirmation before the query runs', async ({ page }) => {
+  const seen = await setup(page);
+  await expect(page.locator('.cm-editor')).toBeVisible();
+  await box(page).fill('select \u202e1, 2');
+  await expect(page.locator('.cm-specialChar').first()).toBeVisible();
+  await box(page).press('ControlOrMeta+Enter');
+  const alert = page.getByRole('alert').filter({ hasText: 'Unsichtbare oder umkehrende Zeichen' });
+  await expect(alert).toBeVisible();
+  expect(seen.queries).toEqual([]);
+  await alert.getByRole('button', { name: 'Abbrechen' }).click();
+  expect(seen.queries).toEqual([]);
+  await box(page).press('ControlOrMeta+Enter');
+  await alert.getByRole('button', { name: 'Trotzdem ausführen' }).click();
+  await expect.poll(() => seen.queries).toEqual(['select \u202e1, 2']);
+});
+
+test('suggestion list stays usable at 320 px and is not a scroll container', async ({ page }) => {
+  await setup(page);
+  await expect(page.getByRole('button', { name: /customers/ })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 700 });
+  await box(page).pressSequentially('select * from cus');
+  const option = page.getByRole('listbox').getByRole('option', { name: /customers/ });
+  await expect(option).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

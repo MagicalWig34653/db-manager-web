@@ -1528,14 +1528,18 @@ export const de = {
     find: 'Suchen und ersetzen',
     formatted: 'SQL formatiert. Rückgängig mit Strg+Z.',
     formatRefused:
-      'Nicht formatiert: unvollständige Zeichenkette oder Kommentar, oder Routinenkörper/DELIMITER. Der Text blieb unverändert.',
+      'Nicht formatiert: unvollständige Zeichenkette oder Kommentar, Routinenkörper/DELIMITER, zu großer oder zu tief verschachtelter Text, oder die Prüfung ergab mehr als eine Leerraumänderung. Der Text blieb unverändert.',
+    hiddenTitle: 'Unsichtbare oder umkehrende Zeichen im SQL',
+    hiddenText:
+      'Der SQL-Text enthält Steuer-, Nullbreiten- oder Textrichtungszeichen, die anders aussehen können, als sie wirken (Trojan Source). Sie sind im Editor markiert. Prüfe den Text, bevor du ihn ausführst.',
+    hiddenRun: 'Trotzdem ausführen',
     findLoading: 'Der Editor wird noch geladen. Suchen ist gleich verfügbar.',
     variables: {
       title: 'Variablen ausfüllen',
       description:
         'Der SQL-Text enthält Platzhalter wie :name. Gib Werte ein, bevor die Abfrage ausgeführt wird.',
       warning:
-        'Reine Textersetzung im Browser: Der Server kennt keine Platzhalter und bekommt nur den fertigen Text. Der Editortext bleibt unverändert. Rohtext wird unverändert eingefügt und kann die Abfrage verändern.',
+        'Reine Textersetzung im Browser: Der Server kennt keine Platzhalter und bekommt nur den fertigen Text. Der Editortext bleibt unverändert.',
       kind: 'Art des Werts für :{name}',
       value: 'Wert für :{name}',
       preview: 'Vorschau des gesendeten SQL',
@@ -1545,7 +1549,6 @@ export const de = {
         text: 'Text (in Anführungszeichen)',
         number: 'Zahl',
         null: 'NULL',
-        raw: 'Rohtext (unverändert)',
       },
       error: {
         missing: 'Für :{name} fehlt ein Wert.',

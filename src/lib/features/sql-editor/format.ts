@@ -98,26 +98,55 @@ interface Frame {
   indent: number;
 }
 
-/** Returns the formatted statement text, or null when the input cannot be formatted safely. */
+export const MAX_FORMAT_LENGTH = 100_000;
+const MAX_FORMAT_DEPTH = 40;
+const OPERATOR_GLYPHS = new Set('+-*/<>=~!@#%^&|?:'.split(''));
+const WORDISH = /[A-Za-z0-9_$\u0080-\uffff]/;
+const WHITESPACE_ONLY = /^[ \t\r\n\f\v]*$/;
+const strip = (text: string) => text.replace(/[ \t\r\n\f\v]+/g, '');
+
+/**
+ * Returns the formatted statement text, or null when the input cannot be formatted safely.
+ * Only whitespace between tokens is changed; the result is verified (whitespace-free text equal, token sequence
+ * equal after lexing again) and discarded in case of any doubt.
+ */
 export function formatSql(sql: string, driver: Driver): string | null {
+  if (sql.length > MAX_FORMAT_LENGTH) return null;
   const all = tokenize(sql, driver);
   if (!all) return null;
   const tokens = all.filter((token) => token.kind !== 'space');
   if (tokens.length === 0) return sql;
   if (tokens.some((token) => token.kind === 'word' && PROCEDURAL.has(lower(token)))) return null;
 
-  let out = '';
+  const parts: string[] = [];
   let lineStart = true;
+  let lastText = '';
   let clause = '';
   let breakAfterSelect = false;
   const stack: Frame[] = [];
-  const newline = (level: number) => {
-    out = out.replace(/[ \t]+$/, '') + '\n' + INDENT.repeat(Math.max(level, 0));
+  const dropWhitespace = () => {
+    while (parts.length > 0 && WHITESPACE_ONLY.test(parts[parts.length - 1])) parts.pop();
+  };
+  const newline = (level: number, blank = false) => {
+    dropWhitespace();
+    parts.push((blank ? '\n\n' : '\n') + INDENT.repeat(Math.max(level, 0)));
     lineStart = true;
   };
-  const append = (text: string, space: boolean) => {
-    if (!lineStart && space) out += ' ';
-    out += text;
+  const append = (text: string, wantSpace: boolean) => {
+    let space = wantSpace;
+    if (!lineStart && !space && lastText) {
+      const left = lastText[lastText.length - 1];
+      const right = text[0];
+      // Never let two separate tokens run together into another token ("- -" into "--", "<" "@", words).
+      if (
+        (OPERATOR_GLYPHS.has(left) && OPERATOR_GLYPHS.has(right)) ||
+        (WORDISH.test(left) && WORDISH.test(right))
+      )
+        space = true;
+    }
+    if (!lineStart && space) parts.push(' ');
+    parts.push(text);
+    lastText = text;
     lineStart = false;
   };
 
@@ -132,7 +161,7 @@ export function formatSql(sql: string, driver: Driver): string | null {
 
     if (token.kind === 'line-comment' || token.kind === 'block-comment') {
       // Own-line comments stay on their own line; trailing comments stay behind their code.
-      const ownLine = !previous || /\n/.test(sql.slice(previous.end, token.start));
+      const ownLine = !previous || sql.slice(previous.end, token.start).includes('\n');
       if (ownLine && !lineStart) newline(base + (clause === 'select' ? 1 : 0));
       append(token.text, true);
       if (token.kind === 'line-comment') newline(base + (clause === 'select' ? 1 : 0));
@@ -177,16 +206,14 @@ export function formatSql(sql: string, driver: Driver): string | null {
       append(';', false);
       stack.length = 0;
       clause = '';
-      if (i < tokens.length - 1) {
-        newline(0);
-        newline(0);
-      }
+      if (i < tokens.length - 1) newline(0, true);
       continue;
     }
     if (token.text === '(') {
       const subquery = nextWord === 'select' || nextWord === 'with';
       append('(', !lineStart && spaceBeforeParen(tokens, i));
       stack.push({ subquery, indent: base + (subquery ? 1 : 0) });
+      if (stack.length > MAX_FORMAT_DEPTH) return null;
       if (subquery) newline(base + 1);
       continue;
     }
@@ -196,18 +223,34 @@ export function formatSql(sql: string, driver: Driver): string | null {
       append(')', false);
       continue;
     }
-    append(token.text, spaceBetween(tokens, i));
+    append(token.text, spaceBetween(tokens, i, sql));
   }
-  return out
-    .replace(/[ \t]+$/gm, '')
-    .replace(/^\n+/, '')
-    .trimEnd();
+  dropWhitespace();
+  const out = parts.join('').replace(/^[ \t\r\n\f\v]+/, '');
+  // Independent safety net: only whitespace may differ, and the token sequence must survive a new lexing pass.
+  if (strip(out) !== strip(sql)) return null;
+  const again = tokenize(out, driver);
+  if (!again) return null;
+  const kept = again.filter((token) => token.kind !== 'space');
+  if (kept.length !== tokens.length) return null;
+  for (let k = 0; k < kept.length; k++)
+    if (kept[k].kind !== tokens[k].kind || kept[k].text !== tokens[k].text) return null;
+  return out;
 }
 
-function spaceBetween(tokens: Token[], i: number): boolean {
+const LITERALS = new Set(['string', 'quoted-identifier', 'dollar-string']);
+function spaceBetween(tokens: Token[], i: number, sql: string): boolean {
   const token = tokens[i];
   const previous = tokens[i - 1];
   if (!previous) return false;
+  // A word glued to a literal in the input (_utf8'x') stays glued: a prefix must not become an alias.
+  if (
+    previous.end === token.start &&
+    ((previous.kind === 'word' && LITERALS.has(token.kind)) ||
+      (LITERALS.has(previous.kind) && token.kind === 'word'))
+  )
+    return false;
+  void sql;
   if ([',', '.', '[', ']'].includes(token.text) && token.kind !== 'string') return false;
   if (token.text === '::' || previous.text === '::' || previous.text === '.') return false;
   if (previous.text === '(' || previous.text === '[') return false;

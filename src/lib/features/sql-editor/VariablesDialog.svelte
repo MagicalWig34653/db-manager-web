@@ -60,7 +60,7 @@
       throw cause;
     }
   });
-  const modes: VariableMode[] = ['text', 'number', 'null', 'raw'];
+  const modes: VariableMode[] = ['text', 'number', 'null'];
   function run() {
     if (result.error) return;
     done = true;

@@ -6,6 +6,7 @@ import {
   EditorView,
   drawSelection,
   highlightActiveLine,
+  highlightSpecialChars,
   highlightActiveLineGutter,
   keymap,
   lineNumbers,
@@ -255,6 +256,8 @@ const theme = EditorView.theme({
     border: '1px solid var(--border)',
   },
   '.cm-tooltip-autocomplete > ul': {
+    // No scroll container without focusable content (axe scrollable-region-focusable); the keyboard scrolls it.
+    overflowY: 'hidden',
     fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
     maxWidth: 'min(420px, 90vw)',
   },
@@ -262,6 +265,7 @@ const theme = EditorView.theme({
     backgroundColor: 'var(--primary)',
     color: 'var(--on-primary)',
   },
+  '.cm-specialChar': { color: 'var(--destructive)', outline: '1px solid var(--destructive)' },
   '.cm-completionDetail': { color: 'inherit', opacity: '0.85' },
 });
 
@@ -385,6 +389,10 @@ export function createEditor(options: EditorOptions): EditorHandle {
         highlightActiveLineGutter(),
         highlightActiveLine(),
         history(),
+        // Marks control, zero-width and bidi characters visibly (Trojan Source).
+        highlightSpecialChars({
+          addSpecialChars: /[\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/,
+        }),
         drawSelection(),
         indentOnInput(),
         bracketMatching(),

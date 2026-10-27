@@ -4,7 +4,7 @@
 import type { Driver } from '$lib/workbench';
 import { tokenize } from './lexer';
 
-export type VariableMode = 'text' | 'number' | 'null' | 'raw';
+export type VariableMode = 'text' | 'number' | 'null';
 export interface VariableInput {
   mode: VariableMode;
   value: string;
@@ -40,9 +40,10 @@ function literal(input: VariableInput, name: string, driver: Driver): string {
   if (input.mode === 'number') {
     if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim()))
       throw new VariableError(name, 'number');
-    return value.trim();
+    // A negative number is parenthesised so that "-:n" with n=-5 can never turn into a "--" comment.
+    const number = value.trim();
+    return /^[+-]/.test(number) ? `(${number})` : number;
   }
-  if (input.mode === 'raw') return value;
   // eslint-disable-next-line no-control-regex
   if (/\u0000/.test(value)) throw new VariableError(name, 'control');
   const escaped = value.replaceAll("'", "''");

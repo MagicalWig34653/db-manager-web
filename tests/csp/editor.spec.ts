@@ -39,6 +39,8 @@ test('CodeMirror editor, search panel and completion raise no CSP violation', as
   await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
   await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
   await expect(page.locator('.cm-editor')).toBeVisible();
+  // The catalog arrives after the editor; completion cannot offer tables before it is there.
+  await expect(page.getByRole('button', { name: /customers/ })).toBeVisible();
   const editor = page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true });
   await editor.pressSequentially('select * from cus');
   await expect(page.getByRole('listbox').getByRole('option', { name: /customers/ })).toBeVisible();
