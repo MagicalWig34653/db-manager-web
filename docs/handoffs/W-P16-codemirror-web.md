@@ -1,6 +1,7 @@
 # W-P16 Web: CodeMirror-6-Editor
 
 Stand: 27.10.2026. Branch `feat/w-p16-codemirror`, Basis Web-main `4b24e53`. Nicht gemergt; unabhängiges Review offen.
+Stand nach Review-Fixes: siehe Abschnitt "Review-Nachbesserung" am Ende.
 Entscheidungen: `docs/decisions/ADR-W-P16-codemirror-editor.md`. Aufbauend auf `W-P16-web.md` (lokaler Verlauf/Lesezeichen, unverändert).
 
 ## Umfang
@@ -16,6 +17,7 @@ Entscheidungen: `docs/decisions/ADR-W-P16-codemirror-editor.md`. Aufbauend auf `
 - Vervollständigung: Tabellen aus `session.objects`; Spalten aus den vom Tabellenarbeitsplatz ohnehin geladenen Beschreibungen
   (`catalog-hints.svelte.ts`, Aufruf in `TableWorkbench.svelte`), nur für die in FROM/JOIN/UPDATE/INTO genannten Tabellen und nach `tabelle.`.
   Keine zusätzliche Anfrage (Test beobachtet die Requests).
+- (Review: Rohtext-Modus entfernt; Text/Zahl/NULL, negative Zahlen in Klammern.)
 - Lesezeichenvariablen: `variables.ts`, `VariablesDialog.svelte`, `SqlRunner.execute(session, text?)`/`runWithValues`/`runUnchanged`.
   Reine clientseitige Textersetzung mit sichtbarer Warnung, Vorschau, Art Text/Zahl/NULL/Rohtext. Verlauf/Lesezeichen enthalten
   die Vorlage, nie die Werte. Abbrechen führt nichts aus, „Unverändert ausführen“ sendet `:name` wie geschrieben.
@@ -60,3 +62,33 @@ Die Shell lädt den Chunk erst beim Öffnen des SQL-Arbeitsbereichs.
 - Repin im Backend (`scripts/build-web.py`: MAX_CHUNKS 64, 8 MiB eingehalten) und Doku des Chunks in `docs/WEBBUILD.md`.
 - Mehrere Editor-Tabs, Spaltenvorschläge für nicht geöffnete Tabellen (benötigen eine eigene, begrenzte Strukturabfrage).
 - Rohtext-Modus der Variablen ist bewusst mächtig; gekennzeichnet, aber nicht verboten. Falls unerwünscht: Modus entfernen.
+
+## Review-Nachbesserung (Review ad498a2: B-1..B-3, M-1..M-6)
+
+- **B-1/B-3 Lexer** (`lexer.ts`) dialektgenau: Operatorläufe sind EIN Token (`@>`, `<@`, `#>>`, `#-`, `||`, `<=>`, `->>`); `#` und `@`
+  sind je Dialekt Kommentar/Variable bzw. Operatorzeichen. Literalpräfixe `E'' U&'' X'' B'' N''` gehören zum Literal. Backslash
+  nur MySQL und PostgreSQL-E-Strings; PostgreSQL-Blockkommentare verschachteln; Dollar-Tags mit Ziffern. Leerraum ist nur
+  `[ \t\r\n\f\v]` (kein NBSP).
+- **B-2 Adjazenz** (`format.ts`): Zwischen getrennten Tokens wird nie Leerraum entfernt, wenn Operatorzeichen oder Wortzeichen
+  verschmelzen könnten (`- -` bleibt `- -`); Wort direkt am Literal (`_utf8'x'`) bleibt verklebt.
+- **Verifikation im Formatierer** (Verweigerung statt Raten): Text ohne Leerraum von Ein- und Ausgabe identisch, Tokenfolge nach
+  erneutem Lexen identisch, sonst `null`. Trailing-Blank-Regex entfernt; Ausgabe wird als Teilearray gebaut (linear). Grenzen:
+  100.000 Zeichen, Verschachtelung 40; darüber `null` (kein Web-Worker; Grenze statt Abbruch).
+- **Unabhängiger Nachweis** (`format-oracle.test.ts`, ohne den Lexer des Formatierers): (a) Whitespace-freier Text gleich,
+  (b) Pool-Literale/-Kommentare byte-exakt in gleicher Anzahl, (c) Idempotenz, jeweils auf 4000 generierten Anweisungen je Dialekt
+  (deterministischer Zufall), (d) Ausführung formatiert/unformatiert auf echtem SQLite (`node:sqlite`) mit gleichen Ergebnissen,
+  (e) Echtlauf gegen SQLite und PostgreSQL 18.6 (`tests/real/sql-editor.spec.ts`, Korpus inkl. Operatoren, Präfixen, Dollar-Quotes,
+  verschachtelten Kommentaren). Die `it.fails`/`test.fail` des Reviews sind auf `it`/`test` umgestellt.
+- **M-1**: `highlightSpecialChars` mit Bidi/Nullbreite markiert Zeichen sichtbar; vor jeder Ausführung (auch nach Variablenersetzung)
+  mit solchen Zeichen erscheint eine Warnung mit „Trotzdem ausführen“/„Abbrechen“ (`SqlRunner.hiddenPending`).
+- **M-2**: negative Zahl wird geklammert (`10 -(-5)`). **M-3**: Rohtext-Modus entfernt.
+- **M-4**: linear (siehe oben); 84 kB in unter 400 ms (Test).
+- **M-5**: Vorschlagsliste ist kein Scrollcontainer mehr (`overflow: hidden`, Selektor mit höherer Spezifität); axe mit offener Liste
+  bei 320 px ohne Befund. **M-6**: Ursache war ein Rennen im Test: der Katalog trifft nach dem Editor ein, vorher kann keine Tabelle
+  vorgeschlagen werden. Test wartet nun auf den Katalog; 6 von 6 Läufen von `test:csp` grün. Produkt: eine bereits offene Liste
+  wird bei spät eintreffendem Katalog nicht aktualisiert (nächster Tastendruck zeigt sie); bewusst nicht behoben.
+- Noch offen/Hinweise: N-1/N-2 (MySQL `NO_BACKSLASH_ESCAPES`, PG `standard_conforming_strings=off`) unverändert dokumentiert.
+  Verbleibende axe-Befunde sind nur das vorbestehende Übergangsbild des „Abfrage ausführen“-Knopfes (Kontrast/label-content-name-mismatch, N-3).
+
+Prüfstand: check 0/0, format ok, vitest 78 Dateien / 1018 Tests, Playwright 133/133, `test:csp` 6x 3/3, `test:pwa` siehe Bericht,
+axe ohne Editorbefund, `scripts/test-real-sql-editor.py` 5/5 (SQLite und PostgreSQL).
