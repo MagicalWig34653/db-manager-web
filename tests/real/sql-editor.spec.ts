@@ -23,12 +23,21 @@ const connectionFor = (driver: Driver) =>
         tls_mode: 'verify-full',
       };
 async function query(request: APIRequestContext, driver: Driver, sql: string) {
-  const response = await request.post(`${config.backendURL}/api/v1/query`, {
-    headers: { Authorization: `Bearer ${config.token}` },
-    data: { connection: connectionFor(driver), sql },
-  });
-  expect(response.status(), `${sql} -> ${await response.text()}`).toBe(200);
-  return (await response.json()).results as { rows: { value?: string }[][] }[];
+  // The backend opens SQLite per request; a direct call can meet the UI's own request and answer 422 database_busy
+  // ("Erneut versuchen"), by design. PIN-BUNDLE-6 review: retry that answer instead of failing (about 2 of 7 runs failed).
+  for (let attempt = 0; ; attempt++) {
+    const response = await request.post(`${config.backendURL}/api/v1/query`, {
+      headers: { Authorization: `Bearer ${config.token}` },
+      data: { connection: connectionFor(driver), sql },
+    });
+    const text = await response.text();
+    if (response.status() === 422 && text.includes('database_busy') && attempt < 20) {
+      await new Promise((r) => setTimeout(r, 150));
+      continue;
+    }
+    expect(response.status(), `${sql} -> ${text}`).toBe(200);
+    return JSON.parse(text).results as { rows: { value?: string }[][] }[];
+  }
 }
 async function open(page: Page, driver: Driver) {
   const connection = connectionFor(driver);
