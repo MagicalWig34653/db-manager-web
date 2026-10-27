@@ -81,12 +81,15 @@ for (const driver of ['sqlite', 'postgresql'] as const) {
     await query(request, driver, `CREATE TABLE ${quoted(odd)} (id INTEGER PRIMARY KEY)`);
     await query(request, driver, 'CREATE TABLE pxz_other (id INTEGER PRIMARY KEY)');
     await query(request, driver, "INSERT INTO px_a VALUES (1, 'row')");
-    // A table outside the batch references px_a: the drop is blocked and nothing may change.
-    await query(
-      request,
-      driver,
-      'CREATE TABLE outside_ref (id INTEGER PRIMARY KEY, a INTEGER REFERENCES px_a(id))',
-    );
+    // PostgreSQL: a table outside the batch references px_a, so the drop is blocked and nothing may change.
+    // SQLite does not enforce foreign keys by default, so there the first drop simply succeeds.
+    const blocked = driver === 'postgresql';
+    if (blocked)
+      await query(
+        request,
+        driver,
+        'CREATE TABLE outside_ref (id INTEGER PRIMARY KEY, a INTEGER REFERENCES px_a(id))',
+      );
 
     await connect(page, driver);
     await page.goto(`/#/db/${driver === 'sqlite' ? 'w4_part' : 'w4_probe'}/praefix-stapel`);
@@ -104,23 +107,27 @@ for (const driver of ['sqlite', 'postgresql'] as const) {
     await card.getByRole('button', { name: 'Ausführen' }).click();
     await typeAndConfirm(page, 'px_');
     const result = page.getByTestId('result');
-    await expect(result).toHaveAttribute('data-outcome', 'rejected');
-    await expect(page.getByTestId('table-results').locator('tbody tr').first()).toHaveAttribute(
-      'data-status',
-      'not_applied',
-    );
-    expect(executes).toHaveLength(1);
-    expect(await names(request, driver, 'px\\_%')).toContain('px_a');
-    expect(await names(request, driver, 'keep\\_pfx')).toEqual(['keep_pfx']);
+    if (blocked) {
+      await expect(result).toHaveAttribute('data-outcome', 'rejected');
+      await expect(page.getByTestId('table-results').locator('tbody tr').first()).toHaveAttribute(
+        'data-status',
+        'not_applied',
+      );
+      expect(executes).toHaveLength(1);
+      expect(await names(request, driver, 'px\\_%')).toContain('px_a');
+      expect(await names(request, driver, 'keep\\_pfx')).toEqual(['keep_pfx']);
 
-    // Remove the blocker, plan again (a used plan is locked) and drop for real.
-    await query(request, driver, 'DROP TABLE outside_ref');
-    await card.getByRole('button', { name: 'Neuer Plan' }).click();
-    await card.getByRole('button', { name: 'Plan anzeigen' }).click();
-    await card.getByRole('button', { name: 'Ausführen' }).click();
-    await typeAndConfirm(page, 'px_');
+      // Remove the blocker, plan again (a used plan is locked) and drop for real.
+      await query(request, driver, 'DROP TABLE outside_ref');
+      await card.getByRole('button', { name: 'Neuer Plan' }).click();
+      await card.getByRole('button', { name: 'Plan anzeigen' }).click();
+      await card.getByRole('button', { name: 'Ausführen' }).click();
+      await typeAndConfirm(page, 'px_');
+    }
     await expect(result).toHaveAttribute('data-outcome', 'completed');
-    expect(executes).toHaveLength(2);
+    for (const row of await page.getByTestId('table-results').locator('tbody tr').all())
+      await expect(row).toHaveAttribute('data-status', 'applied');
+    expect(executes).toHaveLength(blocked ? 2 : 1);
     const left = await names(request, driver, 'px%');
     expect(left).toEqual(['pxz_other']);
     expect(await names(request, driver, 'keep\\_pfx')).toEqual(['keep_pfx']);
