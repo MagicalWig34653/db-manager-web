@@ -91,3 +91,32 @@ Die Shell lädt den Chunk erst beim Öffnen des SQL-Arbeitsbereichs.
 
 Prüfstand: check 0/0, format ok, vitest 78 Dateien / 1018 Tests, Playwright 133/133, `test:csp` 6x 3/3, `test:pwa` siehe Bericht,
 axe ohne Editorbefund, `scripts/test-real-sql-editor.py` 5/5 (SQLite und PostgreSQL).
+
+## Re-Review-Nachbesserung (Re-Review 9c0ec90: H-1, M-1..M-3, L-1..L-9)
+
+- **H-1 und Leerraum mit Bedeutung**: Der Formatierer verweigert (`null`) bei zwei aufeinanderfolgenden Zeichenkettenliteralen (auch über
+  Kommentare hinweg; PostgreSQL-Fortsetzung, MySQL-Verkettung). Leerraum zwischen Name/Parameter und `(` bleibt wie im Original
+  (weder entfernt noch eingefügt; MySQL ohne `IGNORE_SPACE`). SQLite `@v(`/`$v(`/`:v(` (TCL-Suffix) wird verweigert.
+- **L-1** `?NNN` ist ein Token (Parameter, kein `:name`-Platzhalter). **L-3** Als Leerraum zählt nur `[ \t\r\n\f]`; U+000B bleibt ein
+  gewöhnliches Zeichen. **L-5** MySQL/MariaDB: `--` ist nur bei folgendem Leerraum/Steuerzeichen/Textende ein Kommentar.
+- **M-3** MySQL/MariaDB: Literale und `"`-Bezeichner mit Backslash im Inhalt werden nicht formatiert (Servermodus `NO_BACKSLASH_ESCAPES`
+  unbekannt; kein Extra-Request für `@@sql_mode`).
+- **M-1** Der Editor ist schreibgeschützt, solange die Bidi-/Unsichtbar-Warnung steht; „In Editor übernehmen“ verwirft sie. Der Verlauf
+  speichert damit exakt den ausgeführten Text.
+- **M-2** `hidden.ts`: Cc (außer Tab/LF/CR), Cf, Zs (außer Leerzeichen), Default_Ignorable_Code_Point (Hangul-Füller, Variation Selectors,
+  Tag-Zeichen U+E0000..E0FFF) und U+2800 werden markiert und lösen die Warnung aus.
+- **L-6** Rohtext-Reste in ADR/Handoff entfernt. **L-7** Spec wartet auf `.cm-editor`; Warnungsspecs mit `toPass`.
+  **L-8** SQL-Stapel verlangt bei solchen Zeichen eine zusätzliche Bestätigung (Kontrollkästchen) vor „Bestätigt ausführen“.
+- Alle `it.fails`/`test.fail` aus dem Re-Review sind umgedreht; die Ausnahmeliste `known` im Differenztest enthält nur noch das
+  SQLite-Artefakt `@@x`/`a:b`.
+
+**Differenztest (formatiert vs. unformatiert, echte Server, eigene Wegwerf-Container `w-p16-rr`, entfernt, PostgreSQL read-only)**:
+PostgreSQL 18.6: 18.716 Paare, 14.193 ok, 4.523 Fehler, **0 Abweichungen**. MySQL 8.4: 18.020 Paare, 10.892 ok, 7.128 Fehler,
+1 Abweichung; MariaDB 12.3: 18.020 Paare, 7.049 ok, 10.971 Fehler, 1 Abweichung. Die eine Abweichung je System ist das bekannte
+Testartefakt `SELECT @a := 1, @a + 1` (`2.0` vs. `2`: Sitzungsvariable bleibt zwischen beiden Läufen stehen), kein Formatiererfehler.
+Fehler->ok und ok->Fehler: 0. SQLite (`node:sqlite`) im vitest-Differenztest: 0 Abweichungen. Ausführung:
+`DBM_CORPUS_OUT=<dir> npx vitest run src/lib/features/sql-editor`, dann `python3 tests/differential/run-differential.py <backend-repo> <dir> <out.json>`
+(braucht `psycopg`, `pymysql`, Backend-`scripts/dbfix.py`).
+
+Prüfstand: check 0/0, format ok, vitest 82 Dateien / 1043 Tests, Playwright 140/140, `test:csp` 6x 3/3, `test:pwa` 6/6, axe (27 Specs) nur das
+bekannte Übergangsbild des „Abfrage ausführen“-Knopfes, `scripts/test-real-sql-editor.py` 5/5.
