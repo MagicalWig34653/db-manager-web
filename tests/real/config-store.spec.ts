@@ -51,8 +51,7 @@ async function toServer(page: Page) {
   if (await link.count()) await link.click();
   else await page.evaluate(() => (location.hash = '#/server/uebersicht'));
 }
-const toSql = (page: Page) =>
-  page.getByRole('link', { name: config.connection.database, exact: true }).click();
+const toSql = (page: Page) => page.locator('a.database-label').click();
 
 test.describe.configure({ mode: 'serial' });
 test.skip(!config, 'DBM_REAL_CONFIG and the disposable backend/MariaDB fixture are required.');
