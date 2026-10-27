@@ -108,3 +108,14 @@ Browsersuite 155/155, `test:csp` 3/3, `test:pwa` 6/6, `scripts/test-real-config-
 (Wegwerf-MariaDB 12.3, entfernt). Größe `dist`: Web-main `1145be4` 4,76 MiB, Branch 4,91 MiB (+0,15 MiB, Backend-Grenze 8 MiB;
 der Backend-Precache-Test selbst nicht ausgeführt). Hinweis: der Echtlauf-Spec erwartet jetzt die lokale Ablehnung des
 32-Hex-Eintrags (Server-Ablehnung weiterhin per Unit-/Backend-Test abgedeckt).
+
+## Nachtrag 2: Pin-Bündel-6-Review (Web `review/pin-bundle6-web` @ `33ef0fd` eingemerged)
+
+1. **Produktfehler Autosave (Ursache des flakigen Echtlaufs):** `AppearanceSync.push` merkt Änderungen vor `load()` (`wanted`) und sendet sie danach; die lokale Nutzeränderung gewinnt gegen den Serverwert (kein `apply` des Serverwerts dann); schlägt `load()` fehl, wird mit Wiederholung alle 5 s weiterversucht statt zu verwerfen. Das Panel übergibt eine Änderung aus der Zeit vor Serverbereitschaft (`touched`) an das neue Sync-Objekt. Test für schnelle Doppeländerung (`fixes.test.ts`); `tests/real/pin6-appearance.spec.ts` ist von `test.fail` auf normalen Test umgedreht und läuft im Echtskript mit.
+2. **secrets.ts = Backend:** Go-`\s` (nur `[\t\n\f\r ]`, nicht NBSP/VT/U+2028), Kelvin-Zeichen in der Key-Regel, Confusables `ᴊ`/`ʜ`; URL-Schema-Regel ohne Lookbehind-Lücke. Differenztest `pin6.differential.test.ts` mit eingechecktem Korpus `differential/backend-rejected.json` (24.608 vom Backend abgelehnte Mutationen, Ausgabe von `TestPin6DifferentialCorpus` auf `review/pin-bundle6`): **0 Durchlässer**.
+3. **DSN/URL-Regel linear:** beide Regeln als lineare Scans (`credentialUrl`, `goDsn`) statt Regex; Test mit 1-MiB-Mustern (<1,5 s je Fall, DSN 256 KiB <300 ms) bestanden.
+4. **Sitzungssperre:** `TableTab` leitet Schreibphasen des Config-Stores (Zuletzt benutzt) an `onwritephase`; Verlauf beim Abfragestart bleibt ein stiller Hintergrundschreiber ohne Navigationssperre (würde jede Abfrage sperren). Testfix `database_busy` aus dem Review-Branch ist enthalten.
+5. **Owner-Hash:** Hinweis: der Kurzhash ist nun pro Installation gesalzen (zufälliges Salt in `localStorage`, **nur angelegt, wenn tatsächlich gepuffert wird**, damit der Standard-Browserspeicher leer bleibt; `workbench.spec` prüft das). Das Token selbst wird nie gespeichert. Löscht der Nutzer Browserdaten, entfällt auch das Salt und der Puffer ist dann ohnehin weg.
+6. **Zur Kenntnis (Backend, nicht geändert):** Runtime-Spec-Regex in `tests/web-runtime/` könnte `.cm-placeholder` genauer zählen.
+
+Prüfstand: `npm run check` 0/0, `npm test` 1246/1246, Prettier ok, Browser 155/155, `test:csp` 3/3, `test:pwa` 6/6, `test-real-sql-editor.py` 5/5, `scripts/test-real-config-store.py` 8 Wiederholungen je 9/9 (Config-Store 7 + Appearance-Race 2) gegen Backend-Main `a40b20d`. `dist` 4,91 MiB.
