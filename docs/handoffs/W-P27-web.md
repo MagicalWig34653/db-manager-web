@@ -35,14 +35,20 @@ Branch `feat/w-p17-27-web`, Basis Web-`main` `f830326`, Backend-`main` `d9463ba`
 Auf dem Branch (Arbeitsbaum committed): `npm run check` 0 Fehler/Warnungen; `npm test` 780 grün (60 Dateien, neu: Poller 10,
 Server-Admin 33, Monitor 43); `npm run format:check`, `contract:check`, `validators:check` ok; `npm run build` ok (Precache
 3,65 MiB); `npm run test:csp` 2 grün; Browser-Specs mit gemocktem Backend `tests/browser/server-admin.spec.ts` 6 grün
-(`DBM_E2E_PORT=4391`, Port 4179 nicht verwendet). Vollständige Browser-Suite siehe unten (Abschnitt Echtlauf/Suite).
+(`DBM_E2E_PORT=4391`, Port 4179 nicht verwendet). Vollständige Browser-Suite (`DBM_E2E_PORT=4391 npx playwright test`): 78 grün.
 
 ## Echtlauf
 
 `scripts/test-real-server-admin.py` baut das Backend aus `DBM_BACKEND_REPO`/`DBM_BACKEND_REV` (hier `d9463ba`; prüft SHA-256 der
 Verträge v17/v20), startet Vorschau auf freiem Zufallsport und fährt `tests/real/server-admin.spec.ts` für SQLite und, falls
 Docker verfügbar ist, nacheinander MySQL 8.4, MariaDB 12.3, PostgreSQL 18.6 über `scripts/dbfix.py` des Backends (TLS
-verify-full, eigene CA über `DBM_DB_CA_FILE`). Ergebnis siehe Abschnitt "Ergebnis des Echtlaufs".
+verify-full, eigene CA über `DBM_DB_CA_FILE`). 
+Ergebnis (Backend `d9463ba`, macOS arm64, Colima): SQLite, MySQL 8.4, MariaDB 12.3 und PostgreSQL 18.6 je 2/2 Tests grün
+(Status/Variablen/Prozesse inkl. unabhängigem Rücklesen von `max_connections` über `/api/v1/query`, self-Markierung, Filter,
+Scope; Messwerte mit Raten, Engines, Analyse, Hinweise, Replikation als Daten/leer/erklärt-unavailable ohne Fehler, Binärlogs mit
+Ereignissen bei MySQL, EXPLAIN `SELECT 1` und fehlerhafte Anweisung als Fehler). Fixtures danach entfernt (0 Container
+mit Label `dbmanager.task=wp1727`). Die Prüfungen auf Netzwerkengines sind bewusst tolerant gegenüber Rechte-/Konfigurationsunterschieden
+(Daten, leer oder erklärt nicht verfügbar), aber nie gegenüber Fehlern.
 
 ## Offen
 
