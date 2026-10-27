@@ -2,6 +2,7 @@
 // Server-side configuration store (API 0.24) against an in-memory stand-in for the backend. The real server is covered
 // by scripts/test-real-config-store.py.
 import { test, expect, type Page } from '@playwright/test';
+import { editorText } from './editor';
 import { FakeConfigServer } from '../../src/lib/features/config-store/testing';
 
 const SQL_CAPS = {
@@ -106,7 +107,7 @@ test('server mode: opt-in synchronized with the server, history written only aft
   await page.getByLabel('Verlauf durchsuchen').fill('202');
   await editor.fill('SELECT 303');
   await page.getByRole('button', { name: 'In Editor übernehmen' }).click();
-  await expect(editor).toHaveValue('SELECT 202');
+  await expect.poll(() => editorText(editor)).toBe('SELECT 202');
   expect(queries()).toBe(2);
   // A bookmark with a secret the local rules do not know: rejected by the server, text never echoed.
   await page.getByLabel('Name des Lesezeichens').fill('Mark');
