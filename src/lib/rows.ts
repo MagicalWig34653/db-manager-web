@@ -4,6 +4,7 @@ import * as v3 from './contract/v3/validators.js';
 import * as v4 from './contract/v4/validators.js';
 import type { components } from './contract/v4/api-types';
 import { prepareFilters } from './tables';
+import { t } from './i18n';
 import type { DisplayResult } from './workbench';
 export type RowSchemas = components['schemas'];
 export type Snapshot = RowSchemas['RowSnapshot'];
@@ -22,8 +23,7 @@ export interface FieldDraft {
   value: string;
   locked: boolean;
 }
-export const UNKNOWN_MESSAGE =
-  'Der Ausgang ist unbekannt. Die Datenbank kann die Änderung bereits übernommen haben. Nicht erneut senden; prüfe zuerst den aktuellen Datenbankstand.';
+export const unknownMessage = () => t('coreText.rowsUnknown');
 export const copySnapshot = (value: Snapshot): Snapshot => ({
   columns: [...value.columns],
   values: value.values.map((cell) => ({ ...cell })),
@@ -33,10 +33,7 @@ export function validateRow<T extends keyof RowSchemas>(name: T, value: unknown)
     ? v4[name as keyof typeof v4]
     : v3[name as keyof typeof v3];
   if (!validate || !validate(value))
-    throw new ApiError(
-      'invalid_response',
-      'Die Antwort des Zeileneditors ist ungültig. Prüfe die Version deiner Instanz.',
-    );
+    throw new ApiError('invalid_response', t('coreText.badEditorResponse'));
   return value as RowSchemas[T];
 }
 export function snapshotResult(
@@ -44,7 +41,7 @@ export function snapshotResult(
   description: RowSchemas['TableDescription'],
 ): DisplayResult {
   if (snapshot.columns.length !== snapshot.values.length)
-    throw new ApiError('invalid_response', 'Der gemeldete Zeilenzustand ist unvollständig.');
+    throw new ApiError('invalid_response', t('coreText.badRowState'));
   return {
     columns: snapshot.columns.map((name) => ({
       name,
@@ -76,8 +73,7 @@ export function prepareChanges(fields: FieldDraft[], operation: Operation): Chan
       );
     changes.push({ column: field.column, value });
   }
-  if (operation === 'update' && changes.length === 0)
-    throw new Error('Wähle mindestens einen Wert zum Ändern.');
+  if (operation === 'update' && changes.length === 0) throw new Error(t('coreText.pickOne'));
   return changes;
 }
 export class RowClient {
@@ -105,16 +101,10 @@ export class RowClient {
           cap3.features.includes(feature as never),
         )
       )
-        throw new ApiError(
-          'unsupported_feature',
-          'Diese Instanz bietet keinen freigegebenen Zeileneditor. SQL und Tabellenansicht bleiben verfügbar.',
-        );
+        throw new ApiError('unsupported_feature', t('coreText.noRowEditor'));
     } catch (cause) {
       if (cause instanceof ApiError && ['not_found', 'invalid_response'].includes(cause.code))
-        throw new ApiError(
-          'unsupported_feature',
-          'Diese Instanz bietet keinen freigegebenen Zeileneditor. SQL und Tabellenansicht bleiben verfügbar.',
-        );
+        throw new ApiError('unsupported_feature', t('coreText.noRowEditor'));
       throw cause;
     }
     const input = { connection, table };
@@ -131,10 +121,7 @@ export class RowClient {
         description.table.name !== table.name ||
         (table.schema !== undefined && description.table.schema !== table.schema)
       )
-        throw new ApiError(
-          'invalid_response',
-          'Die Eignung gehört nicht zur ausgewählten Tabelle.',
-        );
+        throw new ApiError('invalid_response', t('coreText.wrongTable'));
     }
     return { update, insert };
   }
@@ -191,7 +178,7 @@ export class RowClient {
           result.row.columns.length !== result.row.values.length ||
           new Set(result.row.columns).size !== result.row.columns.length
         )
-          throw new ApiError('invalid_response', 'Die gemeldete Nachherzeile ist unvollständig.');
+          throw new ApiError('invalid_response', t('coreText.badAfterRow'));
       }
       return result;
     } catch (cause) {
@@ -200,7 +187,7 @@ export class RowClient {
         (!(cause instanceof ApiError) ||
           ['invalid_response', 'outcome_unknown', 'network_error', 'timeout'].includes(cause.code))
       )
-        throw new ApiError('outcome_unknown', UNKNOWN_MESSAGE);
+        throw new ApiError('outcome_unknown', unknownMessage());
       throw cause;
     }
   }

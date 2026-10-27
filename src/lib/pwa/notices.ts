@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Minimal status strip for the PWA: offline hint and "new version" action, built with DOM nodes.
 
-export const OFFLINE_TEXT = 'Keine Verbindung zum Server';
-export const UPDATE_TEXT = 'Eine neue Version ist verfügbar.';
-export const UPDATE_ACTION = 'Neue Version laden';
+import { t } from '$lib/i18n';
+
+export const offlineText = () => t('coreText.offline');
+export const updateText = () => t('coreText.updateAvailable');
+export const updateAction = () => t('coreText.updateAction');
 
 export interface Notices {
   setOffline(offline: boolean): void;
@@ -33,16 +35,16 @@ export function createNotices(doc: Document): Notices {
   });
   const offline = doc.createElement('span');
   offline.setAttribute('data-pwa-offline', '');
-  offline.textContent = OFFLINE_TEXT;
+  offline.textContent = offlineText();
   offline.hidden = true;
   const update = doc.createElement('span');
   update.setAttribute('data-pwa-update', '');
   update.hidden = true;
   const message = doc.createElement('span');
-  message.textContent = UPDATE_TEXT;
+  message.textContent = updateText();
   const action = doc.createElement('button');
   action.type = 'button';
-  action.textContent = UPDATE_ACTION;
+  action.textContent = updateAction();
   Object.assign(action.style, {
     marginLeft: '0.75rem',
     padding: '0.25rem 0.75rem',
@@ -68,11 +70,14 @@ export function createNotices(doc: Document): Notices {
   return {
     setOffline(isOffline) {
       attach();
+      offline.textContent = offlineText();
       offline.hidden = !isOffline;
       refresh();
     },
     showUpdate(onAccept) {
       attach();
+      message.textContent = updateText();
+      action.textContent = updateAction();
       update.hidden = false;
       action.onclick = () => {
         action.disabled = true;

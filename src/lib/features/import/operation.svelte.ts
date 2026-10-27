@@ -141,6 +141,8 @@ export class ImportOperation {
     this.progress = { loaded: 0, total: 0 };
     this.phase = 'uploading';
     let dispatched = false;
+    // Every body byte was handed to the network: the server may already have read the file and started.
+    let bodySent = false;
     let job: Job;
     try {
       job = await this.client.execute(structuredClone(request), file, token, {
@@ -152,6 +154,7 @@ export class ImportOperation {
           report('sending');
         },
         onProgress: (loaded, total) => {
+          if (total > 0 && loaded >= total) bodySent = true;
           if (mine === this.generation) this.progress = { loaded, total };
         },
         onUploaded: () => {
@@ -162,7 +165,7 @@ export class ImportOperation {
       if (mine !== this.generation) return;
       this.controller = null;
       const aborted = controller.signal.aborted;
-      if (aborted && this.phase === 'uploading') {
+      if (aborted && this.phase === 'uploading' && !bodySent) {
         // The request body was not completely sent, so the server cannot have started the import.
         this.consumed = false;
         this.finishReport('settled');
@@ -260,7 +263,9 @@ export class ImportOperation {
       if (job.state === 'finished') this.settle(job);
       else this.job = job;
     } catch {
-      // The poll keeps watching; a lost cancel call changes nothing about the server state.
+      // The poll keeps watching; a lost cancel call changes nothing about the server state. The request can be
+      // repeated because it never arrived (or its answer was lost); the server treats a second stop as a no-op.
+      this.cancelRequested = false;
     }
   }
 }

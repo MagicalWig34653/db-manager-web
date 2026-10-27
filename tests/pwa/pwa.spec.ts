@@ -71,7 +71,7 @@ test('worker is active with whole-origin scope and keeps only shell files in its
     return { scope: registration.scope, active: registration.active?.state, names, keys };
   });
   expect(state.active).toBe('activated');
-  expect(state.scope).toBe('http://127.0.0.1:4181/');
+  expect(state.scope).toBe(`${new URL(page.url()).origin}/`);
   expect(state.names).toHaveLength(1);
   expect(state.names[0]).toMatch(/^db-manager-shell-/);
   expect(state.keys).toContain('/index.html');

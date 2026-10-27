@@ -283,12 +283,13 @@ test('server administration and monitor: only the documented read routes are eve
 
 async function bulkBackend(
   page: Page,
-  options: { hangUpload?: boolean; hangExecute?: boolean } = {},
+  options: { hangUpload?: boolean; hangExecute?: boolean; hangRow?: boolean } = {},
 ) {
   let release = () => {};
   const gate = new Promise<void>((resolve) => (release = resolve));
   const uploads: number[] = [];
   const executes: number[] = [];
+  const rowWrites: number[] = [];
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -329,6 +330,13 @@ async function bulkBackend(
         })
         .catch(() => {});
     }
+    if (path === '/api/v3/rows/update') {
+      rowWrites.push(1);
+      if (options.hangRow) await gate;
+      return route
+        .fulfill({ status: 500, json: { error: { code: 'internal', message: 'x' } } })
+        .catch(() => {});
+    }
     if (path === '/api/v19/values/upload') {
       uploads.push(request.postDataBuffer()?.length ?? 0);
       if (options.hangUpload) await gate;
@@ -338,7 +346,7 @@ async function bulkBackend(
     void keyOf;
     return json({ error: { code: 'not_found', message: 'x' } }, 404);
   });
-  return { uploads, executes, release: () => release() };
+  return { uploads, executes, rowWrites, release: () => release() };
 }
 async function openRowEditor(page: Page) {
   await page.goto('/');
@@ -448,37 +456,36 @@ test('REVIEW: SQL import - cancelling an open upload releases the write lock and
   release();
 });
 
-test.fail(
-  'REVIEW F-1 (open finding): closing the bulk dialog (Escape) while the execute request is in flight keeps the write lock',
-  async ({ page }) => {
-    const mock = await bulkBackend(page, { hangExecute: true });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Backend-Zugang' }).click();
-    await page.getByLabel('Zugriffstoken').fill('synthetic-token');
-    await page.getByRole('button', { name: 'Übernehmen' }).click();
-    await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
-    await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
-    await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
-    await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: /items/ }).first().click();
-    await page.getByRole('checkbox', { name: 'Zeile 1 auswählen' }).check();
-    await page.getByTestId('bulk-delete').click();
-    await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
-    await page.getByTestId('bulk-typed').fill('1');
-    await page.getByTestId('bulk-execute').click();
-    await expect.poll(() => mock.executes.length).toBe(1);
-    await page.keyboard.press('Escape');
-    // The request is still open: unload must stay guarded and navigation blocked until it settled.
-    expect(
-      await page.evaluate(() => {
-        const event = new Event('beforeunload', { cancelable: true });
-        window.dispatchEvent(event);
-        return event.defaultPrevented;
-      }),
-    ).toBe(true);
-    mock.release();
-  },
-);
+test('REVIEW F-1: closing the bulk dialog (Escape) while the execute request is in flight keeps the write lock', async ({
+  page,
+}) => {
+  const mock = await bulkBackend(page, { hangExecute: true });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+  await page.getByLabel('Zugriffstoken').fill('synthetic-token');
+  await page.getByRole('button', { name: 'Übernehmen' }).click();
+  await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
+  await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
+  await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
+  await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /items/ }).first().click();
+  await page.getByRole('checkbox', { name: 'Zeile 1 auswählen' }).check();
+  await page.getByTestId('bulk-delete').click();
+  await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
+  await page.getByTestId('bulk-typed').fill('1');
+  await page.getByTestId('bulk-execute').click();
+  await expect.poll(() => mock.executes.length).toBe(1);
+  await page.keyboard.press('Escape');
+  // The request is still open: unload must stay guarded and navigation blocked until it settled.
+  expect(
+    await page.evaluate(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }),
+  ).toBe(true);
+  mock.release();
+});
 
 test('REVIEW: discarding the row editor while a file value upload is open does not drop the lock silently', async ({
   page,
@@ -506,4 +513,66 @@ test('REVIEW: discarding the row editor while a file value upload is open does n
     expect(locked || notice > 0).toBe(true);
   }
   mock.release();
+});
+
+const unloadGuarded = (page: Page) =>
+  page.evaluate(() => {
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+
+test('REVIEW F-1 (all writers): the row editor cannot be dismissed while its write request is open', async ({
+  page,
+}) => {
+  const mock = await bulkBackend(page, { hangRow: true });
+  await openRowEditor(page);
+  await page.getByLabel('Angabe für name').selectOption('value');
+  await page.getByLabel('Wert für name').fill('changed');
+  await page.getByRole('button', { name: 'Änderung prüfen' }).click();
+  await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
+  await page.getByRole('button', { name: 'Änderung verbindlich speichern' }).click();
+  await expect.poll(() => mock.rowWrites.length).toBe(1);
+  // Escape, the close icon and a click outside must all leave the dialog open and the lock held.
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Schließen', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.mouse.click(2, 2);
+  await expect(page.getByRole('dialog')).toBeVisible();
+  expect(await unloadGuarded(page)).toBe(true);
+  expect(mock.rowWrites.length).toBe(1);
+  mock.release();
+  // After the answer the lock is released and the dialog can be closed again.
+  await expect.poll(() => unloadGuarded(page)).toBe(false);
+});
+
+test('REVIEW F-1 (all writers): the bulk dialog also ignores the close icon and a click outside while executing', async ({
+  page,
+}) => {
+  const mock = await bulkBackend(page, { hangExecute: true });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Backend-Zugang' }).click();
+  await page.getByLabel('Zugriffstoken').fill('synthetic-token');
+  await page.getByRole('button', { name: 'Übernehmen' }).click();
+  await page.getByRole('button', { name: 'Verbindung hinzufügen', exact: true }).first().click();
+  await page.getByLabel('Datenbank', { exact: true }).fill('synthetic');
+  await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
+  await expect(page.getByText('Verbunden', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /items/ }).first().click();
+  await page.getByRole('checkbox', { name: 'Zeile 1 auswählen' }).check();
+  await page.getByTestId('bulk-delete').click();
+  await page.getByRole('checkbox', { name: /Ich bestätige/ }).check();
+  await page.getByTestId('bulk-typed').fill('1');
+  await page.getByTestId('bulk-execute').click();
+  await expect.poll(() => mock.executes.length).toBe(1);
+  await page.getByRole('button', { name: 'Schließen', exact: true }).click();
+  await page.mouse.click(2, 2);
+  await expect(page.getByTestId('bulk-dialog')).toBeVisible();
+  expect(await unloadGuarded(page)).toBe(true);
+  mock.release();
+  await expect(page.getByTestId('bulk-close')).toBeVisible();
+  expect(await unloadGuarded(page)).toBe(false);
+  await page.getByTestId('bulk-close').click();
+  await expect(page.getByTestId('bulk-dialog')).toBeHidden();
 });

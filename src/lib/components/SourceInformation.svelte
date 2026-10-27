@@ -1,44 +1,43 @@
 <script lang="ts">
   import { Code2, ArrowUpRight } from '@lucide/svelte';
   import * as Dialog from '$lib/components/ui/dialog';
+  import { t } from '$lib/i18n';
 </script>
 
 <Dialog.Root>
-  <Dialog.Trigger class="source-trigger"><Code2 size={14} />Quellcode &amp; Lizenzen</Dialog.Trigger
-  >
+  <Dialog.Trigger class="source-trigger"><Code2 size={14} />{t('sourceInfo.title')}</Dialog.Trigger>
   <Dialog.Content class="sm:max-w-[520px] p-7">
     <Dialog.Header>
       <div class="dialog-mark"><Code2 size={22} /></div>
-      <Dialog.Title class="text-xl">Quellcode &amp; Lizenzen</Dialog.Title>
-      <Dialog.Description>DB Manager ist freie Software unter AGPL-3.0-only.</Dialog.Description>
+      <Dialog.Title class="text-xl">{t('sourceInfo.title')}</Dialog.Title>
+      <Dialog.Description>{t('sourceInfo.free')}</Dialog.Description>
     </Dialog.Header>
-    <nav class="source-links" aria-label="Quellcode und Lizenztexte">
+    <nav class="source-links" aria-label={t('sourceInfo.navLabel')}>
       <a href={__WEB_SOURCE_URL__} target="_blank" rel="noopener noreferrer"
-        >Web-Quellcode dieses Builds <ArrowUpRight size={16} /></a
+        >{t('sourceInfo.web')} <ArrowUpRight size={16} /></a
       >
       <a
         href="https://github.com/MagicalWig34653/db-manager"
         target="_blank"
-        rel="noopener noreferrer">Go-Serverprojekt <ArrowUpRight size={16} /></a
+        rel="noopener noreferrer">{t('sourceInfo.server')} <ArrowUpRight size={16} /></a
       >
       <a
         href="https://github.com/MagicalWig34653/db-manager/blob/main/docs/WEBBUILD.md"
         target="_blank"
-        rel="noopener noreferrer">Herkunft des Serverbuilds <ArrowUpRight size={16} /></a
+        rel="noopener noreferrer">{t('sourceInfo.origin')} <ArrowUpRight size={16} /></a
       >
       <a href="/LICENSE.txt" target="_blank" rel="noopener noreferrer"
-        >AGPL-Lizenztext <ArrowUpRight size={16} /></a
+        >{t('sourceInfo.agpl')} <ArrowUpRight size={16} /></a
       >
       <a href="/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener noreferrer"
-        >Lizenzen der verwendeten Bibliotheken <ArrowUpRight size={16} /></a
+        >{t('sourceInfo.third')} <ArrowUpRight size={16} /></a
       >
     </nav>
     <p class="source-note">
-      Der Web-Quellcode verweist auf den festgelegten Stand dieses Builds. Die Bibliotheken behalten
-      ihre eigenen Lizenzen.
+      {t('sourceInfo.note')}
     </p>
     <Dialog.Footer
-      ><Dialog.Close class="source-close">Zurück zum Arbeitsplatz</Dialog.Close></Dialog.Footer
+      ><Dialog.Close class="source-close">{t('sourceInfo.back')}</Dialog.Close></Dialog.Footer
     >
   </Dialog.Content>
 </Dialog.Root>

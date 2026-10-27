@@ -21,6 +21,7 @@
     disabled = false,
     onwritephase,
     onchanged,
+    onbusychange,
   }: {
     connection: ConnectionDraft;
     token: string;
@@ -34,6 +35,8 @@
     onwritephase: (phase: WritePhase) => void;
     /** A write was sent: the row on screen is stale. */
     onchanged: () => void;
+    /** True while an upload or download request is open; the host must not be dismissed meanwhile. */
+    onbusychange?: (busy: boolean) => void;
   } = $props();
 
   let column = $state('');
@@ -50,6 +53,7 @@
   const tooLarge = $derived(!!file && file.size > maxBytes);
   const current = $derived(expected.values[expected.columns.indexOf(chosen)]);
   const hasValue = $derived(!!current && current.kind !== 'null');
+  $effect(() => onbusychange?.(busy));
   const locked = $derived(disabled || busy || done || unknown);
   const base = $derived({
     connection: toConnection(connection),

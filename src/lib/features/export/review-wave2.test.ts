@@ -16,12 +16,43 @@ describe('REVIEW F-2: SQL marker inside a multi-line text literal', () => {
   // SQLite and PostgreSQL export text with raw line breaks inside the literal (exportLiteral in the backend).
   // A cell that contains ";\n-- DBMANAGER EXPORT COMPLETE\n" followed by a cut right after that line looks complete.
   const cut = "INSERT INTO t VALUES ('x;\n-- DBMANAGER EXPORT COMPLETE\n";
-  it.fails(
-    'a stream cut inside such a literal must not be accepted (current verifier accepts it)',
-    () => {
-      expect(verdict('sql', cut).complete).toBe(false);
-    },
-  );
+  it('a stream cut inside such a literal must not be accepted', () => {
+    expect(verdict('sql', cut).complete).toBe(false);
+  });
+  it('rejects the marker inside quoted identifiers, E-strings, block comments and doubled quotes', () => {
+    const tail = ';\n-- DBMANAGER EXPORT COMPLETE\n';
+    for (const head of [
+      'SELECT "a',
+      'SELECT `a',
+      "INSERT INTO t VALUES (E'a\\'",
+      "INSERT INTO t VALUES ('it''s",
+      '/* c ',
+      '/* a /* nested */ still open ',
+    ])
+      expect(verdict('sql', head + tail).complete, head).toBe(false);
+  });
+  it('accepts the marker after literals that merely contain comment-like text', () => {
+    const end = ';\n-- DBMANAGER EXPORT COMPLETE\n';
+    for (const body of [
+      "INSERT INTO t VALUES ('a -- b /* c');",
+      "INSERT INTO t VALUES ('it''s');",
+      "INSERT INTO t VALUES (E'a\\'b');",
+      'CREATE TABLE "a;\n-- x" (id int);',
+      "/* header 'quote */ INSERT INTO t VALUES ('x'",
+      "-- header: it's\nINSERT INTO t VALUES (1",
+    ])
+      expect(verdict('sql', body.replace(/;$/, '') + end).complete, body).toBe(true);
+  });
+  it('works across arbitrary chunk boundaries and CRLF', () => {
+    const text =
+      "-- h\r\nINSERT INTO t VALUES ('a''b;\n-- x');\r\n-- DBMANAGER EXPORT COMPLETE\r\n";
+    for (let size = 1; size <= 7; size++) {
+      const verifier = new CompletionVerifier('sql');
+      const bytes = enc(text);
+      for (let i = 0; i < bytes.length; i += size) verifier.push(bytes.subarray(i, i + size));
+      expect(verifier.finish().complete, `chunk ${size}`).toBe(true);
+    }
+  });
   it('control: the real end is accepted and a plain unterminated literal is not', () => {
     expect(
       verdict('sql', "INSERT INTO t VALUES ('x');\n-- DBMANAGER EXPORT COMPLETE\n").complete,

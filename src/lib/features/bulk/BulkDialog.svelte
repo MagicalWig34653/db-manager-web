@@ -179,6 +179,7 @@
     if (!needsInput) makePlan();
   }
   function close() {
+    if (operation.phase === 'executing') return;
     const reload = operation.consumed || operation.stale;
     operation.reset(onwritephase);
     open = false;
@@ -213,7 +214,14 @@
 <Dialog.Root
   bind:open
   onOpenChange={(value) => {
-    if (!value) close();
+    if (value) return;
+    // The execute request is in flight: dismissing the dialog would drop the write lock and the result.
+    // The dialog stays open until the server answered.
+    if (operation.phase === 'executing') {
+      open = true;
+      return;
+    }
+    close();
   }}
 >
   <Dialog.Content

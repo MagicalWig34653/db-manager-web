@@ -12,6 +12,7 @@
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { t } from '$lib/i18n';
   import StructurePanel from './StructurePanel.svelte';
   import RowWorkspace from './RowWorkspace.svelte';
   import type { WritePhase } from '$lib/rows';
@@ -69,17 +70,17 @@
     ...(object.schema ? { schema: object.schema } : {}),
   });
   const generatedNames = {
-    none: 'Nein',
-    virtual: 'Virtuell',
-    stored: 'Gespeichert',
-    identity: 'Identität',
-    hidden: 'Versteckt',
+    none: 'tableView.genNone',
+    virtual: 'tableView.genVirtual',
+    stored: 'tableView.genStored',
+    identity: 'tableView.genIdentity',
+    hidden: 'tableView.genHidden',
   };
   const kindNames = {
-    table: 'Tabelle',
-    view: 'View',
-    virtual: 'Virtuelle Tabelle',
-    foreign: 'Fremdtabelle',
+    table: 'tableView.kindTable',
+    view: 'tableView.kindView',
+    virtual: 'tableView.kindVirtual',
+    foreign: 'tableView.kindForeign',
   };
   async function initialize() {
     const current = ++version;
@@ -99,8 +100,7 @@
         if (controller.signal.aborted) cancelled = true;
         else {
           unsupported = cause instanceof ApiError && cause.code === 'unsupported_feature';
-          error =
-            cause instanceof Error ? cause.message : 'Die Tabelle konnte nicht geöffnet werden.';
+          error = cause instanceof Error ? cause.message : t('tableView.openFailed');
         }
       }
     } finally {
@@ -138,10 +138,7 @@
         if (request.signal.aborted) cancelled = true;
         else {
           unsupported = cause instanceof ApiError && cause.code === 'unsupported_feature';
-          error =
-            cause instanceof Error
-              ? cause.message
-              : 'Die Tabellenzeilen konnten nicht geladen werden.';
+          error = cause instanceof Error ? cause.message : t('tableView.rowsFailed');
         }
       }
     } finally {
@@ -158,13 +155,13 @@
       if (
         sort.some((order) => !description!.columns.some((column) => column.name === order.column))
       )
-        throw new Error('Wähle vorhandene Sortierspalten.');
+        throw new Error(t('tableView.pickSortColumns'));
       if (new Set(sort.map((order) => order.column)).size !== sort.length)
-        throw new Error('Jede Sortierspalte darf nur einmal vorkommen.');
+        throw new Error(t('tableView.sortOnce'));
       const nextSort = sort.map((order) => ({ ...order }));
       const nextPageSize = pageSize;
       if (!Number.isInteger(nextPageSize) || nextPageSize < 1 || nextPageSize > 1000)
-        throw new Error('Die Seitengröße muss zwischen 1 und 1.000 Zeilen liegen.');
+        throw new Error(t('tableView.pageSizeRange'));
       validateTable('BrowseRequest', {
         connection: toConnection(connection),
         table,
@@ -183,7 +180,7 @@
       appliedQuery = nextQuery;
       void loadPage(0);
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Prüfe die Filterwerte.';
+      error = cause instanceof Error ? cause.message : t('tableView.checkFilters');
     }
   }
   onMount(() => {
@@ -205,68 +202,77 @@
   id="table-workspace"
   tabindex="-1"
   class="table-workspace"
-  aria-label="Tabellenarbeitsplatz"
+  aria-label={t('tableView.workspace')}
   aria-busy={busy}
 >
   <div class="table-heading">
     <div>
-      <p class="eyebrow">{description ? kindNames[description.kind] : 'OBJEKT'}</p>
+      <p class="eyebrow">{description ? t(kindNames[description.kind]) : t('tableView.object')}</p>
       <h2><Table2 size={20} />{object.schema ? `${object.schema}.` : ''}{object.name}</h2>
-      <p>Einzelzeilenaktionen werden für geeignete Tabellen gesondert freigegeben.</p>
+      <p>{t('tableView.rowActionsNote')}</p>
     </div>
     <Button
       variant="outline"
       disabled={writing || busy || !description || dirty}
-      onclick={() => loadPage(result?.offset ?? 0)}><RefreshCw size={15} />Aktualisieren</Button
+      onclick={() => loadPage(result?.offset ?? 0)}
+      ><RefreshCw size={15} />{t('tableView.refresh')}</Button
     >
   </div>
   {#if description}
     <div class="table-facts">
       <span
-        >Primärschlüssel: {description.primary_key.length
-          ? description.primary_key.join(', ')
-          : 'Nicht vorhanden'}</span
+        >{t('tableView.primaryKey', {
+          value: description.primary_key.length
+            ? description.primary_key.join(', ')
+            : t('tableView.none'),
+        })}</span
       ><span
-        >Transaktionen: {description.transactional === 'yes'
-          ? 'Unterstützt'
-          : description.transactional === 'no'
-            ? 'Nicht unterstützt'
-            : 'Nicht gemeldet'}</span
-      ><span>Speicher: {description.storage_engine || 'Nicht gemeldet'}</span>
+        >{t('tableView.transactions', {
+          value:
+            description.transactional === 'yes'
+              ? t('tableView.supported')
+              : description.transactional === 'no'
+                ? t('tableView.unsupported')
+                : t('tableView.notReported'),
+        })}</span
+      ><span
+        >{t('tableView.storage', {
+          value: description.storage_engine || t('tableView.notReported'),
+        })}</span
+      >
     </div>
-    <div class="table-tabs" role="tablist" aria-label="Tabellenbereich">
-      <button role="tab" aria-selected={tab === 'data'} onclick={() => (tab = 'data')}>Daten</button
+    <div class="table-tabs" role="tablist" aria-label={t('tableView.tabArea')}>
+      <button role="tab" aria-selected={tab === 'data'} onclick={() => (tab = 'data')}
+        >{t('tableView.tabData')}</button
       ><button role="tab" aria-selected={tab === 'structure'} onclick={() => (tab = 'structure')}
-        >Struktur · {description.columns.length} Spalten</button
+        >{t('tableView.tabStructure', { count: description.columns.length })}</button
       >
     </div>
     {#if tab === 'structure'}
-      <div
-        class="metadata-scroll"
-        role="region"
-        aria-label="Tabellenstruktur, horizontal scrollbar"
-      >
+      <div class="metadata-scroll" role="region" aria-label={t('tableView.structureRegion')}>
         <table class="metadata-table">
           <thead
             ><tr
-              ><th>Spalte</th><th>Datentyp</th><th>NULL erlaubt</th><th>Standardausdruck</th><th
-                >PK-Position</th
-              ><th>Generiert</th><th>Zugriff</th></tr
+              ><th>{t('tableView.thColumn')}</th><th>{t('tableView.thType')}</th><th
+                >{t('tableView.thNullable')}</th
+              ><th>{t('tableView.thDefault')}</th><th>{t('tableView.thPk')}</th><th
+                >{t('tableView.thGenerated')}</th
+              ><th>{t('tableView.thAccess')}</th></tr
             ></thead
           ><tbody
             >{#each description.columns as column}<tr
                 ><th scope="row">{column.name}</th><td
-                  >{column.database_type || 'Nicht gemeldet'}</td
-                ><td>{column.nullable ? 'Ja' : 'Nein'}</td><td
+                  >{column.database_type || t('tableView.notReported')}</td
+                ><td>{column.nullable ? t('tableView.yes') : t('tableView.no')}</td><td
                   ><code
                     >{column.default_value === undefined
-                      ? 'Nicht gemeldet'
+                      ? t('tableView.notReported')
                       : column.default_value === ''
                         ? '""'
                         : column.default_value}</code
                   ></td
-                ><td>{column.pk_position || '–'}</td><td>{generatedNames[column.generated]}</td><td
-                  >{column.read_only ? 'Nur lesen' : 'Nicht gemeldet'}</td
+                ><td>{column.pk_position || '–'}</td><td>{t(generatedNames[column.generated])}</td
+                ><td>{column.read_only ? t('tableView.readOnly') : t('tableView.notReported')}</td
                 ></tr
               >{/each}</tbody
           >
@@ -283,29 +289,30 @@
       >
         <details>
           <summary
-            >Sortierung und Filter {filters.length || sort.length
-              ? `(${sort.length} / ${filters.length})`
-              : ''}</summary
+            >{t('tableView.sortFilter', {
+              counts: filters.length || sort.length ? `(${sort.length} / ${filters.length})` : '',
+            })}</summary
           >
           <fieldset disabled={writing || busy}>
-            <legend>Sortierung</legend>
+            <legend>{t('tableView.legendSort')}</legend>
             {#each sort as order, index}<div class="sort-row">
                 <label
-                  >Sortierspalte {index + 1}<select bind:value={order.column}
+                  >{t('tableView.sortColumn', { n: index + 1 })}<select bind:value={order.column}
                     >{#each description.columns as column}<option value={column.name}
                         >{column.name}</option
                       >{/each}</select
                   ></label
                 ><label
-                  >Richtung {index + 1}<select bind:value={order.direction}
-                    ><option value="asc">Aufsteigend</option><option value="desc">Absteigend</option
+                  >{t('tableView.direction', { n: index + 1 })}<select bind:value={order.direction}
+                    ><option value="asc">{t('tableView.asc')}</option><option value="desc"
+                      >{t('tableView.desc')}</option
                     ></select
                   ></label
                 ><Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  aria-label={`Sortierung ${index + 1} entfernen`}
+                  aria-label={t('tableView.removeSort', { n: index + 1 })}
                   onclick={() => (sort = sort.filter((_, i) => i !== index))}
                   ><X size={15} /></Button
                 >
@@ -325,46 +332,48 @@
                       )?.name ?? description!.columns[0].name,
                     direction: 'asc',
                   },
-                ])}><Plus size={14} />Sortierung hinzufügen</Button
+                ])}><Plus size={14} />{t('tableView.addSort')}</Button
             >
           </fieldset>
           <fieldset disabled={writing || busy}>
-            <legend>Filter · alle Bedingungen gelten gemeinsam (UND)</legend>
+            <legend>{t('tableView.legendFilter')}</legend>
             {#each filters as filter, index}<div class="filter-row">
                 <label
-                  >Filterspalte {index + 1}<select bind:value={filter.column}
+                  >{t('tableView.filterColumn', { n: index + 1 })}<select bind:value={filter.column}
                     >{#each description.columns as column}<option value={column.name}
                         >{column.name}</option
                       >{/each}</select
                   ></label
                 ><label
-                  >Bedingung {index + 1}<select bind:value={filter.operator}
-                    ><option value="eq">Ist gleich</option><option value="is_null">Ist NULL</option
-                    ><option value="is_not_null">Ist nicht NULL</option></select
+                  >{t('tableView.condition', { n: index + 1 })}<select bind:value={filter.operator}
+                    ><option value="eq">{t('tableView.opEq')}</option><option value="is_null"
+                      >{t('tableView.opNull')}</option
+                    ><option value="is_not_null">{t('tableView.opNotNull')}</option></select
                   ></label
                 >{#if filter.operator === 'eq'}<label
-                    >Werttyp {index + 1}<select bind:value={filter.kind}
-                      ><option value="text">Text</option><option value="integer">Ganze Zahl</option
-                      ><option value="decimal">Dezimalzahl</option><option value="float"
-                        >Fließkommazahl</option
-                      ><option value="boolean">Wahrheitswert</option><option value="binary"
-                        >Binär (Base64)</option
-                      ><option value="timestamp">Zeitwert</option></select
+                    >{t('tableView.valueType', { n: index + 1 })}<select bind:value={filter.kind}
+                      ><option value="text">{t('tableView.kindText')}</option><option
+                        value="integer">{t('tableView.kindInteger')}</option
+                      ><option value="decimal">{t('tableView.kindDecimal')}</option><option
+                        value="float">{t('tableView.kindFloat')}</option
+                      ><option value="boolean">{t('tableView.kindBoolean')}</option><option
+                        value="binary">{t('tableView.kindBinary')}</option
+                      ><option value="timestamp">{t('tableView.kindTimestamp')}</option></select
                     ></label
                   ><label
-                    >Filterwert {index + 1}<Input
+                    >{t('tableView.filterValue', { n: index + 1 })}<Input
                       bind:value={filter.value}
                       placeholder={filter.kind === 'boolean'
-                        ? 'true oder false'
+                        ? t('tableView.phBoolean')
                         : filter.kind === 'text'
-                          ? 'Auch Leertext erlaubt'
-                          : 'Wert eingeben'}
+                          ? t('tableView.phText')
+                          : t('tableView.phValue')}
                     /></label
                   >{/if}<Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  aria-label={`Filter ${index + 1} entfernen`}
+                  aria-label={t('tableView.removeFilter', { n: index + 1 })}
                   onclick={() => (filters = filters.filter((_, i) => i !== index))}
                   ><X size={15} /></Button
                 >
@@ -375,24 +384,22 @@
               size="sm"
               disabled={filters.length >= 16 || !description.columns.length}
               onclick={() => (filters = [...filters, emptyFilter(description!.columns[0].name)])}
-              ><Plus size={14} />Filter hinzufügen</Button
+              ><Plus size={14} />{t('tableView.addFilter')}</Button
             >
           </fieldset>
           <p class="control-hint">
-            NULL über „Ist NULL“ filtern. Dezimalwerte mit Punkt; Binärwerte als Base64. Werte
-            werden ohne numerische Rundung übertragen.
+            {t('tableView.hint')}
           </p>
         </details>
         <div class="table-actions">
           <label
-            >Zeilen pro Seite<select bind:value={pageSize} disabled={writing || busy}
+            >{t('tableView.pageSize')}<select bind:value={pageSize} disabled={writing || busy}
               ><option value={25}>25</option><option value={100}>100</option><option value={500}
                 >500</option
               ><option value={1000}>1.000</option></select
             ></label
-          ><Button type="submit" disabled={writing || busy}>Anwenden</Button>{#if dirty}<span
-              class="control-hint">Änderungen noch nicht angewendet.</span
-            >{/if}
+          ><Button type="submit" disabled={writing || busy}>{t('tableView.apply')}</Button
+          >{#if dirty}<span class="control-hint">{t('tableView.dirty')}</span>{/if}
         </div>
       </form>
       {#if result && display}<RowWorkspace
@@ -405,11 +412,14 @@
             onwritephase(phase);
           }}
         />
-        <div class="pagination" aria-label="Seitennavigation">
+        <div class="pagination" aria-label={t('tableView.pagination')}>
           <span
             >{result.result.rows.length
-              ? `Zeilen ${result.offset + 1}–${result.offset + result.result.rows.length}`
-              : 'Keine passenden Zeilen'} · Gesamtzahl nicht ermittelt</span
+              ? t('tableView.rowsRange', {
+                  from: result.offset + 1,
+                  to: result.offset + result.result.rows.length,
+                })
+              : t('tableView.noRows')} · {t('tableView.totalUnknown')}</span
           >
           <div>
             <Button
@@ -417,7 +427,7 @@
               size="sm"
               disabled={writing || busy || dirty || result.offset === 0}
               onclick={() => loadPage(Math.max(0, result!.offset - result!.page_size))}
-              ><ArrowLeft size={14} />Zurück</Button
+              ><ArrowLeft size={14} />{t('tableView.prev')}</Button
             ><Button
               variant="outline"
               size="sm"
@@ -427,39 +437,38 @@
                 !result.has_more ||
                 result.offset + result.page_size > 1000000}
               onclick={() => loadPage(result!.offset + result!.page_size)}
-              >Weiter<ArrowRight size={14} /></Button
+              >{t('tableView.next')}<ArrowRight size={14} /></Button
             >
           </div>
         </div>
         {#if !result.stable_order}<p class="table-warning">
-            <TriangleAlert size={15} />Keine stabile Reihenfolge zugesagt. Seiten können sich bei
-            Änderungen verschieben oder überschneiden.
+            <TriangleAlert size={15} />{t('tableView.unstable')}
           </p>{:else}<p class="control-hint">
-            Reihenfolge mit eindeutigem Schlüssel; parallele Datenänderungen können Seiten weiterhin
-            verschieben.
+            {t('tableView.stable')}
           </p>{/if}
         {#if result.has_more}<p class="control-hint">
-            Weitere Zeilen vorhanden.{result.offset + result.page_size > 1000000
-              ? ' Die maximale Seitengrenze ist erreicht. Bitte weiter filtern.'
+            {t('tableView.more')}{result.offset + result.page_size > 1000000
+              ? t('tableView.limitReached')
               : ''}
           </p>{/if}
         {#if result.result.truncated && !result.has_more}<p class="table-warning">
-            Ergebnis begrenzt; nicht als vollständig behandeln.
+            {t('tableView.truncated')}
           </p>{/if}
       {/if}
     {/if}
   {/if}
   {#if busy}<div class="table-feedback" role="status">
-      <p>Tabelleninformationen werden geladen …</p>
+      <p>{t('tableView.loading')}</p>
       <Button variant="outline" onclick={() => controller.abort()}
-        ><Square size={14} />Laden abbrechen</Button
+        ><Square size={14} />{t('tableView.abortLoad')}</Button
       >
     </div>{/if}
   {#if error}<div class="table-feedback table-error" role="alert">
-      {error}{#if unsupported}<Button variant="outline" onclick={onsql}>Zu SQL wechseln</Button
+      {error}{#if unsupported}<Button variant="outline" onclick={onsql}
+          >{t('tableView.toSql')}</Button
         >{/if}
     </div>{/if}
   {#if cancelled}<div class="table-feedback" role="status">
-      Laden abgebrochen. Keine Tabellenzeilen verändert.
+      {t('tableView.cancelled')}
     </div>{/if}
 </section>

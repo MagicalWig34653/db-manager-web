@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { DisplayResult, DisplayCell } from './workbench';
+import { t } from './i18n';
 export const MAX_EXPORT_BYTES = 8 * 1024 * 1024;
 export type ExportScope =
   | { kind: 'sql_result' }
@@ -19,12 +20,12 @@ const kinds = new Set([
 ]);
 function copyCell(cell: DisplayCell): DisplayCell {
   if (!kinds.has(cell.kind) || (cell.kind !== 'null' && typeof cell.value !== 'string'))
-    throw new Error('Das Ergebnis enthält einen ungültigen Zellwert.');
+    throw new Error(t('coreText.invalidCell'));
   return cell.kind === 'null' ? { kind: 'null' } : { kind: cell.kind, value: cell.value! };
 }
 export function snapshot(result: DisplayResult, scope: ExportScope) {
   if (result.rows.some((row) => row.length !== result.columns.length))
-    throw new Error('Die Ergebniszeilen passen nicht zu den Spalten.');
+    throw new Error(t('coreText.exportRows'));
   const source =
     scope.kind === 'sql_result'
       ? { kind: 'sql_result' as const }
@@ -49,9 +50,7 @@ export function encodeExport(result: DisplayResult, scope: ExportScope, format: 
   else {
     const quote = (value: string) => {
       if (/[\u0000-\u0009\u000B\u000C\u000E-\u001F\u007F-\u009F]/u.test(value))
-        throw new Error(
-          'Dieses Ergebnis enthält Steuerzeichen, die CSV hier nicht unterstützt. Lade es als JSON unverändert herunter.',
-        );
+        throw new Error(t('coreText.csvControl'));
       return '"' + ((format === 'csv-spreadsheet' ? "'" : '') + value).replaceAll('"', '""') + '"';
     };
     content =
@@ -63,8 +62,7 @@ export function encodeExport(result: DisplayResult, scope: ExportScope, format: 
       ].join('\r\n') + '\r\n';
   }
   const bytes = new TextEncoder().encode(content);
-  if (bytes.byteLength > MAX_EXPORT_BYTES)
-    throw new Error('Der Export überschreitet 8 MiB. Es wurde keine Datei erzeugt.');
+  if (bytes.byteLength > MAX_EXPORT_BYTES) throw new Error(t('coreText.tooLarge'));
   return {
     bytes,
     mime: format === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8',

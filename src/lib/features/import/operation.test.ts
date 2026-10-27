@@ -185,6 +185,57 @@ it('returns to the plan when the upload is aborted before the body was complete'
   expect(ctx.operation.notice).not.toBe('');
 });
 
+it('declares an abort unknown once every body byte was sent, even before the upload event (review F-5)', async () => {
+  const ctx = make({
+    execute: vi.fn(
+      (
+        _m: unknown,
+        _f: unknown,
+        _t: string,
+        h: {
+          onDispatch: () => void;
+          onProgress: (loaded: number, total: number) => void;
+          signal: AbortSignal;
+        },
+      ) =>
+        new Promise((_, reject) => {
+          h.onDispatch();
+          h.onProgress(10, 10); // all bytes handed over, onUploaded has not fired yet
+          h.signal.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          );
+        }),
+    ),
+  });
+  const meta = await planned(ctx);
+  const run = ctx.operation.execute(meta, file, 't', ctx.report);
+  expect(ctx.operation.phase).toBe('uploading');
+  await ctx.operation.cancel('t');
+  await run;
+  expect(ctx.operation.phase).toBe('unknown');
+  expect(ctx.operation.consumed).toBe(true);
+  expect(ctx.report.mock.calls.flat()).toEqual(['sending', 'unknown']);
+});
+
+it('allows repeating a stop request whose call failed (review F-6)', async () => {
+  let attempts = 0;
+  const ctx = make({
+    status: vi.fn(async () => running(1)),
+    cancel: vi.fn(async () => {
+      if (++attempts === 1) throw new Error('network');
+      return running(2);
+    }),
+  });
+  const meta = await planned(ctx);
+  await ctx.operation.execute(meta, file, 't', ctx.report);
+  await ctx.operation.cancel('t');
+  expect(ctx.operation.cancelRequested).toBe(false);
+  await ctx.operation.cancel('t');
+  expect(ctx.client.cancel).toHaveBeenCalledTimes(2);
+  expect(ctx.operation.cancelRequested).toBe(true);
+  ctx.operation.reset();
+});
+
 it('declares an abort after the full upload unknown', async () => {
   const ctx = make({
     execute: vi.fn(

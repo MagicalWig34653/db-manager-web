@@ -29,7 +29,7 @@
     defaultKind,
     prepareChanges,
     snapshotResult,
-    UNKNOWN_MESSAGE,
+    unknownMessage,
     type Eligibility,
     type Snapshot,
     type Operation,
@@ -52,7 +52,7 @@
     onwritephase: (phase: WritePhase) => void;
   } = $props();
   let eligibility = $state<Eligibility | null>(null);
-  let eligibilityMessage = $state('Bearbeitungsmöglichkeiten werden geprüft …');
+  let eligibilityMessage = $state(t('rowEditor.checking'));
   let dialogOpen = $state(false);
   let operation = $state<Operation>('insert');
   let phase = $state<
@@ -92,6 +92,10 @@
   let contextController = new AbortController();
   let operationController = new AbortController();
   const busy = $derived(['loading', 'checking', 'sending'].includes(phase));
+  let fileBusy = $state(false);
+  // The write request (or a file value transfer) is open: the editor must not be dismissed, otherwise the write
+  // lock is dropped while the server may still be writing and the real result is lost.
+  const closeBlocked = $derived(phase === 'sending' || fileBusy);
   const display = $derived(tableResult(result));
   const table = $derived(result.description.table);
   const tableLabel = $derived(`${table.schema ? table.schema + '.' : ''}${table.name}`);
@@ -132,20 +136,20 @@
           .map((name) => {
             const index = original!.columns.indexOf(name);
             const cell = original!.values[index];
-            return `${name} = ${cell?.kind === 'null' ? 'NULL' : (cell?.value ?? 'Nicht gemeldet')}`;
+            return `${name} = ${cell?.kind === 'null' ? 'NULL' : (cell?.value ?? t('rowEditor.notReported'))}`;
           })
           .join(' · ')
-      : 'Neue Zeile · Schlüsselvergabe gemäß Datenbank',
+      : t('rowEditor.newRowIdentity'),
   );
   const titles = {
-    insert: 'Zeile hinzufügen',
-    update: 'Zeile bearbeiten',
-    delete: 'Zeile löschen',
+    insert: 'rowEditor.titleInsert',
+    update: 'rowEditor.titleUpdate',
+    delete: 'rowEditor.titleDelete',
   };
   const submitLabels = {
-    insert: 'Zeile verbindlich hinzufügen',
-    update: 'Änderung verbindlich speichern',
-    delete: 'Zeile endgültig löschen',
+    insert: 'rowEditor.submitInsert',
+    update: 'rowEditor.submitUpdate',
+    delete: 'rowEditor.submitDelete',
   };
   async function loadEligibility(signal: AbortSignal) {
     return rows.eligibility(toConnection(connection), table, token, signal);
@@ -157,9 +161,7 @@
     changes: Change[] = [],
   ) {
     if (!baseAllowed(value) || (action === 'insert' && !value.insert.eligible))
-      throw new Error(
-        'Diese Tabelle ist für die gewählte Zeilenänderung nicht geeignet. Lade die Daten neu.',
-      );
+      throw new Error(t('rowEditor.notSuitable'));
     const description = value.update.description;
     if (
       expected &&
@@ -168,9 +170,7 @@
         new Set(expected.columns).size !== expected.columns.length ||
         description.columns.some((column) => !expected.columns.includes(column.name)))
     )
-      throw new Error(
-        'Die Tabellenstruktur hat sich geändert. Lade die Daten neu und beginne einen neuen Vorgang.',
-      );
+      throw new Error(t('rowEditor.structureChanged'));
     const allowed =
       action === 'insert' ? value.insert.insertable_columns : value.update.writable_columns;
     for (const change of changes) {
@@ -181,12 +181,12 @@
         column.generated !== 'none' ||
         (action === 'update' && description.primary_key.includes(column.name))
       )
-        throw new Error('Eine ausgewählte Spalte ist nicht mehr bearbeitbar. Lade die Daten neu.');
+        throw new Error(t('rowEditor.columnGone'));
       if (
         change.value.kind === 'null' &&
         (!column.nullable || description.primary_key.includes(column.name))
       )
-        throw new Error(`Die Spalte „${column.name}“ erlaubt kein NULL.`);
+        throw new Error(t('rowEditor.notNull', { column: column.name }));
     }
     if (
       action === 'insert' &&
@@ -194,7 +194,7 @@
         (name) => !changes.some((change) => change.column === name && change.value.kind !== 'null'),
       )
     )
-      throw new Error('Gib alle erforderlichen Primärschlüsselwerte ausdrücklich an.');
+      throw new Error(t('rowEditor.needKey'));
   }
   async function initialize() {
     try {
@@ -202,12 +202,12 @@
       if (destroyed) return;
       eligibility = checked;
       eligibilityMessage = baseAllowed(checked)
-        ? 'Einzelzeilenänderungen werden vor dem Senden erneut geprüft.'
-        : 'Für diese Tabelle sind keine Zeilenänderungen freigegeben (Tabellenart, Primärschlüssel oder Transaktionsgrundlage).';
+        ? t('rowEditor.rechecked')
+        : t('rowEditor.notEnabled');
     } catch (cause) {
       if (!destroyed)
         eligibilityMessage =
-          cause instanceof Error ? cause.message : 'Der Zeileneditor ist nicht verfügbar.';
+          cause instanceof Error ? cause.message : t('rowEditor.editorUnavailable');
     }
   }
   async function begin(action: Operation, index?: number) {
@@ -235,7 +235,7 @@
       if (destroyed || current !== generation) return;
       // Insert key completeness is checked after the user has supplied values.
       if (!baseAllowed(checked) || (action === 'insert' && !checked.insert.eligible))
-        throw new Error('Diese Tabelle ist für die gewählte Zeilenänderung nicht freigegeben.');
+        throw new Error(t('rowEditor.notReleased'));
       if (action !== 'insert') verifyAllowed(checked, action, original);
       eligibility = checked;
       fields = checked.update.description.columns.map((column) => {
@@ -265,8 +265,7 @@
     } catch (cause) {
       if (!destroyed && current === generation) {
         phase = 'blocked';
-        message =
-          cause instanceof Error ? cause.message : 'Der Vorgang konnte nicht vorbereitet werden.';
+        message = cause instanceof Error ? cause.message : t('rowEditor.prepareFailed');
       }
     }
   }
@@ -282,7 +281,7 @@
       confirmed = false;
       phase = 'confirm';
     } catch (cause) {
-      message = cause instanceof Error ? cause.message : 'Prüfe die Eingaben.';
+      message = cause instanceof Error ? cause.message : t('rowEditor.checkInput');
     }
   }
   async function submit() {
@@ -321,10 +320,10 @@
       after = response.row ? copySnapshot(response.row) : null;
       message =
         operation === 'delete'
-          ? 'Der Server hat das Löschen bestätigt.'
+          ? t('rowEditor.doneDelete')
           : operation === 'update' && 'changed' in response && !response.changed
-            ? 'Der Server bestätigt die Zeile ohne Änderung.'
-            : 'Der Server hat das Speichern bestätigt.';
+            ? t('rowEditor.doneUnchanged')
+            : t('rowEditor.doneSave');
       phase = 'done';
       fields = [];
       pendingChanges = [];
@@ -333,17 +332,14 @@
       needsReload = true;
       if (cause instanceof ApiError && cause.code === 'outcome_unknown') {
         phase = 'unknown';
-        message = UNKNOWN_MESSAGE;
+        message = unknownMessage();
         onwritephase('unknown');
       } else {
         phase =
           cause instanceof ApiError && ['row_conflict', 'insert_conflict'].includes(cause.code)
             ? 'conflict'
             : 'blocked';
-        message =
-          cause instanceof Error
-            ? cause.message
-            : 'Die Anfrage wurde nicht bestätigt. Lade die Daten neu.';
+        message = cause instanceof Error ? cause.message : t('rowEditor.notConfirmed');
         onwritephase('settled');
       }
       sent = false;
@@ -352,6 +348,7 @@
     }
   }
   function close() {
+    if (closeBlocked) return;
     const reload = needsReload || (busy && sent);
     if (busy && sent) onwritephase('unknown');
     operationController.abort();
@@ -477,7 +474,7 @@
       variant="outline"
       size="sm"
       disabled={busy || needsReload}
-      onclick={() => begin('insert')}><Plus size={14} />Zeile hinzufügen</Button
+      onclick={() => begin('insert')}><Plus size={14} />{t('rowEditor.add')}</Button
     >{/if}
 </div>
 {#if selected.size > 0}
@@ -565,21 +562,26 @@
   {/key}
 {/if}
 <Dialog.Root
-  open={dialogOpen}
+  bind:open={dialogOpen}
   onOpenChange={(open) => {
-    if (!open) close();
+    if (open) return;
+    if (closeBlocked) {
+      dialogOpen = true;
+      return;
+    }
+    close();
   }}
 >
   <Dialog.Content class="sm:max-w-[900px] max-h-[90dvh] overflow-y-auto p-6">
     <Dialog.Header
-      ><Dialog.Title>{titles[operation]}</Dialog.Title><Dialog.Description
+      ><Dialog.Title>{t(titles[operation])}</Dialog.Title><Dialog.Description
         >{tableLabel} · {identity}</Dialog.Description
       ></Dialog.Header
     >
     {#if busy}<div class="row-status" role="status">
         {phase === 'loading' || phase === 'checking'
-          ? 'Eignung wird aktuell geprüft …'
-          : 'Anfrage gesendet. Eine unterbrochene Antwort kann bereits gespeicherte Änderungen verbergen.'}
+          ? t('rowEditor.statusChecking')
+          : t('rowEditor.statusSent')}
       </div>{/if}
     {#if message}<div
         class="row-message"
@@ -592,9 +594,7 @@
       </div>{/if}
     {#if phase === 'editing'}
       <p class="row-help">
-        {operation === 'insert'
-          ? 'DB-Default lässt die Spalte weg. NULL und ein leerer Textwert sind eigene Angaben.'
-          : 'Unverändert verwendet den ursprünglichen Zellwert. Primärschlüssel und generierte Spalten bleiben gesperrt.'}
+        {operation === 'insert' ? t('rowEditor.helpInsert') : t('rowEditor.helpEdit')}
       </p>
       <div class="row-field-list">
         {#each fields as field}<div class="row-field">
@@ -607,39 +607,40 @@
             </div>
             {#if field.locked}<p>
                 {operation === 'insert' && eligibility?.insert.auto_pk === field.column
-                  ? 'Schlüssel wird von der Datenbank vergeben'
+                  ? t('rowEditor.keyAssigned')
                   : operation === 'insert'
-                    ? 'Von der Datenbank berechnet'
-                    : 'Gesperrt'}{#if operation !== 'insert'}
+                    ? t('rowEditor.computed')
+                    : t('rowEditor.locked')}{#if operation !== 'insert'}
                   · {original?.values[original.columns.indexOf(field.column)]?.kind === 'null'
                     ? 'NULL'
                     : field.value}{/if}
               </p>{:else}<label
-                >Angabe für {field.column}<select
-                  aria-label={`Angabe für ${field.column}`}
+                >{t('rowEditor.fieldMode', { column: field.column })}<select
+                  aria-label={t('rowEditor.fieldMode', { column: field.column })}
                   bind:value={field.mode}
                   ><option value={operation === 'insert' ? 'default' : 'unchanged'}
                     >{operation === 'insert'
-                      ? 'DB-Default (nicht übergeben)'
-                      : 'Unverändert'}</option
+                      ? t('rowEditor.modeDefault')
+                      : t('rowEditor.modeUnchanged')}</option
                   >{#if eligibility?.update.description.columns.find((column) => column.name === field.column)?.nullable && !eligibility?.update.description.primary_key.includes(field.column)}<option
                       value="null">NULL</option
-                    >{/if}<option value="value">Wert angeben</option></select
+                    >{/if}<option value="value">{t('rowEditor.modeValue')}</option></select
                 ></label
               >{#if field.mode === 'value'}<label
-                  >Werttyp für {field.column}<select
-                    aria-label={`Werttyp für ${field.column}`}
+                  >{t('rowEditor.fieldKind', { column: field.column })}<select
+                    aria-label={t('rowEditor.fieldKind', { column: field.column })}
                     bind:value={field.kind}
-                    ><option value="text">Text</option><option value="integer">Ganze Zahl</option
-                    ><option value="decimal">Dezimalzahl</option><option value="float"
-                      >Fließkommazahl</option
-                    ><option value="boolean">Wahrheitswert</option><option value="binary"
-                      >Binär (Base64)</option
-                    ><option value="timestamp">Zeitwert</option></select
+                    ><option value="text">Text</option><option value="integer"
+                      >{t('rowEditor.kindInteger')}</option
+                    ><option value="decimal">{t('rowEditor.kindDecimal')}</option><option
+                      value="float">{t('rowEditor.kindFloat')}</option
+                    ><option value="boolean">{t('rowEditor.kindBoolean')}</option><option
+                      value="binary">{t('rowEditor.kindBinary')}</option
+                    ><option value="timestamp">{t('rowEditor.kindTimestamp')}</option></select
                   ></label
                 ><label
-                  >Wert für {field.column}<Textarea
-                    aria-label={`Wert für ${field.column}`}
+                  >{t('rowEditor.fieldValue', { column: field.column })}<Textarea
+                    aria-label={t('rowEditor.fieldValue', { column: field.column })}
                     bind:value={field.value}
                     rows={2}
                     maxlength={1048576}
@@ -679,22 +680,22 @@
           disabled={busy}
           {onwritephase}
           onchanged={() => (needsReload = true)}
+          onbusychange={(value) => (fileBusy = value)}
         />
       {/if}
       <div class="row-dialog-actions">
-        <Button variant="outline" onclick={close}>Verwerfen</Button><Button
-          onclick={review}
-          disabled={needsReload}>Änderung prüfen</Button
-        >
+        <Button variant="outline" onclick={close} disabled={closeBlocked}
+          >{t('rowEditor.discard')}</Button
+        ><Button onclick={review} disabled={needsReload}>{t('rowEditor.review')}</Button>
       </div>
     {:else if phase === 'confirm'}
       <div class="row-confirm">
         <h3>
           {operation === 'delete'
-            ? 'Genau diese Zeile löschen?'
+            ? t('rowEditor.confirmDelete')
             : operation === 'insert'
-              ? 'Diese neue Zeile speichern?'
-              : 'Genau diese Zeile ändern?'}
+              ? t('rowEditor.confirmInsert')
+              : t('rowEditor.confirmUpdate')}
         </h3>
         <p><strong>{tableLabel}</strong><br />{identity}</p>
         {#if operation !== 'delete'}<ul>
@@ -710,15 +711,13 @@
               </li>{/each}
           </ul>
           {#if operation === 'insert' && pendingChanges.length === 0}<p>
-              Alle Spalten werden der Datenbank überlassen.
+              {t('rowEditor.allDefault')}
             </p>{/if}{/if}
         <p>
-          Die Datenbank kann Werte konvertieren. Maßgeblich ist die anschließend vom Server
-          gemeldete Zeile.
+          {t('rowEditor.mayConvert')}
         </p>
         <label class="row-confirm-check"
-          ><input type="checkbox" bind:checked={confirmed} />Ich bestätige diesen einzelnen
-          Schreibvorgang.</label
+          ><input type="checkbox" bind:checked={confirmed} />{t('rowEditor.confirmCheck')}</label
         >
       </div>
       <div class="row-dialog-actions">
@@ -729,34 +728,32 @@
             : () => {
                 phase = 'editing';
                 confirmed = false;
-              }}>Zurück</Button
+              }}>{t('rowEditor.back')}</Button
         ><Button onclick={submit} disabled={!confirmed}
-          >{#if operation === 'delete'}<Trash2 size={14} />{:else}<Pencil
-              size={14}
-            />{/if}{submitLabels[operation]}</Button
+          >{#if operation === 'delete'}<Trash2 size={14} />{:else}<Pencil size={14} />{/if}{t(
+            submitLabels[operation],
+          )}</Button
         >
       </div>
     {:else if phase === 'done'}
       {#if after && eligibility}<p class="row-help">
-          Tatsächlich gespeicherte Zeile laut Server. Konvertierte Werte können von der Eingabe
-          abweichen.
+          {t('rowEditor.savedRow')}
         </p>
         <ResultTable
           result={snapshotResult(after, eligibility.update.description)}
         />{:else if operation !== 'delete'}<p>
-          Die Nachherzeile wurde nicht gemeldet. Bitte den Datenbankstand prüfen.
+          {t('rowEditor.noAfterRow')}
         </p>{/if}
-      <Button onclick={close}>Schließen und Tabelle neu laden</Button>
+      <Button onclick={close}>{t('rowEditor.closeReload')}</Button>
     {:else if ['conflict', 'unknown', 'blocked'].includes(phase)}
       <p class="row-help">
-        Der Vorgang wird nicht wiederholt. Verwirf den Entwurf, lade aktuelle Daten und beginne bei
-        Bedarf eine neue bestätigte Änderung.
+        {t('rowEditor.notRepeated')}
       </p>
       <Button
         onclick={() => {
           needsReload = true;
           close();
-        }}>Entwurf verwerfen und Daten neu laden</Button
+        }}>{t('rowEditor.discardReload')}</Button
       >
     {/if}
   </Dialog.Content>

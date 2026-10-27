@@ -9,6 +9,8 @@
 //   `),'complete'=>true);`, LaTeX/MediaWiki/Texy marker comment line). The backend escapes every data
 //   value, so a cell can never produce these closing lines; they must be the very end of the stream.
 // The verifier works on the decoded (decompressed) bytes in constant memory.
+import { SqlLexer } from './sql-lexer';
+
 export type ExportFormat =
   | 'sql'
   | 'csv'
@@ -71,6 +73,7 @@ export class CompletionVerifier {
   private headerOk = false;
   private recordCount = 0;
   private head = new Uint8Array(0);
+  private sqlLexer = new SqlLexer();
   private delimiter: number;
   private delimiterText: string;
 
@@ -105,7 +108,8 @@ export class CompletionVerifier {
       merged.set(chunk, keep);
       this.tail = merged;
     }
-    if (JSON_LIKE.has(this.format)) this.scanJson(chunk);
+    if (this.format === 'sql') this.sqlLexer.push(chunk);
+    else if (JSON_LIKE.has(this.format)) this.scanJson(chunk);
     else if (CSV_LIKE.has(this.format)) this.scanCsv(chunk);
   }
 
@@ -167,9 +171,11 @@ export class CompletionVerifier {
 
   private finishSql(): Verdict {
     const text = this.text().replace(/\r\n/g, '\n');
-    // The marker follows a finished statement (COMMIT; / SET ...;). A marker line that is part of an
-    // unterminated string literal is preceded by an open line and is not accepted.
-    if (new RegExp(`;[ \\t]*\\n${SQL_MARKER}\\n$`).test(text)) return { complete: true };
+    // The marker follows a finished statement (COMMIT; / SET ...;) and must be a real line comment: the lexer
+    // rejects a marker line that sits inside a string literal, quoted identifier or block comment (a cell may
+    // contain ";\n-- DBMANAGER EXPORT COMPLETE\n"), the tail check pins it to the very end of the stream.
+    if (this.sqlLexer.complete && new RegExp(`;[ \\t]*\\n${SQL_MARKER}\\n$`).test(text))
+      return { complete: true };
     return { complete: false, reason: 'no_marker' };
   }
 

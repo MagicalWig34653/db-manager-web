@@ -2,48 +2,79 @@
 import { ApiClient, ApiError } from './api';
 import * as validators from './contract/v5/validators.js';
 import type { components } from './contract/v5/api-types';
+import { t } from './i18n';
 export type StructureSchemas = components['schemas'];
 export type TableStructure = StructureSchemas['TableStructure'];
 export const stateLabel = (value: string) =>
-  ({ yes: 'Ja', no: 'Nein', unknown: 'Unbekannt', not_applicable: 'Nicht anwendbar' })[value] ??
-  'Unbekannt';
+  t(
+    (
+      {
+        yes: 'structureView.yes',
+        no: 'structureView.no',
+        unknown: 'structureView.unknown',
+        not_applicable: 'structureView.notApplicable',
+      } as Record<string, string>
+    )[value] ?? 'structureView.unknown',
+  );
 export const coverageLabel = (value: string) =>
-  ({ catalog: 'Katalogangaben', partial: 'Teilweise erfasst', unavailable: 'Nicht verfügbar' })[
-    value
-  ] ?? 'Unbekannt';
+  t(
+    (
+      {
+        catalog: 'structureView.coverageCatalog',
+        partial: 'structureView.coveragePartial',
+        unavailable: 'structureView.coverageUnavailable',
+      } as Record<string, string>
+    )[value] ?? 'structureView.unknown',
+  );
 export const actionLabel = (value: string) =>
-  ({
-    no_action: 'Keine Folgeaktion (NO ACTION)',
-    restrict: 'Verhindern (RESTRICT)',
-    cascade: 'Weitergeben (CASCADE)',
-    set_null: 'Auf NULL setzen',
-    set_default: 'Auf Default setzen',
-    unknown: 'Unbekannt',
-    not_applicable: 'Nicht anwendbar',
-  })[value] ?? 'Unbekannt';
+  t(
+    (
+      {
+        no_action: 'structureView.actionNoAction',
+        restrict: 'structureView.actionRestrict',
+        cascade: 'structureView.actionCascade',
+        set_null: 'structureView.actionSetNull',
+        set_default: 'structureView.actionSetDefault',
+        unknown: 'structureView.unknown',
+        not_applicable: 'structureView.notApplicable',
+      } as Record<string, string>
+    )[value] ?? 'structureView.unknown',
+  );
 export const kindLabel = (value: string) =>
-  ({
-    primary_key: 'Primärschlüssel',
-    unique: 'Eindeutigkeit',
-    foreign_key: 'Fremdschlüssel',
-    check: 'Prüfbedingung (CHECK)',
-    not_null: 'Nicht-NULL',
-    other: 'Sonstige',
-  })[value] ?? 'Unbekannt';
+  t(
+    (
+      {
+        primary_key: 'structureView.kindPrimaryKey',
+        unique: 'structureView.kindUnique',
+        foreign_key: 'structureView.kindForeignKey',
+        check: 'structureView.kindCheck',
+        not_null: 'structureView.kindNotNull',
+        other: 'structureView.kindOther',
+      } as Record<string, string>
+    )[value] ?? 'structureView.unknown',
+  );
 export const roleLabel = (value: string) =>
-  ({
-    key: 'Schlüsselterm',
-    include: 'Mitgeführter Wert (INCLUDE)',
-    auxiliary: 'Hilfsterm',
-    unknown: 'Unbekannt',
-  })[value] ?? 'Unbekannt';
+  t(
+    (
+      {
+        key: 'structureView.roleKey',
+        include: 'structureView.roleInclude',
+        auxiliary: 'structureView.roleAuxiliary',
+        unknown: 'structureView.unknown',
+      } as Record<string, string>
+    )[value] ?? 'structureView.unknown',
+  );
 export const directionLabel = (value: string) =>
-  ({
-    asc: 'Aufsteigend',
-    desc: 'Absteigend',
-    unknown: 'Unbekannt',
-    not_applicable: 'Nicht anwendbar',
-  })[value] ?? 'Unbekannt';
+  t(
+    (
+      {
+        asc: 'structureView.dirAsc',
+        desc: 'structureView.dirDesc',
+        unknown: 'structureView.unknown',
+        not_applicable: 'structureView.notApplicable',
+      } as Record<string, string>
+    )[value] ?? 'structureView.unknown',
+  );
 export const identifierLabel = (value: string): string => JSON.stringify(value);
 export const objectLabel = (value: StructureSchemas['StructureObjectRef']) =>
   value.schema === undefined
@@ -54,10 +85,7 @@ export function validateStructure<T extends keyof StructureSchemas & keyof typeo
   data: unknown,
 ): StructureSchemas[T] {
   if (!validators[name](data))
-    throw new ApiError(
-      'invalid_response',
-      'Die erweiterte Strukturantwort ist ungültig. Die Spaltenstruktur bleibt verfügbar.',
-    );
+    throw new ApiError('invalid_response', t('structureView.invalidResponse'));
   return data as StructureSchemas[T];
 }
 export class StructureClient {
@@ -74,16 +102,10 @@ export class StructureClient {
         await this.client.requestRaw('/api/v5/capabilities', token, undefined, signal),
       );
       if (!cap.features.includes('table_structure'))
-        throw new ApiError(
-          'unsupported_feature',
-          'Diese Instanz bietet keine erweiterten Index-/Constraintangaben. Die Spaltenstruktur bleibt verfügbar.',
-        );
+        throw new ApiError('unsupported_feature', t('structureView.noExtended'));
     } catch (cause) {
       if (cause instanceof ApiError && cause.code === 'not_found')
-        throw new ApiError(
-          'unsupported_feature',
-          'Diese Instanz bietet keine erweiterten Index-/Constraintangaben. Die Spaltenstruktur bleibt verfügbar.',
-        );
+        throw new ApiError('unsupported_feature', t('structureView.noExtended'));
       throw cause;
     }
     const body = { connection, table };
@@ -93,10 +115,7 @@ export class StructureClient {
       payload = await this.client.requestRaw('/api/v5/tables/structure', token, body, signal);
     } catch (cause) {
       if (cause instanceof ApiError && cause.code === 'unsupported_table')
-        throw new ApiError(
-          'unsupported_table',
-          'Für diese Objektart gibt es keine erweiterten Strukturangaben. Die Spaltenstruktur bleibt verfügbar.',
-        );
+        throw new ApiError('unsupported_table', t('structureView.unsupportedTable'));
       throw cause;
     }
     const data = validateStructure('TableStructure', payload);
@@ -104,20 +123,14 @@ export class StructureClient {
       data.table.name !== table.name ||
       (table.schema !== undefined && data.table.schema !== table.schema)
     )
-      throw new ApiError(
-        'invalid_response',
-        'Die Strukturangaben gehören nicht zur ausgewählten Tabelle.',
-      );
+      throw new ApiError('invalid_response', t('structureView.wrongTable'));
     if (
       data.indexes.reduce((sum, index) => sum + index.terms.length, 0) > 8192 ||
       data.indexes.some(
         (index) => new Set(index.terms.map((term) => term.position)).size !== index.terms.length,
       )
     )
-      throw new ApiError(
-        'invalid_response',
-        'Die Indexpositionen oder Metadatengrenzen sind ungültig.',
-      );
+      throw new ApiError('invalid_response', t('structureView.badPositions'));
     return {
       ...data,
       indexes: data.indexes.map((index) => ({

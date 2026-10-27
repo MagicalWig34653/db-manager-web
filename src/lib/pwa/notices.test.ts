@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, it, vi } from 'vitest';
-import { createNotices, OFFLINE_TEXT, UPDATE_ACTION } from './notices';
+import { createNotices, offlineText, updateAction } from './notices';
 
 describe('pwa notices', () => {
   it('stays hidden and detached until a notice is needed', () => {
@@ -15,7 +15,7 @@ describe('pwa notices', () => {
     notices.setOffline(true);
     const strip = document.querySelector<HTMLElement>('[data-pwa-notices]')!;
     expect(strip.style.display).toBe('flex');
-    expect(strip.textContent).toContain(OFFLINE_TEXT);
+    expect(strip.textContent).toContain(offlineText());
     expect(strip.querySelector<HTMLElement>('[data-pwa-offline]')!.hidden).toBe(false);
     notices.setOffline(false);
     expect(strip.style.display).toBe('none');
@@ -27,7 +27,7 @@ describe('pwa notices', () => {
     const accept = vi.fn();
     notices.showUpdate(accept);
     const button = document.querySelector<HTMLButtonElement>('[data-pwa-update] button')!;
-    expect(button.textContent).toBe(UPDATE_ACTION);
+    expect(button.textContent).toBe(updateAction());
     button.click();
     button.click();
     expect(accept).toHaveBeenCalledTimes(1);
