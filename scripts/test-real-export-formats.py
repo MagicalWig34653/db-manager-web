@@ -83,7 +83,7 @@ def check(ctx, pg):
         for key in ('latex', 'latexlongtable'):
             text = files[key].read_text(encoding='utf-8')
             assert text.rstrip().endswith('% DBMANAGER EXPORT COMPLETE'), f'{label}: {key} marker'
-            assert '<b>' in text and '\\&' in text and '\\$' in text, f'{label}: {key} escaping'
+            assert '<b>' not in text and '\\%' in text and '\\$' in text and '\\_' in text and '\\#' in text, f'{label}: {key} escaping'
         assert not list(dumps.glob(f'{label}-cut-*')), f'{label}: an incomplete export was saved'
         print(f'W-P28 real: {label} extended formats re-read with independent parsers (ElementTree, PyYAML, php, json, entities, LaTeX markers).', flush=True)
 
