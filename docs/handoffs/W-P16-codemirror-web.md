@@ -30,8 +30,8 @@ Entscheidungen: `docs/decisions/ADR-W-P16-codemirror-editor.md`. Aufbauend auf `
 | Stand | Größe | Asset-Chunks |
 | --- | --- | --- |
 | Basis `4b24e53` | 4.530.880 B (4,321 MiB) | 39 |
-| mit CodeMirror | 4.978.313 B (4,748 MiB) | 40 |
-| Zuwachs | +447.433 B (+0,427 MiB) | +1 (`cm-*.js`, 409 kB, gzip 134 kB) |
+| mit CodeMirror | 4.979.073 B (4,748 MiB) | 40 |
+| Zuwachs | +448.193 B (+0,427 MiB) | +1 (`cm-*.js`, 409 kB, gzip 134 kB) |
 
 Zuwachs unter 1,5 MiB: der Chunk wird deshalb vorgecacht (Offline-Start inklusive Editor); Grenzen 8 MiB und 64 Chunks eingehalten.
 Die Shell lädt den Chunk erst beim Öffnen des SQL-Arbeitsbereichs.
