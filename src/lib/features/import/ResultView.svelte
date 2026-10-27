@@ -143,7 +143,7 @@
   }
   th,
   td {
-    text-align: left;
+    text-align: start;
     border: 1px solid var(--border);
     padding: 4px 6px;
     white-space: pre-wrap;
@@ -156,7 +156,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    padding-left: 18px;
+    padding-inline-start: 18px;
   }
   button {
     justify-self: start;

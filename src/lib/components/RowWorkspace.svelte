@@ -1,12 +1,28 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { Plus, Pencil, Trash2, TriangleAlert } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Textarea } from '$lib/components/ui/textarea';
   import * as Dialog from '$lib/components/ui/dialog';
   import ResultTable from './ResultTable.svelte';
-  import { ApiError, toConnection } from '$lib/api';
-  import { tableResult, type BrowseResult } from '$lib/tables';
+  import ExportControls from './ExportControls.svelte';
+  import BulkDialog from '$lib/features/bulk/BulkDialog.svelte';
+  import FileValuePanel from '$lib/features/bulk/FileValuePanel.svelte';
+  import FkLookup from '$lib/features/bulk/FkLookup.svelte';
+  import { bulkClient } from '$lib/features/bulk/client';
+  import {
+    fileColumn,
+    noSupport,
+    selection as buildSelection,
+    singleForeignKeys,
+    supportFor,
+    type Action as BulkAction,
+    type ForeignKeyInfo,
+  } from '$lib/features/bulk/model';
+  import { structure as structureClient } from '$lib/structure';
+  import { t } from '$lib/i18n';
+  import { ApiError, apiDriver, toConnection } from '$lib/api';
+  import { tables, tableResult, type BrowseResult } from '$lib/tables';
   import {
     rows,
     copySnapshot,
@@ -60,6 +76,18 @@
   let needsReload = $state(false);
   let sent = false;
   let destroyed = false;
+  // W-P13: multi row selection, file values and foreign key lookup (API 0.19). All optional: without v19 the
+  // single row editor behaves exactly as before.
+  let support = $state(noSupport());
+  let bulkChecked = $state(false);
+  let selected = $state<ReadonlySet<number>>(new Set());
+  let bulkAction = $state<BulkAction | null>(null);
+  let bulkRows = $state.raw<Snapshot[]>([]);
+  let bulkKey = $state(0);
+  let foreignKeys = $state<ForeignKeyInfo[]>([]);
+  let lookupColumn = $state<string | null>(null);
+  let lookupColumns = $state<string[]>([]);
+  let lookupError = $state('');
   let generation = 0;
   let contextController = new AbortController();
   let operationController = new AbortController();
@@ -78,6 +106,25 @@
       !!eligibility?.insert.eligible &&
       eligibility.insert.description.kind === 'table' &&
       eligibility.insert.description.transactional === 'yes',
+  );
+  const selectedList = $derived([...selected].sort((a, b) => a - b));
+  const selectionResult = $derived({
+    ...display,
+    rows: selectedList.map((index) => display.rows[index]).filter((row) => !!row),
+  });
+  const bulkAllowed = $derived(editAllowed && support.bulk && !needsReload);
+  const fileColumns = $derived(
+    eligibility && support.fileValues
+      ? eligibility.update.description.columns
+          .filter((column) =>
+            fileColumn(
+              column,
+              eligibility!.update.description.primary_key,
+              eligibility!.update.writable_columns,
+            ),
+          )
+          .map((column) => column.name)
+      : [],
   );
   const identity = $derived(
     original && eligibility
@@ -319,8 +366,96 @@
     sent = false;
     if (reload) onreload();
   }
+  async function loadBulk() {
+    try {
+      const caps = await bulkClient.capabilities(token, contextController.signal);
+      if (destroyed) return;
+      support = supportFor(caps, apiDriver(connection.driver));
+      if (support.lookup) {
+        try {
+          const found = await structureClient.read(
+            toConnection(connection),
+            table,
+            token,
+            contextController.signal,
+          );
+          if (!destroyed) foreignKeys = singleForeignKeys(found);
+        } catch {
+          if (!destroyed) foreignKeys = [];
+        }
+      }
+    } catch {
+      if (!destroyed) support = noSupport();
+    } finally {
+      if (!destroyed) bulkChecked = true;
+    }
+  }
+  function setSelected(index: number, on: boolean) {
+    const next = new Set(selected);
+    if (on && next.size < support.maxRows) next.add(index);
+    else next.delete(index);
+    selected = next;
+  }
+  function selectAll(on: boolean) {
+    selected = on
+      ? new Set(Array.from({ length: Math.min(display.rows.length, support.maxRows) }, (_, i) => i))
+      : new Set();
+  }
+  function startBulk(action: BulkAction) {
+    if (!bulkAllowed || busy || selected.size === 0) return;
+    try {
+      bulkRows = buildSelection(display, selected).snapshots;
+      bulkKey++;
+      bulkAction = action;
+    } catch (cause) {
+      eligibilityMessage = cause instanceof Error ? cause.message : t('bulk.err.invalidInput');
+    }
+  }
+  function endBulk(reload: boolean) {
+    bulkAction = null;
+    bulkRows = [];
+    selected = new Set();
+    if (reload) {
+      needsReload = true;
+      onreload();
+    }
+  }
+  async function openLookup(column: string) {
+    const info = foreignKeys.find((item) => item.column === column);
+    if (!info) return;
+    lookupError = '';
+    try {
+      const target = await tables.describe(
+        { connection: toConnection(connection), table: info.target },
+        token,
+        operationController.signal,
+      );
+      if (destroyed || phase !== 'editing') return;
+      lookupColumns = target.columns.map((item) => item.name);
+      lookupColumn = column;
+    } catch (cause) {
+      lookupError = cause instanceof Error ? cause.message : t('bulk.fk.unavailable');
+    }
+  }
+  function pickLookup(column: string, cell: { kind: string; value?: string }) {
+    const field = fields.find((item) => item.column === column);
+    if (field && cell.kind !== 'null') {
+      field.mode = 'value';
+      field.kind = cell.kind as FieldDraft['kind'];
+      field.value = cell.value ?? '';
+    }
+    lookupColumn = null;
+  }
+  $effect(() => {
+    // A reload or a new page replaces the rows: an old selection would point at other rows.
+    void result;
+    untrack(() => {
+      selected = new Set();
+    });
+  });
   onMount(() => {
     void initialize();
+    void loadBulk();
   });
   onDestroy(() => {
     destroyed = true;
@@ -344,7 +479,63 @@
       onclick={() => begin('insert')}><Plus size={14} />Zeile hinzufügen</Button
     >{/if}
 </div>
+{#if selected.size > 0}
+  <div class="bulk-bar" role="group" aria-label={t('bulk.barLabel')} data-testid="bulk-bar">
+    <p data-testid="bulk-count">
+      {t('bulk.selected', { count: selected.size, max: support.maxRows })}
+    </p>
+    {#if bulkAllowed}
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onclick={() => startBulk('update')}
+        data-testid="bulk-update">{t('bulk.update')}</Button
+      >
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onclick={() => startBulk('copy')}
+        data-testid="bulk-copy">{t('bulk.copy')}</Button
+      >
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onclick={() => startBulk('delete')}
+        data-testid="bulk-delete">{t('bulk.delete')}</Button
+      >
+    {/if}
+    <Button variant="ghost" size="sm" onclick={() => (selected = new Set())}
+      >{t('bulk.clear')}</Button
+    >
+  </div>
+  {#key selected}
+    <ExportControls
+      result={selectionResult}
+      scope={{
+        kind: 'table_selection',
+        offset: result.offset,
+        page_size: result.page_size,
+        has_more: result.has_more,
+      }}
+    />
+  {/key}
+{/if}
+{#if bulkChecked && !support.bulk && eligibility}<p class="row-help" data-testid="bulk-unavailable">
+    {t('bulk.unavailable')}
+  </p>{/if}
 <ResultTable
+  selection={bulkChecked && display.rows.length
+    ? {
+        selected,
+        max: support.maxRows,
+        disabled: busy || !!bulkAction,
+        onchange: setSelected,
+        onall: selectAll,
+      }
+    : undefined}
   result={display}
   exportScope={{
     kind: 'table_page',
@@ -356,6 +547,22 @@
   ondelete={editAllowed && !needsReload ? (index) => begin('delete', index) : undefined}
   actionsDisabled={busy}
 />
+{#if bulkAction && eligibility}
+  {#key bulkKey}
+    <BulkDialog
+      {connection}
+      {token}
+      {table}
+      description={eligibility.update.description}
+      writable={eligibility.update.writable_columns}
+      requiredPk={eligibility.insert.required_pk}
+      action={bulkAction}
+      rows={bulkRows}
+      onclose={endBulk}
+      {onwritephase}
+    />
+  {/key}
+{/if}
 <Dialog.Root
   open={dialogOpen}
   onOpenChange={(open) => {
@@ -438,12 +645,45 @@
                     autocomplete="off"
                     spellcheck={false}
                   /></label
-                >{/if}{/if}
+                >{#if foreignKeys.some((fk) => fk.column === field.column)}<Button
+                    variant="outline"
+                    size="sm"
+                    onclick={() => openLookup(field.column)}
+                    data-testid={`fk-open-${field.column}`}
+                    >{t('bulk.fk.open', { column: field.column })}</Button
+                  >{/if}{#if lookupColumn === field.column}{@const info = foreignKeys.find(
+                    (fk) => fk.column === field.column,
+                  )}{#if info}<FkLookup
+                      {connection}
+                      {token}
+                      {table}
+                      column={field.column}
+                      displayColumns={lookupColumns}
+                      initialDisplay={lookupColumns.find((name) => name !== info.targetColumn) ??
+                        info.targetColumn}
+                      onpick={(cell) => pickLookup(field.column, cell)}
+                      onclose={() => (lookupColumn = null)}
+                    />{/if}{/if}{/if}{/if}
           </div>{/each}
       </div>
+      {#if lookupError}<p role="alert">{lookupError}</p>{/if}
+      {#if operation === 'update' && original && fileColumns.length}
+        <FileValuePanel
+          {connection}
+          {token}
+          {table}
+          expected={original}
+          columns={fileColumns}
+          maxBytes={support.maxFileBytes}
+          disabled={busy}
+          {onwritephase}
+          onchanged={() => (needsReload = true)}
+        />
+      {/if}
       <div class="row-dialog-actions">
-        <Button variant="outline" onclick={close}>Verwerfen</Button><Button onclick={review}
-          >Änderung prüfen</Button
+        <Button variant="outline" onclick={close}>Verwerfen</Button><Button
+          onclick={review}
+          disabled={needsReload}>Änderung prüfen</Button
         >
       </div>
     {:else if phase === 'confirm'}

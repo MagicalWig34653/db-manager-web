@@ -1588,3 +1588,56 @@ kbd {
   max-width: 40ch;
   overflow-wrap: anywhere;
 }
+.result-table .row-select {
+  width: 34px;
+  text-align: center;
+  padding-inline: 8px;
+}
+.result-table tr.row-selected td {
+  background: var(--muted);
+}
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.bulk-bar p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.bulk-grid {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.bulk-grid label {
+  display: grid;
+  gap: 4px;
+}
+.bulk-grid input,
+.bulk-grid select,
+.bulk-grid textarea {
+  max-width: 100%;
+  min-width: 0;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+  background: var(--surface);
+  color: inherit;
+}
+.bulk-warning {
+  color: var(--warning);
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  overflow-wrap: anywhere;
+}
+.bulk-keys {
+  margin: 0;
+  padding-inline-start: 18px;
+  overflow-wrap: anywhere;
+}

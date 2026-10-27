@@ -247,7 +247,7 @@
       {#if description && !tableOk}<p role="alert">{t('importData.tableNotSupported')}</p>{/if}
     {/if}
 
-    <fieldset disabled={!available || !editable || locked}>
+    <fieldset disabled={!available || !editable || locked || (format === 'csv' && !description)}>
       <legend>{t('importData.fileLegend')}</legend>
       <div
         class="drop"
@@ -601,6 +601,17 @@
     display: grid;
     gap: 12px;
   }
+  .import-panel > *,
+  fieldset > *,
+  .drop,
+  label {
+    min-width: 0;
+  }
+  input:not([type='checkbox']),
+  select {
+    width: 100%;
+    box-sizing: border-box;
+  }
   fieldset {
     display: grid;
     gap: 8px;
@@ -693,7 +704,7 @@
   }
   th,
   td {
-    text-align: left;
+    text-align: start;
     border: 1px solid var(--border);
     padding: 4px 6px;
     white-space: pre-wrap;

@@ -37,6 +37,14 @@ const description = {
       read_only: false,
     },
     {
+      name: 'extra',
+      database_type: 'TEXT',
+      nullable: true,
+      pk_position: 0,
+      generated: 'none',
+      read_only: false,
+    },
+    {
       name: 'calc',
       database_type: 'TEXT',
       nullable: true,
@@ -140,7 +148,7 @@ it('SQL: renders rolled_back and not_executed statements', async () => {
   expect(screen.getByTestId('import-counts')).toHaveTextContent('Ausgeführt, aber zurückgerollt');
 });
 
-it('SQL: a failed upload that was never sent stays retryable but a network loss after dispatch is unknown', async () => {
+it('SQL: a network loss after dispatch is unknown and offers no retry', async () => {
   vi.spyOn(importClient, 'execute').mockImplementation(async (_m, _f, _t, h) => {
     h.onDispatch();
     throw new (await import('$lib/api')).ApiError('network_error', 'x');
@@ -190,6 +198,8 @@ it('CSV: plans, blocks on errors in stop mode, executes once and spends the plan
   expect(screen.queryByDisplayValue('calc')).toBeNull();
   await pick('rows.csv', 'id,value\n1,a\n');
   await waitFor(() => expect(screen.getByTestId('csv-header-peek')).toBeVisible());
+  // The header names exactly the first two columns: the mapping follows the file, not the table order.
+  await waitFor(() => expect(screen.queryByRole('combobox', { name: 'Feld 3' })).toBeNull());
   await fireEvent.click(screen.getByTestId('import-plan'));
   await waitFor(() => expect(screen.getByTestId('import-plan-view')).toBeVisible());
   expect(screen.getByTestId('import-plan-issues')).toHaveTextContent('Zeile 2, Spalte 1');

@@ -7,10 +7,7 @@
     "name": "beispiel"
   },
   "expected": {
-    "columns": [
-      "id",
-      "name"
-    ],
+    "columns": ["id", "name"],
     "values": [
       {
         "kind": "integer",

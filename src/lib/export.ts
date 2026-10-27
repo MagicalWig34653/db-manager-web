@@ -3,7 +3,9 @@ import type { DisplayResult, DisplayCell } from './workbench';
 export const MAX_EXPORT_BYTES = 8 * 1024 * 1024;
 export type ExportScope =
   | { kind: 'sql_result' }
-  | { kind: 'table_page'; offset: number; page_size: number; has_more: boolean };
+  | { kind: 'table_page'; offset: number; page_size: number; has_more: boolean }
+  // Rows the user ticked on one loaded table page (W-P13); same page coordinates, only the selected rows are exported.
+  | { kind: 'table_selection'; offset: number; page_size: number; has_more: boolean };
 export type ExportFormat = 'json' | 'csv-spreadsheet' | 'csv-raw';
 const kinds = new Set([
   'null',
@@ -27,7 +29,7 @@ export function snapshot(result: DisplayResult, scope: ExportScope) {
     scope.kind === 'sql_result'
       ? { kind: 'sql_result' as const }
       : {
-          kind: 'table_page' as const,
+          kind: scope.kind,
           offset: scope.offset,
           page_size: scope.page_size,
           has_more: scope.has_more,
