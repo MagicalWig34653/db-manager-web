@@ -100,7 +100,7 @@ def main():
                                           'localOnlyURL': local_web, 'connection': connection, 'container': container})); config.chmod(0o600)
             environment = dict(os.environ, DBM_REAL_CONFIG=str(config), CI='1')
             run(['npx', 'playwright', 'install', 'chromium'], cwd=ROOT, env=environment)
-            print(redact(run(['npx', 'playwright', 'test', '--config', 'playwright.real.config.ts', '--reporter=line', os.environ.get('DBM_REAL_SPEC', 'tests/real/config-store.spec.ts')], cwd=ROOT, env=environment)), flush=True)
+            print(redact(run(['npx', 'playwright', 'test', '--config', 'playwright.real.config.ts', '--reporter=line', *(os.environ['DBM_REAL_SPEC'].split(',') if os.environ.get('DBM_REAL_SPEC') else ['tests/real/config-store.spec.ts', 'tests/real/pin6-appearance.spec.ts'])], cwd=ROOT, env=environment)), flush=True)
             print('W-P20 web real: config store (server mode, migration, opt-in, 412 merge, export, clear, outage, local mode) passed against backend', sha[:12], flush=True)
         finally:
             for process in reversed(processes):
