@@ -7,10 +7,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { looksSecret } from './secrets';
 
-// The corpus is committed (backend TestPin6DifferentialCorpus output); DBM_DIFF_CORPUS overrides it.
-const corpus =
-  process.env.DBM_DIFF_CORPUS ?? 'src/lib/features/config-store/differential/backend-rejected.json';
-describe('client secret rules cover the backend rules', () => {
+// The corpus is NOT committed (it contains example tokens that secret scanning rightly flags). Generate it in the
+// backend repo: DBM_DIFF_OUT=<file> go test ./internal/configstore -run TestPin6DifferentialCorpus, then run this test
+// with DBM_DIFF_CORPUS=<file>. Skipped without it.
+const corpus = process.env.DBM_DIFF_CORPUS;
+describe.skipIf(!corpus)('client secret rules cover the backend rules', () => {
   // DEFECT (Low, hardening): about 2 % of the mutation corpus is missed (digit/dot/plus/minus before a URL scheme, JS-only
   // whitespace such as NBSP/VT/U+2028 inside credentials, U+1D0A/U+029C missing from the confusables table).
   it('every string the backend rejects is rejected by the client (differences are listed)', () => {
