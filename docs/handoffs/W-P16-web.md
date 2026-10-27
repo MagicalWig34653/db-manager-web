@@ -1,5 +1,7 @@
 # W-P16 Web: SQL-Verlauf und Lesezeichen
 
+Nachfolger: `W-P16-codemirror-web.md` (CodeMirror, Formatierung, Vervollständigung, Variablen).
+
 Stand: 25.10.2026. Branch `feat/w-p16-web`, Basis `c14271e`. Umsetzung im
 zugewiesenen Worktree, noch uncommittet und nicht integriert. Keine Git-Schreibbefehle;
 Commit, unabhängiges Review und Integration liegen beim Lead. Zentrale STATUS-/

@@ -13,6 +13,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { t } from '$lib/i18n';
+  import { rememberColumns } from '$lib/features/sql-editor/catalog-hints.svelte';
   import StructurePanel from './StructurePanel.svelte';
   import RowWorkspace from './RowWorkspace.svelte';
   import type { WritePhase } from '$lib/rows';
@@ -82,6 +83,14 @@
     virtual: 'tableView.kindVirtual',
     foreign: 'tableView.kindForeign',
   };
+  // Columns that are loaded anyway feed SQL completion; no extra request is made for it.
+  function remember(loaded: TableDescription) {
+    rememberColumns(
+      connection,
+      object,
+      loaded.columns.map((column) => column.name),
+    );
+  }
   async function initialize() {
     const current = ++version;
     busy = true;
@@ -94,6 +103,7 @@
       );
       if (destroyed || current !== version) return;
       description = metadata;
+      remember(metadata);
       await loadPage(0);
     } catch (cause) {
       if (!destroyed && current === version) {
@@ -132,6 +142,7 @@
       );
       if (destroyed || current !== version) return;
       description = loaded.description;
+      remember(loaded.description);
       result = loaded;
     } catch (cause) {
       if (!destroyed && current === version) {

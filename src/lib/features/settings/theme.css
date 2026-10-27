@@ -14,6 +14,17 @@
   --ring: #315dd4;
   --secondary: var(--muted);
   --text-secondary: var(--muted-foreground);
+  /* SQL editor syntax roles (tested against every surface) and editor highlight backgrounds. */
+  --sql-keyword: #1d4ed8;
+  --sql-string: #166534;
+  --sql-number: #9a3412;
+  --sql-comment: #4b5563;
+  --sql-type: #6d28d9;
+  --sql-function: #155e75;
+  --sql-operator: #334155;
+  --editor-active-line: #f1f5f9;
+  --editor-selection: #c7d7f9;
+  --editor-match: #fde68a;
 }
 :root[data-theme='dark'] {
   --background: #111827;
@@ -26,6 +37,16 @@
   --success: #bbf7d0;
   --border: #748298;
   --ring: #a5b4fc;
+  --sql-keyword: #93c5fd;
+  --sql-string: #86efac;
+  --sql-number: #fdba74;
+  --sql-comment: #cbd5e1;
+  --sql-type: #d8b4fe;
+  --sql-function: #67e8f9;
+  --sql-operator: #e2e8f0;
+  --editor-active-line: #273449;
+  --editor-selection: #3b4f7a;
+  --editor-match: #5b4a12;
 }
 /* The shell is revealed only after the synchronous pre-mount preference application. */
 :root:not([data-theme]) #app {

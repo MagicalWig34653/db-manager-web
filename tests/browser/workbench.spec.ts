@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { editorText } from './editor';
 import { test, expect, type Page } from '@playwright/test';
 const capabilities = {
   contract_version: '0.1.0',
@@ -94,7 +95,9 @@ test('auth, connection, catalog, explicit SQL, precision, truncation, cancellati
     ),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Zu SQL wechseln' }).click();
-  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
+  await expect
+    .poll(() => editorText(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })))
+    .toBe('');
   expect(queries).toBe(0);
   await page
     .getByRole('textbox', { name: 'SQL-Abfrage', exact: true })
@@ -124,7 +127,9 @@ test('auth, connection, catalog, explicit SQL, precision, truncation, cancellati
   expect(requestLeaks).toEqual([]);
   await page.reload();
   await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
+  await expect
+    .poll(() => editorText(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })))
+    .toBe('');
 });
 
 test('unavailable backend drivers never report a successful connection', async ({ page }) => {
@@ -261,7 +266,9 @@ test('changing the backend token invalidates the complete previous session and d
   await page.getByLabel('Zugriffstoken').fill('synthetic-next-token');
   await page.getByRole('button', { name: 'Übernehmen' }).click();
   await expect(page.getByText('Nicht verbunden', { exact: true })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })).toHaveValue('');
+  await expect
+    .poll(() => editorText(page.getByRole('textbox', { name: 'SQL-Abfrage', exact: true })))
+    .toBe('');
   await expect(page.getByRole('button', { name: 'orders' })).not.toBeVisible();
   await expect(page.getByText('9007199254740993123456789', { exact: true })).not.toBeVisible();
   releaseOldResponse();
