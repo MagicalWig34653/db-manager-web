@@ -188,6 +188,30 @@
   ],
   "17": ["ServerAdminCapabilities", "ServerAdminReadRequest", "ServerAdminReadResult"],
   "20": ["MonitorCapabilities", "MonitorRequest", "MonitorResult"],
+  "21": [
+    "Connection",
+    "Error",
+    "ExportTableRef",
+    "ExtendedExportCapabilities",
+    "ExtendedExportRequest"
+  ],
+  "22": [
+    "Connection",
+    "Error",
+    "PartitionRequest",
+    "PartitionsCapabilities",
+    "PartitionsReadRequest",
+    "PartitionsResult",
+    "PrefixExecuteRequest",
+    "PrefixReadRequest",
+    "PrefixRequest",
+    "PrefixResult",
+    "PrefixStructureResult",
+    "StructureExecuteRequest",
+    "StructurePlan",
+    "StructureResult",
+    "TableRef"
+  ],
   "23": [
     "AccountAccess",
     "AccountAccessRequest",

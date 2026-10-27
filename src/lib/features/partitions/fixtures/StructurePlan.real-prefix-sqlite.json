@@ -1,0 +1,18 @@
+{
+  "driver": "sqlite",
+  "statements": ["DROP TABLE \"pp_a\"", "DROP TABLE \"pp_b\""],
+  "warnings": [
+    "Der Stapel umfasst alle passenden Basistabellen im Schema. Kein automatischer Retry; MySQL/MariaDB können Teiländerungen behalten.",
+    "Die Tabelle und alle ihre Daten werden unwiderruflich gelöscht.",
+    "Die Tabelle und alle ihre Daten werden unwiderruflich gelöscht."
+  ],
+  "affected_objects": ["table:pp_a", "table:pp_b"],
+  "plan_sha256": "4b88582dc06a04f7c6dce09b0f4a8252bde3f8dbb7888e6672594b58390b3f7f",
+  "action": "prefix_drop",
+  "confirmation": {
+    "action": "prefix_drop",
+    "destructive": true,
+    "target_name": "pp_",
+    "current_database": false
+  }
+}

@@ -69,8 +69,19 @@ describe('closing marker: CSV', () => {
     expect(verdict('csv', `${header}"row","1","x"\n${control}`, 4).complete).toBe(true);
     expect(verdict('csv', `${header}${control}`).complete).toBe(true);
     expect(
-      verdict('excel-csv', `"'_record","'a"\r\n"'row","'1"\r\n"'complete","'"\r\n`).complete,
+      verdict('excel-csv', `"'_record";"'a"\r\n"'row";"'1"\r\n"'complete";"'"\r\n`).complete,
     ).toBe(true);
+    // An explicit delimiter of the request is honoured (comma, tab).
+    const comma = new CompletionVerifier('excel-csv', ',');
+    comma.push(new TextEncoder().encode(`"'_record","'a"\r\n"'row","'1"\r\n"'complete","'"\r\n`));
+    expect(comma.finish().complete).toBe(true);
+    const tab = new CompletionVerifier('csv', '\t');
+    tab.push(new TextEncoder().encode('"_record"\t"a"\n"row"\t"1"\n"complete"\t""\n'));
+    expect(tab.finish().complete).toBe(true);
+    // The wrong separator in the control record is not accepted.
+    expect(
+      verdict('excel-csv', `"'_record";"'a"\r\n"'row";"'1"\r\n"'complete","'"\r\n`).complete,
+    ).toBe(false);
   });
   it('rejects streams without control record or cut inside a record', () => {
     expect(verdict('csv', `${header}"row","1","x"\n`).complete).toBe(false);

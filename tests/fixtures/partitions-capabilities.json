@@ -1,0 +1,197 @@
+{
+  "contract_version": "0.22.0",
+  "default_timeout_ms": 30000,
+  "drivers": {
+    "mysql": {
+      "add": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "analyze": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "attach": {
+        "support": "unsupported",
+        "reason": "ATTACH/DETACH ist hier nur für deklarative PostgreSQL-Partitionen verfügbar."
+      },
+      "check": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "coalesce": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "define": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "detach": {
+        "support": "unsupported",
+        "reason": "ATTACH/DETACH ist hier nur für deklarative PostgreSQL-Partitionen verfügbar."
+      },
+      "drop": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "inspect": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "optimize": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "rebuild": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "remove": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "reorganize": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "repair": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      },
+      "truncate": {
+        "support": "limited",
+        "reason": "Server und Speicherengine entscheiden über Unterstützung; DDL kann sperren und implizit committen. Strukturierte Definitionen verwenden eine Katalogspalte, keine freien Ausdrücke; keine Subpartitionen."
+      }
+    },
+    "postgres": {
+      "add": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      },
+      "analyze": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      },
+      "attach": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      },
+      "check": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "coalesce": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "define": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "detach": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      },
+      "drop": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      },
+      "inspect": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      },
+      "optimize": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "rebuild": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "remove": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "reorganize": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "repair": {
+        "support": "unsupported",
+        "reason": "Kein direktes Gegenstück für bestehende deklarative PostgreSQL-Tabellen; kein automatischer Tabellenumbau."
+      },
+      "truncate": {
+        "support": "limited",
+        "reason": "Nur deklarative Partitionierung; ADD erzeugt CREATE TABLE PARTITION OF. ANALYZE pro Kind; kein freies SQL in Grenzen."
+      }
+    },
+    "sqlite": {
+      "add": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "analyze": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "attach": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "check": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "coalesce": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "define": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "detach": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "drop": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "inspect": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "optimize": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "rebuild": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "remove": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "reorganize": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "repair": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      },
+      "truncate": {
+        "support": "unsupported",
+        "reason": "SQLite unterstützt keine Partitionierung."
+      }
+    }
+  },
+  "features": ["partitions", "prefix_batch"],
+  "max_partitions": 100,
+  "max_request_bytes": 1048576,
+  "max_tables": 100,
+  "max_timeout_ms": 60000
+}

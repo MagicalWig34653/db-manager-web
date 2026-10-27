@@ -1,0 +1,12 @@
+{
+  "tables": [
+    {
+      "schema": "main",
+      "name": "pp_a"
+    },
+    {
+      "schema": "main",
+      "name": "pp_b"
+    }
+  ]
+}

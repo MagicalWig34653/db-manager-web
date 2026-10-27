@@ -1,4 +1,5 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
+
 # Wartungsfixtures
 
 Unveränderte JSON-Kopien aus `contracts/fixtures/maintenance/` des Backendrepos,

@@ -9,33 +9,29 @@
   import type { FeatureProps } from '$lib/features';
   import { t, formatNumber } from '$lib/i18n';
   import { getShellContext } from '$lib/shell/context';
-  import { loadCapabilities } from './caps';
+  import { loadCapabilities, type ExportCaps } from './caps';
   import {
     buildRequest,
     defaultForm,
     formatLabel,
+    isExtendedFormat,
+    tableKey,
     notices,
     previewRows,
     scopeLabel,
     type ExportForm,
     type Scope,
   } from './options';
-  import {
-    defaultFilename,
-    ExportError,
-    runExport,
-    type ExportCapabilities,
-    type ExportOutcome,
-  } from './run';
+  import { defaultFilename, ExportError, runExport, type ExportOutcome } from './run';
   import { openSink, supportsFileSystemAccess } from './sinks';
-  import type { ExportFormat } from './verify';
+  import { isCsvFormat, type ExportFormat } from './verify';
 
   let { connection, token, object }: FeatureProps = $props();
   const shell = getShellContext();
   const uid = $props.id();
 
   const form = $state<ExportForm>(defaultForm());
-  let caps = $state<ExportCapabilities | null>(null);
+  let caps = $state<ExportCaps | null>(null);
   let capsError = $state('');
   let starting = $state(false);
   let phase = $state<'idle' | 'running' | 'done' | 'failed' | 'canceled'>('idle');
@@ -61,17 +57,28 @@
           connection: toConnection(connection),
           streamsToDisk,
           catalogTables: catalogTables.length,
+          api: caps?.api ?? 'v21',
+          catalog: catalogTables,
         })
       : { request: null, problems: [] },
   );
   const running = $derived(phase === 'running');
   const formats = $derived<ExportFormat[]>(
     (caps?.formats ?? ['sql', 'csv', 'excel-csv', 'json']).filter((f) =>
-      form.scope === 'query' ? f !== 'sql' : true,
-    ) as ExportFormat[],
+      form.scope === 'query' ? f !== 'sql' : form.scope === 'server' ? !isCsvFormat(f) : true,
+    ),
   );
+  const classicFormats = $derived(formats.filter((f) => !isExtendedFormat(f)));
+  const textFormats = $derived(formats.filter(isExtendedFormat));
+  const extended = $derived(caps?.api === 'v21');
+  const compatOptions = $derived(driverCaps?.compatibility ?? ['native', 'data-only']);
+  const statementOptions = $derived(driverCaps?.dataStatements ?? ['insert']);
+  // A scope change can make the chosen format unavailable (query: no SQL, server: no CSV).
+  $effect(() => {
+    if (formats.length > 0 && !formats.includes(form.format)) form.format = formats[0];
+  });
 
-  const keyOf = (o: { schema?: string; name: string }) => `${o.schema ?? ''}\u0000${o.name}`;
+  const keyOf = tableKey;
   const selected = $derived(new Set(form.tables.map(keyOf)));
   function toggle(o: { schema?: string; name: string }) {
     const key = keyOf(o);
@@ -108,6 +115,7 @@
               },
             ]
           : [];
+      form.aliases = {};
       if (selectedObject) form.scope = 'tables';
       if (!current) return;
       const mine = generation;
@@ -132,7 +140,7 @@
 
   async function start() {
     const request = built.request;
-    if (!request || running || starting) return;
+    if (!request || !caps || running || starting) return;
     starting = true;
     const mine = ++generation;
     failure = null;
@@ -157,6 +165,7 @@
         token,
         signal: controller.signal,
         sink,
+        api: caps?.api ?? 'v21',
         onProgress(bytes) {
           const now = Date.now();
           if (mine === generation && now - lastPaint > 100) {
@@ -275,7 +284,7 @@
 
       <fieldset disabled={running}>
         <legend>{t('exportDump.formatLegend')}</legend>
-        {#each formats as format (format)}
+        {#each classicFormats as format (format)}
           <label
             ><input
               type="radio"
@@ -286,6 +295,21 @@
           >
         {/each}
       </fieldset>
+      {#if textFormats.length}
+        <fieldset disabled={running} data-testid="text-formats">
+          <legend>{t('exportDump.textFormatsLegend')}</legend>
+          {#each textFormats as format (format)}
+            <label
+              ><input
+                type="radio"
+                name="{uid}-format"
+                value={format}
+                bind:group={form.format}
+              />{formatLabel(format)}</label
+            >
+          {/each}
+        </fieldset>
+      {/if}
 
       {#if form.format === 'sql'}
         <fieldset disabled={running}>
@@ -322,7 +346,66 @@
             /></label
           >
         </fieldset>
-      {:else if form.format !== 'json'}
+        {#if extended}
+          <fieldset disabled={running} data-testid="dump-details">
+            <legend>{t('exportDump.detailsLegend')}</legend>
+            <label
+              ><input type="checkbox" bind:checked={form.viewsAsTables} />{t(
+                'exportDump.viewsAsTables',
+              )}</label
+            >
+            <label
+              ><input type="checkbox" bind:checked={form.comments} />{t(
+                'exportDump.comments',
+              )}</label
+            >
+            <label class="stack"
+              >{t('exportDump.compat.label')}
+              <select bind:value={form.compatibility} data-testid="compatibility">
+                <option value="">{t('exportDump.serverDefault')}</option>
+                {#if compatOptions.includes('native')}<option value="native"
+                    >{t('exportDump.compat.native')}</option
+                  >{/if}
+                {#if compatOptions.includes('data-only')}<option value="data-only"
+                    >{t('exportDump.compat.dataOnly')}</option
+                  >{/if}
+              </select>
+            </label>
+            <label class="stack"
+              >{t('exportDump.dataStatement')}
+              <select bind:value={form.dataStatement} data-testid="data-statement">
+                <option value="">{t('exportDump.serverDefault')}</option>
+                {#each statementOptions as option (option)}<option value={option}
+                    >{option.toUpperCase().replace('-', ' ')}</option
+                  >{/each}
+              </select>
+            </label>
+            <p class="hint">{t('exportDump.definerHint')}</p>
+            {#if form.scope === 'tables' && form.tables.length > 0}
+              <div class="aliases" data-testid="aliases">
+                <strong>{t('exportDump.aliasTitle')}</strong>
+                <p class="hint">{t('exportDump.aliasHint')}</p>
+                {#each form.tables as source (keyOf(source))}
+                  <label class="stack"
+                    ><span
+                      >{t('exportDump.aliasFor')}
+                      <code>{source.schema ? `${source.schema}.` : ''}{source.name}</code></span
+                    >
+                    <select bind:value={form.aliases[keyOf(source)]}>
+                      <option value="">{t('exportDump.aliasNone')}</option>
+                      {#each catalogTables as target (keyOf(target))}
+                        <option value={keyOf(target)}
+                          >{target.schema ? `${target.schema}.` : ''}{target.name}</option
+                        >
+                      {/each}
+                    </select>
+                  </label>
+                {/each}
+              </div>
+            {/if}
+          </fieldset>
+        {/if}
+      {:else if isCsvFormat(form.format)}
         <fieldset disabled={running}>
           <legend>{t('exportDump.csvLegend')}</legend>
           <label class="stack"
@@ -415,18 +498,20 @@
       {/if}
 
       <div class="actions">
+        <!-- Start stays in place (disabled) while running: a double click can never hit "Cancel". -->
+        <Button
+          type="submit"
+          disabled={running ||
+            starting ||
+            !built.request ||
+            !caps ||
+            !caps.available ||
+            !!capsError}
+          data-testid="start"><Download size={14} />{t('exportDump.start')}</Button
+        >
         {#if running}
           <Button type="button" variant="outline" onclick={cancel} data-testid="cancel"
             ><Square size={14} />{t('exportDump.cancel')}</Button
-          >
-        {:else}
-          <Button
-            type="submit"
-            disabled={starting ||
-              !built.request ||
-              (caps !== null && !caps.available) ||
-              !!capsError}
-            data-testid="start"><Download size={14} />{t('exportDump.start')}</Button
           >
         {/if}
       </div>
@@ -446,6 +531,14 @@
         {#if failure.kind === 'incomplete'}
           <ErrorPanel title={t('exportDump.incompleteTitle')} message={failure.message} />
           <p class="hint" data-testid="incomplete-hint">{t('exportDump.incompleteCauses')}</p>
+        {:else if failure.code === 'export_busy'}
+          <div data-testid="export-busy">
+            <ErrorPanel
+              title={t('exportDump.busyTitle')}
+              message={failure.message}
+              onretry={() => void start()}
+            />
+          </div>
         {:else}
           <ErrorPanel title={t('exportDump.failedTitle')} message={failureText(failure)} />
         {/if}
@@ -545,6 +638,11 @@
   .preview dd {
     margin: 2px 0 0;
     overflow-wrap: anywhere;
+  }
+  .aliases {
+    display: grid;
+    gap: 6px;
+    width: 100%;
   }
   .actions {
     display: flex;
