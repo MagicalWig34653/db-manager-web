@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 const sha = (value: Buffer) => createHash('sha256').update(value).digest('hex');
 test('visible source and original license links match the production commit and preserve focus', async ({
   page,
+  baseURL,
 }) => {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const origins = new Set<string>();
@@ -53,5 +54,5 @@ test('visible source and original license links match the production commit and 
   await expect(dialog).not.toBeVisible();
   await expect(trigger).toBeFocused();
   expect(await page.evaluate(() => window.cspViolations)).toEqual([]);
-  expect([...origins]).toEqual(['http://127.0.0.1:4180']);
+  expect([...origins]).toEqual([new URL(baseURL!).origin]);
 });
