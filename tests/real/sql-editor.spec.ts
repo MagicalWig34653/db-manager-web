@@ -27,7 +27,7 @@ async function query(request: APIRequestContext, driver: Driver, sql: string) {
     headers: { Authorization: `Bearer ${config.token}` },
     data: { connection: connectionFor(driver), sql },
   });
-  expect(response.status()).toBe(200);
+  expect(response.status(), `${sql} -> ${await response.text()}`).toBe(200);
   return (await response.json()).results as { rows: { value?: string }[][] }[];
 }
 async function open(page: Page, driver: Driver) {
