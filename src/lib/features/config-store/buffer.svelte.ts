@@ -40,10 +40,12 @@ const valid = (value: unknown): value is BufferedWrite => {
 const SALT_KEY = 'db-manager.config-owner-salt.v1';
 let memorySalt = '';
 /** Random per-installation salt: the owner hash of a chosen token cannot be precomputed (no rainbow table). */
-function installationSalt(): string {
+function installationSalt(create: boolean): string {
   try {
     let salt = localStorage.getItem(SALT_KEY);
-    if (!salt || !/^[0-9a-f]{32}$/.test(salt)) {
+    if (salt && /^[0-9a-f]{32}$/.test(salt)) return salt;
+    if (!create) return '';
+    {
       salt = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
         b.toString(16).padStart(2, '0'),
       ).join('');
@@ -51,6 +53,7 @@ function installationSalt(): string {
     }
     return salt;
   } catch {
+    if (!create) return memorySalt;
     memorySalt ||= Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
       b.toString(16).padStart(2, '0'),
     ).join('');
@@ -59,10 +62,11 @@ function installationSalt(): string {
 }
 
 /** One-way owner id of a backend token (salted; the token itself is never stored). */
-export async function ownerOf(token: string): Promise<string> {
+/** The salt is only created (written to storage) when `create` is set, i.e. when something is actually buffered. */
+export async function ownerOf(token: string, create = false): Promise<string> {
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(`dbm-config-buffer\0${installationSalt()}\0${token}`),
+    new TextEncoder().encode(`dbm-config-buffer\0${installationSalt(create)}\0${token}`),
   );
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0'))
     .join('')

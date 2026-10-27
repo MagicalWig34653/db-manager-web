@@ -233,7 +233,7 @@ describe('outage buffer', () => {
     expect(store.buffer.entries).toHaveLength(1);
     // Persisted in this browser: a fresh buffer (page reload) still has it.
     const reloaded = new WriteBuffer(() => localStorage);
-    reloaded.bind(await ownerOf(fake.token));
+    reloaded.bind(await ownerOf(fake.token, true));
     expect(reloaded.entries).toHaveLength(1);
     const lib = new ServerLibrary(store, SCOPE, () => []);
     expect(lib.shown('bookmarks')[0]).toMatchObject({ name: 'Buffered', pending: true });

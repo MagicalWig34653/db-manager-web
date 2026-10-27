@@ -270,6 +270,7 @@ export class ConfigStore {
     const result = await this.createItem(kind, { scope, client_ref: clientRef, data });
     if (result.ok) return { ok: true, value: { item: result.value.item } };
     if (isOutage(new ConfigError(result.code))) {
+      this.buffer.bind(await ownerOf(this.token, true));
       const kept = this.buffer.add({ kind, scope, client_ref: clientRef, time, data });
       if (!kept) return { ok: false, code: 'buffer_full' };
       this.revision++;

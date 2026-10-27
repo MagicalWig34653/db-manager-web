@@ -81,7 +81,7 @@ describe('W-04 buffer bound to the token identity', () => {
     await b.ensureReady();
     expect(b.buffer.entries).toHaveLength(0);
     expect(fake.count('bookmarks')).toBe(0);
-    expect(localStorage.getItem('db-manager.config-buffer.v1')).toContain(await ownerOf('token-a'));
+    expect(localStorage.getItem('db-manager.config-buffer.v1')).toContain(await ownerOf("token-a", true));
   });
 });
 

@@ -214,10 +214,10 @@ describe('W-04 owner binding of the outage buffer', () => {
   it('a tampered owner or foreign entry cannot be adopted by changing the field to the own hash only through valid format', async () => {
     const store = make();
     await store.ensureReady();
-    const owner = await ownerOf(fake.token);
+    const owner = await ownerOf(fake.token, true);
     expect(owner).toMatch(/^[0-9a-f]{32}$/);
     // 128-bit truncated, unsalted, single SHA-256 with a fixed prefix: computing it for a guess is one hash.
-    expect(owner).toBe(await ownerOf(fake.token));
+    expect(owner).toBe(await ownerOf(fake.token, true));
   });
 });
 
