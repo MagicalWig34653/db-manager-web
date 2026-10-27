@@ -1,6 +1,6 @@
 # WEB-WAVE2-FIXES Behebung der Befunde aus WEB-WAVE2-REVIEW
 
-Stand 27.10.2026. Branch `integration/web-wave2-fixes` (Basis `review/web-wave2` c48d476, enthält `integration/web-wave2` 757a203). Nicht nach main gemergt. Code-Commit: `3990f95`.
+Stand 27.10.2026. Branch `integration/web-wave2-fixes` (Basis `review/web-wave2` c48d476, enthält `integration/web-wave2` 757a203). Nicht nach main gemergt. Code-Commits: `3990f95`, `c32d946` (Zusatz, siehe Tabelle).
 
 ## Ergebnis je Befund
 
@@ -13,6 +13,7 @@ Stand 27.10.2026. Branch `integration/web-wave2-fixes` (Basis `review/web-wave2`
 | F-4 (niedrig) hart codiertes Deutsch | behoben | Neue Katalogabschnitte `rowEditor`, `structureView`, `tableView`, `sourceInfo`, `coreText` (de und en, Platzhalter paritätsgeprüft). Umgestellt: `RowWorkspace` (alle Texte), `StructurePanel` samt `structure.ts`, `TableWorkbench` samt Filterfehlern in `tables.ts`, `SourceInformation`, `gateway.ts`, `export.ts`, `rows.ts` (Fehlertexte; `UNKNOWN_MESSAGE` wurde zur Funktion `unknownMessage()`), PWA-Hinweise (`notices.ts`: `offlineText()` usw., Texte werden beim Anzeigen gesetzt), Schließen-Texte der Dialogkomponenten. `session.svelte.ts` enthielt bereits keine festen Texte mehr. Die deutschen Texte sind unverändert, daher bleiben alle Specs gültig. Rest (bewusst): Fixtures `*/testing.ts` (Backend-Gründe als Testdaten), im Zustand gespeicherte Statuszeile `eligibilityMessage` des Zeileneditors wird beim Erzeugen übersetzt und folgt einem späteren Sprachwechsel erst beim nächsten Laden. |
 | F-5 (info) Upload-Race | behoben | `ImportOperation.execute` merkt sich über `onProgress` (`loaded >= total`), dass alle Body-Bytes übergeben wurden. Ein Abbruch danach (auch vor `upload.onload`) gilt als `unknown` statt "nichts gestartet"; Test ergänzt. |
 | F-6 (info) Abbruch wiederholbar | behoben | Schlägt der Abbruchaufruf fehl, wird `cancelRequested` zurückgesetzt, ein zweiter Versuch ist möglich; Test ergänzt. |
+| Zusatz aus der Bündel-5-Integration | behoben | Die Laufzeitspecs im Backend (`tests/web-runtime`) zeigten, dass `RowWorkspace` bei jedem Laden einer Tabellenseite im Hintergrund `/api/v5/tables/structure` las (Fremdschlüssel für die Nachschlagehilfe). Das brach die Zusage "Blättern und Exportieren lösen keine eigenen Anfragen aus" und verdoppelte den Strukturabruf. Jetzt wird die Struktur erst gelesen, wenn ein Zeileneditor (Einfügen/Ändern) öffnet, und nur einmal je Arbeitsbereich. Spec ergänzt ("opening a table reads no structure"). |
 | F-7, F-8 | unverändert (info) | axe-Kontrast ist ein Animationsartefakt; F-8 bewusst festgehalten. |
 
 ## Prüfstand (Worktree `.worktrees/web-wave2-fixes`, Node 26.5.0)
@@ -23,7 +24,7 @@ Stand 27.10.2026. Branch `integration/web-wave2-fixes` (Basis `review/web-wave2`
 | `npm test` | 73 Dateien, 970 Tests bestanden (kein erwarteter Fehlschlag mehr) |
 | `format:check`, `contract:check`, `validators:check` | bestanden |
 | `npm run build` (nach Commit) | bestanden; Precache 49 Dateien, 4 530 403 Byte (4,32 MiB) ohne `sw.js`; Grenzen 8 MiB und `MAX_CHUNKS` 64 eingehalten |
-| Playwright `tests/browser` (Port 4611) | 117 von 117 (vorher 115 + `test.fail` F-1 jetzt normal; 2 neue Specs: Zeileneditor und Bulk-Dialog ohne Schließen während des Writes, jeweils Escape, Schließen-Symbol, Klick außerhalb, `beforeunload`); ohne den Fix schlagen die Bulk-Specs fehl (belegt) |
+| Playwright `tests/browser` (Port 4611) | 118 von 118 (vorher 115 + `test.fail` F-1 jetzt normal; 3 neue Specs: Zeileneditor und Bulk-Dialog ohne Schließen während des Writes, jeweils Escape, Schließen-Symbol, Klick außerhalb, `beforeunload`); ohne den Fix schlagen die Bulk-Specs fehl (belegt) |
 | `test:csp` (Port 4612, außerdem `DBM_TEST_PORT=4614`) | 2 von 2 |
 | `test:pwa` (`PWA_TEST_PORT=4613`) | 6 von 6 |
 | Echtläufe `test-real-export.py` (SQL-Dump, SQLite + PostgreSQL verify-full) und `test-real-export-formats.py`, Backend `cf3d406` | je 2 von 2; Container, Prozesse, Checkout entfernt |
