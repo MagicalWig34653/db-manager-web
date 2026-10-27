@@ -151,7 +151,7 @@ for (const driver of ['sqlite', 'postgresql'] as const) {
         : [
             'select - -1, + +2, 3 - -4, 5- - 6',
             "select '{\"a\":[1]}'::jsonb @> '{\"a\":[1]}', '{\"a\":1}'::jsonb #>> '{a}', array[1,2] <@ array[1,2,3]",
-            "select E'a\\'  b', U&'d\\0061t  a', B'101', X'4a', $t1$ a   b $t1$, 'm\n  n   \nx'",
+            "select E'a\\'  b', U&'d\\0061t  a', B'101'::text, X'4a'::text, $t1$ a   b $t1$, 'm\n  n   \nx'",
             'select 5 -(-3), 1 /* /* n */ */ + 2, 2 || 3, 7 # 2, 6 & 3, ~5',
           ];
     for (const sql of corpus) {
