@@ -454,8 +454,9 @@
     });
   });
   onMount(() => {
-    void initialize();
-    void loadBulk();
+    // Sequential on purpose: SQLite answers concurrent requests on one database with database_busy, and the
+    // structure read of the foreign key lookup must never make the eligibility check of the editor fail.
+    void initialize().then(() => (destroyed ? undefined : loadBulk()));
   });
   onDestroy(() => {
     destroyed = true;

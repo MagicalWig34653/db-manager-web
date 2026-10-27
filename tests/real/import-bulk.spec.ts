@@ -182,6 +182,10 @@ for (const driver of ['sqlite', 'postgresql']) {
         `CREATE TABLE w13_items (${identity}, name TEXT, owner_id INTEGER REFERENCES w13_owners(id), raw ${blob})`,
         "INSERT INTO w13_owners VALUES (1, 'Erste'), (2, 'Zweite')",
         "INSERT INTO w13_items (id, name, owner_id) VALUES (1, 'a', 1), (2, 'b', 1), (3, 'c', 2), (4, 'd', NULL)",
+        // Explicit ids leave a PostgreSQL identity sequence behind; a copy with an automatic key needs it ahead.
+        ...(driver === 'sqlite'
+          ? []
+          : ["SELECT setval(pg_get_serial_sequence('w13_items', 'id'), 4)"]),
       ])
         await sql(page, apiDriver, statement);
       await connect(page, driver);
