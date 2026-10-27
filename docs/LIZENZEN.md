@@ -53,6 +53,14 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `@babel/helper-validator-identifier` | `7.29.7` | MIT | Entwicklung |
 | `@babel/runtime` | `7.29.10` | MIT | Entwicklung |
 | `@bramus/specificity` | `2.4.3` | MIT | Entwicklung |
+| `@codemirror/autocomplete` | `6.20.4` | MIT | Laufzeit/Bündel |
+| `@codemirror/commands` | `6.11.1` | MIT | Laufzeit/Bündel |
+| `@codemirror/lang-sql` | `6.10.0` | MIT | Laufzeit/Bündel |
+| `@codemirror/language` | `6.13.1` | MIT | Laufzeit/Bündel |
+| `@codemirror/search` | `6.7.2` | MIT | Laufzeit/Bündel |
+| `@codemirror/state` | `6.7.6` | MIT | Laufzeit/Bündel |
+| `@codemirror/streamparser` | `6.0.0` | MIT | Laufzeit/Bündel |
+| `@codemirror/view` | `6.43.15` | MIT | Laufzeit/Bündel |
 | `@csstools/color-helpers` | `6.1.2` | MIT-0 | Entwicklung |
 | `@csstools/css-calc` | `3.4.3` | MIT | Entwicklung |
 | `@csstools/css-color-parser` | `4.2.6` | MIT | Entwicklung |
@@ -69,7 +77,11 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `@jridgewell/resolve-uri` | `3.1.2` | MIT | Laufzeit/Bündel |
 | `@jridgewell/sourcemap-codec` | `1.6.0` | MIT | Laufzeit/Bündel |
 | `@jridgewell/trace-mapping` | `0.3.31` | MIT | Laufzeit/Bündel |
+| `@lezer/common` | `1.5.4` | MIT | Laufzeit/Bündel |
+| `@lezer/highlight` | `1.2.5` | MIT | Laufzeit/Bündel |
+| `@lezer/lr` | `1.4.11` | MIT | Laufzeit/Bündel |
 | `@lucide/svelte` | `1.60.0` | ISC | Laufzeit/Bündel |
+| `@marijn/find-cluster-break` | `1.0.4` | MIT | Laufzeit/Bündel |
 | `@oxc-project/types` | `0.154.0` | MIT | Entwicklung |
 | `@playwright/test` | `1.64.1` | Apache-2.0 | Entwicklung |
 | `@redocly/ajv` | `8.11.2` | MIT | Entwicklung |
@@ -94,6 +106,7 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `@sveltejs/acorn-typescript` | `1.0.13` | MIT | Laufzeit/Bündel |
 | `@sveltejs/load-config` | `0.2.3` | MIT | Entwicklung |
 | `@sveltejs/vite-plugin-svelte` | `7.3.1` | MIT | Entwicklung |
+| `crelt` | `1.0.7` | MIT | Laufzeit/Bündel |
 | `magic-string` | `1.4.3` | MIT | Entwicklung |
 | `@swc/helpers` | `0.5.23` | Apache-2.0 | Laufzeit/Bündel |
 | `@tailwindcss/node` | `4.3.3` | MIT | Entwicklung |
@@ -226,6 +239,7 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `source-map-js` | `1.2.2` | BSD-3-Clause | Entwicklung |
 | `std-env` | `4.3.0` | MIT | Entwicklung |
 | `strip-indent` | `3.0.0` | MIT | Entwicklung |
+| `style-mod` | `4.1.4` | MIT | Laufzeit/Bündel |
 | `style-to-object` | `1.0.14` | MIT | Laufzeit/Bündel |
 | `supports-color` | `10.2.2` | MIT | Entwicklung |
 | `svelte` | `5.57.2` | MIT | Laufzeit/Bündel |
@@ -266,6 +280,7 @@ für andere Vertriebswege oder künftige Abhängigkeiten.
 | `vitest` | `5.0.5` | MIT | Entwicklung |
 | `magic-string` | `1.4.3` | MIT | Entwicklung |
 | `obug` | `3.0.0` | MIT | Entwicklung |
+| `w3c-keyname` | `2.2.8` | MIT | Laufzeit/Bündel |
 | `w3c-xmlserializer` | `6.0.0` | MIT | Entwicklung |
 | `webidl-conversions` | `8.0.1` | BSD-2-Clause | Entwicklung |
 | `whatwg-mimetype` | `5.0.0` | MIT | Entwicklung |
@@ -314,3 +329,13 @@ AGPL-3.0-only; keine Änderung kopierter Registry-Lizenztexte.
 Lesende Strukturkomponente und fünfter Standalonevalidator führen keine neuen
 Abhängigkeiten ein. Lockfile und Originaltexte unverändert; eigener Produkt-/Testcode
 AGPL-3.0-only. Vorherige Vertragsvalidatoren bleiben bytegleich.
+
+## W-P16-CodeMirror-Nachtrag
+
+Der SQL-Editor verwendet CodeMirror 6 (Entscheidung E8, vorab freigegeben), MIT-lizenziert, Autor Marijn Haverbeke
+und Mitwirkende. Direkt eingebunden: `@codemirror/state` 6.7.6, `@codemirror/view` 6.43.15, `@codemirror/language` 6.13.1,
+`@codemirror/commands` 6.11.1, `@codemirror/search` 6.7.2, `@codemirror/autocomplete` 6.20.4, `@codemirror/lang-sql` 6.10.0
+und `@lezer/highlight` 1.2.5. Transitiv: `@codemirror/streamparser` 6.0.0, `@lezer/common` 1.5.4, `@lezer/lr` 1.4.11,
+`@marijn/find-cluster-break` 1.0.4, `crelt` 1.0.7, `style-mod` 4.1.4, `w3c-keyname` 2.2.8 (alle MIT; Lizenztexte bytegleich in
+den Distributionshinweisen). Die Pakete werden ausschließlich über einen dynamischen Import als eigener Chunk geladen.
+Der SQL-Formatierer ist eigener Code (`src/lib/features/sql-editor/format.ts`), kein `sql-formatter`.
