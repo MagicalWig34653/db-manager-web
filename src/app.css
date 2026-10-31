@@ -1691,3 +1691,129 @@ kbd {
   padding-inline-start: 18px;
   overflow-wrap: anywhere;
 }
+
+/* W-P22: column transformations. Text only; images are drawn on a canvas. */
+.transform-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: 4px;
+  min-width: 24px;
+  min-height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.transform-trigger:hover,
+.transform-trigger.transform-active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+.transform-trigger:focus-visible,
+.cell-detail:focus-visible {
+  outline: 2px solid var(--ring, currentColor);
+  outline-offset: 1px;
+}
+.transform-link {
+  color: inherit;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.transform-pre {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px;
+  max-height: 40vh;
+  overflow: auto;
+}
+.transform-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: repeating-conic-gradient(var(--muted) 0% 25%, transparent 0% 50%) 50% / 12px 12px;
+}
+.transform-note {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin: 0;
+}
+.transform-error {
+  color: var(--destructive);
+  font-size: 12px;
+  margin: 0;
+}
+.transform-form {
+  display: grid;
+  gap: 10px;
+}
+.transform-form label,
+.transform-editor label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.transform-form input[type='text'],
+.transform-form input[type='number'],
+.transform-form select {
+  min-height: 32px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  padding: 4px 8px;
+  font: inherit;
+}
+.transform-form label.transform-check,
+.transform-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.transform-preview {
+  display: grid;
+  gap: 8px;
+}
+.transform-preview h3 {
+  margin: 0;
+  font-size: 13px;
+}
+.transform-sample {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.transform-full {
+  white-space: normal;
+}
+.transform-editor {
+  display: grid;
+  gap: 6px;
+}
+.transform-editor-area {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+mark {
+  background: color-mix(in srgb, Mark 55%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+.cell-detail {
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  padding: 7px 4px;
+  min-width: 24px;
+}

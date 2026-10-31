@@ -5,6 +5,8 @@
   import { Textarea } from '$lib/components/ui/textarea';
   import * as Dialog from '$lib/components/ui/dialog';
   import ResultTable from './ResultTable.svelte';
+  import TransformEditor from '$lib/features/transformations/TransformEditor.svelte';
+  import type { TransformState } from '$lib/features/transformations/state.svelte';
   import ExportControls from './ExportControls.svelte';
   import BulkDialog from '$lib/features/bulk/BulkDialog.svelte';
   import FileValuePanel from '$lib/features/bulk/FileValuePanel.svelte';
@@ -44,12 +46,15 @@
     result,
     onreload,
     onwritephase,
+    transforms,
   }: {
     connection: ConnectionDraft;
     token: string;
     result: BrowseResult;
     onreload: () => void;
     onwritephase: (phase: WritePhase) => void;
+    /** Column -> transformation assignment of the table (W-P22), for display and input editors. */
+    transforms?: TransformState;
   } = $props();
   let eligibility = $state<Eligibility | null>(null);
   let eligibilityMessage = $state(t('rowEditor.checking'));
@@ -273,6 +278,11 @@
   }
   function review() {
     try {
+      for (const field of fields) {
+        if (field.locked || field.mode !== 'value') continue;
+        if (transforms?.inputProblem(field.column, field.value))
+          throw new Error(t('transform.blocked', { column: field.column }));
+      }
       const changes = prepareChanges(fields, operation);
       verifyAllowed(eligibility!, operation, original, changes);
       pendingChanges = changes.map((change) => ({
@@ -548,6 +558,7 @@
       }
     : undefined}
   result={display}
+  {transforms}
   exportScope={{
     kind: 'table_page',
     offset: result.offset,
@@ -651,16 +662,23 @@
                       value="binary">{t('rowEditor.kindBinary')}</option
                     ><option value="timestamp">{t('rowEditor.kindTimestamp')}</option></select
                   ></label
-                ><label
-                  >{t('rowEditor.fieldValue', { column: field.column })}<Textarea
-                    aria-label={t('rowEditor.fieldValue', { column: field.column })}
+                >{#if transforms?.mappingFor(field.column)?.input}{@const input =
+                    transforms.mappingFor(field.column)!.input!}<TransformEditor
+                    column={field.column}
+                    id={input.id}
+                    options={input.options}
                     bind:value={field.value}
-                    rows={2}
-                    maxlength={1048576}
-                    autocomplete="off"
-                    spellcheck={false}
-                  /></label
-                >{#if foreignKeys.some((fk) => fk.column === field.column)}<Button
+                    {transforms}
+                  />{:else}<label
+                    >{t('rowEditor.fieldValue', { column: field.column })}<Textarea
+                      aria-label={t('rowEditor.fieldValue', { column: field.column })}
+                      bind:value={field.value}
+                      rows={2}
+                      maxlength={1048576}
+                      autocomplete="off"
+                      spellcheck={false}
+                    /></label
+                  >{/if}{#if foreignKeys.some((fk) => fk.column === field.column)}<Button
                     variant="outline"
                     size="sm"
                     onclick={() => openLookup(field.column)}
@@ -753,6 +771,7 @@
           {t('rowEditor.savedRow')}
         </p>
         <ResultTable
+          {transforms}
           result={snapshotResult(after, eligibility.update.description)}
         />{:else if operation !== 'delete'}<p>
           {t('rowEditor.noAfterRow')}

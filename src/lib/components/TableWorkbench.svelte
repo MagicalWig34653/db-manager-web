@@ -16,6 +16,8 @@
   import { rememberColumns } from '$lib/features/sql-editor/catalog-hints.svelte';
   import StructurePanel from './StructurePanel.svelte';
   import RowWorkspace from './RowWorkspace.svelte';
+  import { configStoreFor } from '$lib/features/config-store/store.svelte';
+  import { TransformState } from '$lib/features/transformations/state.svelte';
   import type { WritePhase } from '$lib/rows';
   import { toConnection, ApiError } from '$lib/api';
   import {
@@ -44,6 +46,16 @@
     onsql: () => void;
     onwritephase: (phase: WritePhase) => void;
   } = $props();
+  // Column -> display transformation of this table (W-P22): server store, or browser/memory in local mode.
+  const transforms = $derived(
+    new TransformState(configStoreFor(token), connection, {
+      schema: object.schema,
+      name: object.name,
+    }),
+  );
+  $effect(() => {
+    void transforms.load();
+  });
   let description = $state<TableDescription | null>(null);
   let result = $state<BrowseResult | null>(null);
   let busy = $state(false);
@@ -417,6 +429,7 @@
           {connection}
           {token}
           {result}
+          {transforms}
           onreload={() => loadPage(result?.offset ?? 0)}
           onwritephase={(phase) => {
             writing = phase === 'sending';
